@@ -11,7 +11,7 @@ check_PROGRAMS =
 check_SCRIPTS =
 pkgconfig_DATA =
 
-EXTRA_DIST = autogen.sh
+EXTRA_DIST = autogen.sh README.md
 TESTS =
 
 include lib/fstream/Makemodule.am
