@@ -1,0 +1,35 @@
+The tar archives in this directory have been obtained from here:
+
+    https://github.com/mgorny/tar-test-inputs
+
+    git commit hash a2110a6
+
+This repository was linked in the following article on interoperability of
+various different tar programs:
+
+    https://dev.gentoo.org/~mgorny/articles/portability-of-tar-features.html
+
+The original intention of the example archives was to test various tar programs
+for interoperability with each others extensions and format quirks.
+
+The following have been removed since there is no intention in adding support
+for those features:
+
+ - volume-label tests
+ - multi-volume tests
+ - longe user + group names
+ - sun tar samples
+ - star samples
+ - file flags tests
+
+In addition to that, the files in "file-size" are truncated, since we are only
+interested in parsing the header.
+
+The following addtional files have been added:
+ - xattr/xattr-shily-binary.tar
+     Created from xattr/xattr-shily.tar by manually patching in a capability
+     xattr key/value pair.
+ - tar/format-acceptance/link_filled.tar
+     Contributed in GitHub issue #64. A tar ball that contains a hard link
+     where the 100 byte target field is completely filled without containing
+     a null-terminator.
