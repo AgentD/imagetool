@@ -1,0 +1,4 @@
+libutil_a_SOURCES = include/bitmap.h
+libutil_a_SOURCES += lib/util/bitmap.c
+
+noinst_LIBRARIES += libutil.a
