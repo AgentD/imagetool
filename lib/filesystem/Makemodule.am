@@ -1,0 +1,5 @@
+libfilesystem_a_SOURCES = include/libfilesystem.h include/predef.h
+libfilesystem_a_CFLAGS = $(AM_CFLAGS)
+libfilesystem_a_CPPFLAGS = $(AM_CPPFLAGS)
+
+noinst_LIBRARIES += libfilesystem.a

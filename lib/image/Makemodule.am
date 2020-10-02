@@ -1,0 +1,6 @@
+libimage_a_SOURCES = lib/image/file_volume.c
+libimage_a_SOURCES += include/volume.h include/predef.h
+libimage_a_CFLAGS = $(AM_CFLAGS)
+libimage_a_CPPFLAGS = $(AM_CPPFLAGS)
+
+noinst_LIBRARIES += libimage.a

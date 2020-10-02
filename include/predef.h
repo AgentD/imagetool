@@ -1,3 +1,9 @@
+/* SPDX-License-Identifier: GPL-3.0-or-later */
+/*
+ * predef.h
+ *
+ * Copyright (C) 2020 David Oberhollenzer <goliath@infraroot.at>
+ */
 #ifndef PREDEF_H
 #define PREDEF_H
 
