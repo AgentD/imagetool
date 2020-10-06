@@ -18,5 +18,6 @@ include lib/fstream/Makemodule.am
 include lib/tar/Makemodule.am
 include lib/util/Makemodule.am
 include lib/image/Makemodule.am
+include lib/fstree/Makemodule.am
 include lib/filesystem/Makemodule.am
 include tests/Makemodule.am

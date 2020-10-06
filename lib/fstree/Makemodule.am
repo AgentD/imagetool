@@ -1,0 +1,10 @@
+libfstree_a_SOURCES = lib/fstree/fstree.c lib/fstree/get_path.c
+libfstree_a_SOURCES += lib/fstree/mknode.c lib/fstree/node_from_path.c
+libfstree_a_SOURCES += include/fstree.h lib/fstree/canonicalize_path.c
+libfstree_a_SOURCES += lib/fstree/sort.c lib/fstree/resolve_hard_links.c
+libfstree_a_SOURCES += lib/fstree/create_inode_table.c
+libfstree_a_SOURCES += lib/fstree/add_file_block.c
+libfstree_a_CFLAGS = $(AM_CFLAGS)
+libfstree_a_CPPFLAGS = $(AM_CPPFLAGS)
+
+noinst_LIBRARIES += libfstree.a
