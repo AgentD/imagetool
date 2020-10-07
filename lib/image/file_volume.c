@@ -21,7 +21,7 @@ typedef struct {
 	char *filename;
 	int fd;
 
-	bitmap_t bitmap;
+	bitmap_t *bitmap;
 
 	uint8_t scratch[];
 } file_volume_t;
@@ -30,7 +30,7 @@ static void destroy(object_t *base)
 {
 	file_volume_t *fvol = (file_volume_t *)base;
 
-	bitmap_cleanup(&fvol->bitmap);
+	object_drop(fvol->bitmap);
 
 	close(fvol->fd);
 	free(fvol->filename);
@@ -50,7 +50,7 @@ static int read_block(volume_t *vol, uint64_t index, void *buffer)
 		return -1;
 	}
 
-	if (!bitmap_is_set(&fvol->bitmap, index)) {
+	if (!bitmap_is_set(fvol->bitmap, index)) {
 		memset(buffer, 0, vol->blocksize);
 		return 0;
 	}
@@ -108,7 +108,7 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 		vol->blocks_used = index + 1;
 	}
 
-	if (bitmap_set(&fvol->bitmap, index)) {
+	if (bitmap_set(fvol->bitmap, index)) {
 		fprintf(stderr, "%s: failed to mark block as used.\n",
 			fvol->filename);
 		return -1;
@@ -144,8 +144,8 @@ static int swap_blocks(volume_t *vol, uint64_t a, uint64_t b)
 	file_volume_t *fvol = (file_volume_t *)vol;
 	bool a_set, b_set;
 
-	a_set = bitmap_is_set(&fvol->bitmap, a);
-	b_set = bitmap_is_set(&fvol->bitmap, b);
+	a_set = bitmap_is_set(fvol->bitmap, a);
+	b_set = bitmap_is_set(fvol->bitmap, b);
 
 	if (!a_set && !b_set)
 		return 0;
@@ -157,7 +157,7 @@ static int swap_blocks(volume_t *vol, uint64_t a, uint64_t b)
 		if (write_block(vol, b, fvol->scratch))
 			return -1;
 
-		bitmap_clear(&fvol->bitmap, a);
+		bitmap_clear(fvol->bitmap, a);
 	} else if (!a_set && b_set) {
 		if (read_block(vol, b, fvol->scratch))
 			return -1;
@@ -165,7 +165,7 @@ static int swap_blocks(volume_t *vol, uint64_t a, uint64_t b)
 		if (write_block(vol, a, fvol->scratch))
 			return -1;
 
-		bitmap_clear(&fvol->bitmap, b);
+		bitmap_clear(fvol->bitmap, b);
 	} else {
 		if (read_block(vol, a, fvol->scratch))
 			return -1;
@@ -261,10 +261,10 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	bool shrink_file = false;
 
 	while (count--)
-		bitmap_clear(&fvol->bitmap, index++);
+		bitmap_clear(fvol->bitmap, index++);
 
 	while (vol->blocks_used > 0 &&
-	       !bitmap_is_set(&fvol->bitmap, vol->blocks_used - 1)) {
+	       !bitmap_is_set(fvol->bitmap, vol->blocks_used - 1)) {
 		vol->blocks_used -= 1;
 		shrink_file = true;
 	}
@@ -275,7 +275,7 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 			return -1;
 		}
 
-		bitmap_shrink(&fvol->bitmap);
+		bitmap_shrink(fvol->bitmap);
 	}
 
 	return 0;
@@ -289,13 +289,13 @@ static int commit(volume_t *vol)
 	memset(fvol->scratch, 0, vol->blocksize);
 
 	for (i = 0; i < vol->blocks_used; ++i) {
-		if (bitmap_is_set(&fvol->bitmap, i))
+		if (bitmap_is_set(fvol->bitmap, i))
 			continue;
 
 		if (write_block(vol, i, fvol->scratch))
 			return -1;
 
-		bitmap_clear(&fvol->bitmap, i);
+		bitmap_clear(fvol->bitmap, i);
 	}
 
 	if (fsync(fvol->fd) != 0) {
@@ -341,9 +341,11 @@ volume_t *volume_from_file(const char *filename, uint32_t blocksize,
 		}
 	}
 
-	if (bitmap_init(&fvol->bitmap, min_count))
+	fvol->bitmap = bitmap_create(min_count);
+	if (fvol->bitmap == NULL)
 		goto fail;
 
+	((object_t *)fvol)->refcount = 1;
 	((object_t *)fvol)->destroy = destroy;
 	((volume_t *)fvol)->blocksize = blocksize;
 	((volume_t *)fvol)->min_block_count = min_count;

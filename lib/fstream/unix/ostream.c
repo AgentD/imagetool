@@ -135,6 +135,7 @@ ostream_t *ostream_open_file(const char *path, int flags)
 	strm->append = file_append;
 	strm->flush = file_flush;
 	strm->get_filename = file_get_filename;
+	obj->refcount = 1;
 	obj->destroy = file_destroy;
 	return strm;
 fail_path:
@@ -161,6 +162,7 @@ ostream_t *ostream_open_stdout(void)
 	strm->append = file_append;
 	strm->flush = file_flush;
 	strm->get_filename = file_get_filename;
+	obj->refcount = 1;
 	obj->destroy = file_destroy;
 	return strm;
 fail:

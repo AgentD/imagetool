@@ -132,6 +132,13 @@ AM_CONDITIONAL([WITH_LZ4], [test "x$with_lz4" = "xyes"])
 AM_CONDITIONAL([WITH_ZSTD], [test "x$with_zstd" = "xyes"])
 AM_CONDITIONAL([WITH_LZO], [test "x$with_lzo" = "xyes"])
 
+##### additional checks #####
+
+AX_COMPILE_CHECK_SIZEOF(size_t)
+AX_COMPILE_CHECK_SIZEOF(int)
+AX_COMPILE_CHECK_SIZEOF(long)
+AX_COMPILE_CHECK_SIZEOF(long long)
+
 ##### generate output #####
 
 AC_CONFIG_HEADERS([config.h])

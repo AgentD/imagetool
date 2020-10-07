@@ -89,6 +89,7 @@ istream_t *istream_open_file(const char *path)
 	strm->buffer = file->buffer;
 	strm->precache = file_precache;
 	strm->get_filename = file_get_filename;
+	obj->refcount = 1;
 	obj->destroy = file_destroy;
 	return strm;
 fail_path:
@@ -115,6 +116,7 @@ istream_t *istream_open_stdin(void)
 	strm->buffer = file->buffer;
 	strm->precache = file_precache;
 	strm->get_filename = file_get_filename;
+	obj->refcount = 1;
 	obj->destroy = file_destroy;
 	return strm;
 fail:

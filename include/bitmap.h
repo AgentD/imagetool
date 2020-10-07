@@ -9,22 +9,11 @@
 
 #include "predef.h"
 
-typedef uint64_t bitmap_word_t;
-
-typedef struct {
-	object_t base;
-
-	size_t word_count;
-	bitmap_word_t *words;
-} bitmap_t;
+typedef struct bitmap_t bitmap_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-int bitmap_init(bitmap_t *bitmap, size_t bit_count);
-
-void bitmap_cleanup(bitmap_t *bitmap);
 
 bitmap_t *bitmap_create(size_t bit_count);
 

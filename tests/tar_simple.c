@@ -4,7 +4,9 @@
  *
  * Copyright (C) 2019 David Oberhollenzer <goliath@infraroot.at>
  */
-#include "test_tar.h"
+#include "config.h"
+#include "tar.h"
+#include "test.h"
 
 #ifndef TESTUID
 #define TESTUID 1000
@@ -62,6 +64,6 @@ int main(void)
 	buffer[5] = '\0';
 	TEST_STR_EQUAL(buffer, "test\n");
 	clear_header(&hdr);
-	object_destroy(fp);
+	object_drop(fp);
 	return EXIT_SUCCESS;
 }

@@ -4,7 +4,9 @@
  *
  * Copyright (C) 2019 David Oberhollenzer <goliath@infraroot.at>
  */
-#include "test_tar.h"
+#include "config.h"
+#include "tar.h"
+#include "test.h"
 
 int main(void)
 {
@@ -34,6 +36,6 @@ int main(void)
 	TEST_NULL(hdr.xattr->next);
 
 	clear_header(&hdr);
-	object_destroy(fp);
+	object_drop(fp);
 	return EXIT_SUCCESS;
 }

@@ -14,42 +14,24 @@
 
 #define MIN_BITMAP_WORDS (64)
 
-int bitmap_init(bitmap_t *bitmap, size_t bit_count)
-{
-	size_t bits_per_word = sizeof(bitmap_word_t) * CHAR_BIT;
+typedef uint64_t bitmap_word_t;
 
-	if ((bit_count % bits_per_word) != 0)
-		bit_count += bits_per_word - bit_count % bits_per_word;
+struct bitmap_t {
+	object_t base;
 
-	if ((bit_count / bits_per_word) < MIN_BITMAP_WORDS)
-		bit_count = MIN_BITMAP_WORDS * bits_per_word;
-
-	memset(bitmap, 0, sizeof(*bitmap));
-	bitmap->word_count = bit_count / bits_per_word;
-
-	bitmap->words = calloc(bitmap->word_count, sizeof(bitmap_word_t));
-	if (bitmap->words == NULL) {
-		perror("allocating bitmap");
-		return -1;
-	}
-
-	return 0;
-}
-
-void bitmap_cleanup(bitmap_t *bitmap)
-{
-	free(bitmap->words);
-	memset(bitmap, 0, sizeof(*bitmap));
-}
+	size_t word_count;
+	bitmap_word_t *words;
+};
 
 static void bitmap_destroy(object_t *base)
 {
-	bitmap_cleanup((bitmap_t *)base);
+	free(((bitmap_t *)base)->words);
 	free(base);
 }
 
 bitmap_t *bitmap_create(size_t bit_count)
 {
+	size_t bits_per_word = sizeof(bitmap_word_t) * CHAR_BIT;
 	bitmap_t *bitmap = calloc(1, sizeof(*bitmap));
 
 	if (bitmap == NULL) {
@@ -57,11 +39,22 @@ bitmap_t *bitmap_create(size_t bit_count)
 		return NULL;
 	}
 
-	if (bitmap_init(bitmap, bit_count)) {
+	if ((bit_count % bits_per_word) != 0)
+		bit_count += bits_per_word - bit_count % bits_per_word;
+
+	if ((bit_count / bits_per_word) < MIN_BITMAP_WORDS)
+		bit_count = MIN_BITMAP_WORDS * bits_per_word;
+
+	bitmap->word_count = bit_count / bits_per_word;
+
+	bitmap->words = calloc(bitmap->word_count, sizeof(bitmap_word_t));
+	if (bitmap->words == NULL) {
+		perror("allocating bitmap");
 		free(bitmap);
 		return NULL;
 	}
 
+	((object_t *)bitmap)->refcount = 1;
 	((object_t *)bitmap)->destroy = bitmap_destroy;
 	return bitmap;
 }

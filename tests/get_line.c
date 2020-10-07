@@ -47,7 +47,7 @@ static void run_test_case(const line_t *lines, size_t count,
 	ret = istream_get_line(fp, &line, &line_num, flags);
 	TEST_ASSERT(ret > 0);
 
-	object_destroy(fp);
+	object_drop(fp);
 }
 
 static const line_t lines_raw[] = {

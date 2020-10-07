@@ -56,7 +56,7 @@ static void comp_destroy(object_t *obj)
 	ostream_comp_t *comp = (ostream_comp_t *)obj;
 
 	comp->cleanup(comp);
-	object_destroy(comp->wrapped);
+	object_drop(comp->wrapped);
 	free(comp);
 }
 
@@ -94,7 +94,7 @@ ostream_t *ostream_compressor_create(ostream_t *strm, int comp_id)
 	if (comp == NULL)
 		return NULL;
 
-	comp->wrapped = strm;
+	comp->wrapped = object_grab(strm);
 	comp->inbuf_used = 0;
 
 	base = (ostream_t *)comp;
@@ -103,6 +103,7 @@ ostream_t *ostream_compressor_create(ostream_t *strm, int comp_id)
 	base->get_filename = comp_get_filename;
 
 	obj = (object_t *)comp;
+	obj->refcount = 1;
 	obj->destroy = comp_destroy;
 	return base;
 }

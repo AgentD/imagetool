@@ -4,7 +4,9 @@
  *
  * Copyright (C) 2019 David Oberhollenzer <goliath@infraroot.at>
  */
-#include "test_tar.h"
+#include "config.h"
+#include "tar.h"
+#include "test.h"
 
 #include <unistd.h>
 
@@ -102,7 +104,7 @@ int main(void)
 
 	/* end of file */
 	TEST_ASSERT(read_header(fp, &hdr) > 0);
-	object_destroy(fp);
+	object_drop(fp);
 
 	return EXIT_SUCCESS;
 }

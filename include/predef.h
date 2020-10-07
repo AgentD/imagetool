@@ -12,12 +12,25 @@
 #include <stdbool.h>
 
 typedef struct object_t {
+	size_t refcount;
+
 	void (*destroy)(struct object_t *obj);
 } object_t;
 
-static inline void object_destroy(void *obj)
+static inline void* object_grab(void *obj)
 {
-	((object_t *)obj)->destroy(obj);
+	((object_t *)obj)->refcount += 1;
+	return obj;
+}
+
+static inline void* object_drop(void *obj)
+{
+	if (((object_t *)obj)->refcount == 1) {
+		((object_t *)obj)->destroy(obj);
+	} else {
+		((object_t *)obj)->refcount -= 1;
+	}
+	return NULL;
 }
 
 #if defined(__GNUC__) && __GNUC__ >= 5

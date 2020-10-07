@@ -8,7 +8,7 @@
 
 #include <string.h>
 #include <stdlib.h>
-#include <stdio.h>
+#include <errno.h>
 
 static void free_recursive(tree_node_t *n)
 {
@@ -29,15 +29,30 @@ static void free_recursive(tree_node_t *n)
 	free(n);
 }
 
-int fstree_init(fstree_t *fs)
+static void destroy(object_t *base)
 {
-	memset(fs, 0, sizeof(*fs));
-	fs->default_permissions = 0755;
+	fstree_t *fs = (fstree_t *)base;
+
+	free_recursive(fs->root);
+	free(fs->inode_table);
+	free(fs);
+}
+
+fstree_t * fstree_create(void)
+{
+	fstree_t *fs = calloc(1, sizeof(*fs));
+
+	if (fs == NULL)
+		return NULL;
 
 	fs->root = calloc(1, sizeof(*fs->root) + 1);
-	if (fs->root == NULL)
-		return -1;
+	if (fs->root == NULL) {
+		free(fs);
+		errno = ENOMEM;
+		return NULL;
+	}
 
+	fs->default_permissions = 0755;
 	fs->root->type = TREE_NODE_DIR;
 	fs->root->permissions = 0755;
 	fs->root->name = (char *)fs->root->payload;
@@ -45,12 +60,7 @@ int fstree_init(fstree_t *fs)
 
 	strcpy((char *)fs->root->payload, "");
 
+	((object_t *)fs)->refcount = 1;
+	((object_t *)fs)->destroy = destroy;
 	return 0;
-}
-
-void fstree_cleanup(fstree_t *fs)
-{
-	free_recursive(fs->root);
-	free(fs->inode_table);
-	memset(fs, 0, sizeof(*fs));
 }

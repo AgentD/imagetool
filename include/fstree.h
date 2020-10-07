@@ -71,6 +71,8 @@ typedef struct tree_node_t {
 } tree_node_t;
 
 typedef struct {
+	object_t base;
+
 	/* default settings for implicitly created directories */
 	uint64_t default_ctime;
 	uint64_t default_mtime;
@@ -88,9 +90,7 @@ typedef struct {
 extern "C" {
 #endif
 
-int fstree_init(fstree_t *fs);
-
-void fstree_cleanup(fstree_t *fs);
+fstree_t *fstree_create(void);
 
 void fstree_canonicalize_path(char *path);
 
