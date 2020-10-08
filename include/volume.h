@@ -19,19 +19,12 @@ struct volume_t {
 
 	uint64_t min_block_count;
 	uint64_t max_block_count;
-	uint64_t blocks_used;
 
 	int (*read_block)(volume_t *vol, uint64_t index, void *buffer);
 
 	int (*write_block)(volume_t *vol, uint64_t index, const void *buffer);
 
 	int (*swap_blocks)(volume_t *vol, uint64_t a, uint64_t b);
-
-	int (*read_data)(volume_t *vol, uint64_t offset,
-			 void *buffer, size_t size);
-
-	int (*write_data)(volume_t *vol, uint64_t offset,
-			  const void *buffer, size_t size);
 
 	int (*discard_blocks)(volume_t *vol, uint64_t index, uint64_t count);
 
