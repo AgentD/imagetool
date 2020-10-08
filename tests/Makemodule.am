@@ -166,6 +166,10 @@ test_get_line_LDADD = libfstream.a
 test_get_line_CPPFLAGS = $(AM_CPPFLAGS)
 test_get_line_CPPFLAGS += -DTESTFILE=$(top_srcdir)/tests/get_line.txt
 
+test_bitmap_SOURCES = tests/bitmap.c tests/test.h
+test_bitmap_LDADD = libutil.a
+test_bitmap_CPPFLAGS = $(AM_CPPFLAGS)
+
 check_PROGRAMS += test_tar_ustar0 test_tar_ustar1 test_tar_ustar2
 check_PROGRAMS += test_tar_ustar3 test_tar_ustar4 test_tar_ustar5
 check_PROGRAMS += test_tar_ustar6
@@ -177,7 +181,7 @@ check_PROGRAMS += test_tar_sparse_gnu test_tar_sparse_gnu0 test_tar_sparse_gnu1
 check_PROGRAMS += test_tar_sparse_gnu2 test_tar_sparse_gnu3
 check_PROGRAMS += test_tar_xattr_bsd test_tar_xattr_schily
 check_PROGRAMS += test_tar_xattr_schily_bin test_tar_target_filled
-check_PROGRAMS += test_get_line
+check_PROGRAMS += test_get_line test_bitmap
 
 TESTS += test_tar_ustar0 test_tar_ustar1 test_tar_ustar2 test_tar_ustar3
 TESTS += test_tar_ustar4 test_tar_ustar5 test_tar_ustar6
@@ -189,5 +193,6 @@ TESTS += test_tar_sparse_gnu test_tar_sparse_gnu0
 TESTS += test_tar_sparse_gnu1 test_tar_sparse_gnu2 test_tar_sparse_gnu3
 TESTS += test_tar_xattr_bsd test_tar_xattr_schily
 TESTS += test_tar_xattr_schily_bin test_tar_target_filled test_get_line
+TESTS += test_bitmap
 
 EXTRA_DIST += $(top_srcdir)/tests/tar $(top_srcdir)/tests/get_line.txt

@@ -76,8 +76,8 @@ int bitmap_set(bitmap_t *bitmap, size_t index)
 {
 	size_t word_idx = index / (sizeof(bitmap->words[0]) * CHAR_BIT);
 	size_t word_off = index % (sizeof(bitmap->words[0]) * CHAR_BIT);
-	size_t new_count;
-	void *new;
+	size_t i, new_count;
+	bitmap_word_t *new;
 
 	if (word_idx >= bitmap->word_count) {
 		new_count = bitmap->word_count * 2;
@@ -92,6 +92,9 @@ int bitmap_set(bitmap_t *bitmap, size_t index)
 			perror("growing bitmap");
 			return -1;
 		}
+
+		for (i = bitmap->word_count; i < new_count; ++i)
+			new[i] = 0;
 
 		bitmap->words = new;
 		bitmap->word_count = new_count;
