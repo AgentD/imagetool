@@ -8,6 +8,8 @@
 #include "volume.h"
 #include "bitmap.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <string.h>
@@ -230,11 +232,35 @@ static volume_t *create_sub_volume(volume_t *vol, uint64_t min_count,
 	return NULL;
 }
 
-volume_t *volume_from_file(const char *filename, uint32_t blocksize,
-			   uint64_t min_count, uint64_t max_count)
+volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 {
-	file_volume_t *fvol;
+	uint64_t i, used, max_count;
+	file_volume_t *fvol = NULL;
+	size_t blocksize;
+	struct stat sb;
 
+	/* determine block size, current block count, maximum block count */
+	if (fstat(fd, &sb) != 0)
+		goto fail;
+
+	blocksize = sb.st_blksize;
+	if (blocksize == 0)
+		blocksize = 512;
+
+	used = sb.st_size / blocksize;
+
+	if (sb.st_size % blocksize) {
+		used += 1;
+
+		if (ftruncate(fd, used * blocksize) != 0)
+			goto fail;
+	}
+
+	max_count = max_size / blocksize;
+	if (max_size % blocksize)
+		max_count += 1;
+
+	/* create wrapper */
 	fvol = calloc(1, sizeof(*fvol) + 2 * blocksize);
 	if (fvol == NULL)
 		goto fail;
@@ -243,25 +269,15 @@ volume_t *volume_from_file(const char *filename, uint32_t blocksize,
 	if (fvol->filename == NULL)
 		goto fail;
 
-	fvol->fd = open(filename, O_RDWR | O_CREAT | O_EXCL, 0644);
-	if (fvol->fd < 0)
-		goto fail;
-
-	if (min_count > 0) {
-		if (ftruncate(fvol->fd, min_count * blocksize) != 0) {
-			perror(filename);
-			goto fail;
-		}
-	}
-
-	fvol->bitmap = bitmap_create(min_count);
+	fvol->bitmap = bitmap_create(used);
 	if (fvol->bitmap == NULL)
 		goto fail;
 
+	fvol->fd = fd;
 	((object_t *)fvol)->refcount = 1;
 	((object_t *)fvol)->destroy = destroy;
 	((volume_t *)fvol)->blocksize = blocksize;
-	((volume_t *)fvol)->min_block_count = min_count;
+	((volume_t *)fvol)->min_block_count = 0;
 	((volume_t *)fvol)->max_block_count = max_count;
 	((volume_t *)fvol)->read_block = read_block;
 	((volume_t *)fvol)->write_block = write_block;
@@ -269,11 +285,20 @@ volume_t *volume_from_file(const char *filename, uint32_t blocksize,
 	((volume_t *)fvol)->discard_blocks = discard_blocks;
 	((volume_t *)fvol)->commit = commit;
 	((volume_t *)fvol)->create_sub_volume = create_sub_volume;
+
+	/* fill the used block bitmap */
+	for (i = 0; i < used; ++i) {
+		bitmap_set(fvol->bitmap, i);
+	}
+
 	return (volume_t *)fvol;
 fail:
 	perror(filename);
 
 	if (fvol != NULL) {
+		if (fvol->bitmap != NULL)
+			object_drop(fvol->bitmap);
+
 		free(fvol->filename);
 		free(fvol);
 	}

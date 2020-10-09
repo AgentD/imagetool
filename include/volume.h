@@ -38,8 +38,7 @@ struct volume_t {
 extern "C" {
 #endif
 
-volume_t *volume_from_file(const char *filename, uint32_t blocksize,
-			   uint64_t min_count, uint64_t max_count);
+volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size);
 
 volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize);
 
