@@ -20,4 +20,5 @@ include lib/util/Makemodule.am
 include lib/image/Makemodule.am
 include lib/fstree/Makemodule.am
 include lib/filesystem/Makemodule.am
+include bin/imagebuild/Makemodule.am
 include tests/Makemodule.am

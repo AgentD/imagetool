@@ -1,0 +1,5 @@
+imagebuild_SOURCES = bin/imagebuild/imagebuild.c bin/imagebuild/imagebuild.h
+imagebuild_SOURCES += bin/imagebuild/options.c bin/imagebuild/version.c
+
+bin_PROGRAMS += imagebuild
+
