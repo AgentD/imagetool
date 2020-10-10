@@ -81,9 +81,17 @@ static int read_block(volume_t *vol, uint64_t index, void *buffer)
 {
 	adapter_t *adapter = (adapter_t *)vol;
 	volume_t *wrapped = adapter->wrapped;
+	uint64_t offset;
+	size_t size;
 
-	uint64_t offset = index * vol->blocksize;
-	size_t size = vol->blocksize;
+	if (index >= vol->max_block_count) {
+		fputs("Out of bounds read attempted on block size adapter.\n",
+		      stderr);
+		return -1;
+	}
+
+	offset = index * vol->blocksize;
+	size = vol->blocksize;
 
 	while (size > 0) {
 		uint64_t target_idx = offset / wrapped->blocksize;
@@ -91,7 +99,7 @@ static int read_block(volume_t *vol, uint64_t index, void *buffer)
 		size_t target_size = wrapped->blocksize - target_offset;
 
 		if (target_size > size)
-			target_offset = size;
+			target_size = size;
 
 		if (target_offset == 0 && target_size == wrapped->blocksize) {
 			wrapped->read_block(wrapped, target_idx, buffer);
@@ -115,9 +123,17 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 {
 	adapter_t *adapter = (adapter_t *)vol;
 	volume_t *wrapped = adapter->wrapped;
+	uint64_t offset;
+	size_t size;
 
-	uint64_t offset = index * vol->blocksize;
-	size_t size = vol->blocksize;
+	if (index >= vol->max_block_count) {
+		fputs("Out of bounds write attempted on block size adapter.\n",
+		      stderr);
+		return -1;
+	}
+
+	offset = index * vol->blocksize;
+	size = vol->blocksize;
 
 	while (size > 0) {
 		uint64_t target_idx = offset / wrapped->blocksize;
@@ -125,7 +141,7 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 		size_t target_size = wrapped->blocksize - target_offset;
 
 		if (target_size > size)
-			target_offset = size;
+			target_size = size;
 
 		if (target_offset == 0 && target_size == wrapped->blocksize) {
 			wrapped->write_block(wrapped, target_idx, buffer);
@@ -173,14 +189,38 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 {
 	adapter_t *adapter = (adapter_t *)vol;
 	volume_t *wrapped = adapter->wrapped;
-	void *z_buf;
+	uint64_t offset, size;
 
-	z_buf = adapter->scratch + wrapped->blocksize;
-	memset(z_buf, 0, sizeof(z_buf));
+	if (index >= vol->max_block_count)
+		return 0;
 
-	while (count--) {
-		if (write_block(vol, index++, z_buf))
-			return -1;
+	if (count > (vol->max_block_count - index))
+		count = vol->max_block_count - index;
+
+	offset = index * vol->blocksize;
+	size = count * vol->blocksize;
+
+	while (size > 0) {
+		uint64_t target_idx = offset / wrapped->blocksize;
+		size_t target_offset = offset % wrapped->blocksize;
+		size_t target_size = wrapped->blocksize - target_offset;
+
+		if (target_size > size)
+			target_size = size;
+
+		if (target_offset == 0 && target_size == wrapped->blocksize) {
+			wrapped->discard_blocks(wrapped, target_idx, 1);
+		} else {
+			if (cache_block(adapter, target_idx))
+				return -1;
+
+			memset(adapter->scratch + target_offset, 0,
+			       target_size);
+			adapter->cache_dirty = true;
+		}
+
+		offset += target_size;
+		size -= target_size;
 	}
 
 	return 0;
@@ -217,16 +257,22 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize)
 {
 	size_t scratch_size = vol->blocksize + blocksize * 2;
 	adapter_t *adapter = calloc(1, sizeof(*adapter) + scratch_size);
+	uint64_t count;
 
 	if (adapter == NULL) {
 		perror("creating block size adapter volume");
 		return NULL;
 	}
 
+	count = (vol->max_block_count * vol->blocksize) / blocksize;
+
 	adapter->wrapped = object_grab(vol);
 
 	((object_t *)adapter)->refcount = 1;
 	((object_t *)adapter)->destroy = destroy;
+	((volume_t *)adapter)->blocksize = blocksize;
+	((volume_t *)adapter)->min_block_count = 0;
+	((volume_t *)adapter)->max_block_count = count;
 	((volume_t *)adapter)->read_block = read_block;
 	((volume_t *)adapter)->write_block = write_block;
 	((volume_t *)adapter)->swap_blocks = swap_blocks;
