@@ -12,6 +12,11 @@
 
 typedef struct volume_t volume_t;
 
+enum {
+	MOVE_SWAP = 0x01,
+	MOVE_ERASE_SOURCE = 0x02,
+};
+
 struct volume_t {
 	object_t base;
 
@@ -24,7 +29,7 @@ struct volume_t {
 
 	int (*write_block)(volume_t *vol, uint64_t index, const void *buffer);
 
-	int (*swap_blocks)(volume_t *vol, uint64_t a, uint64_t b);
+	int (*move_block)(volume_t *vol, uint64_t src, uint64_t dst, int flags);
 
 	int (*discard_blocks)(volume_t *vol, uint64_t index, uint64_t count);
 

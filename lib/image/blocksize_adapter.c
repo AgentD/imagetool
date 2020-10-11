@@ -162,24 +162,30 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 	return 0;
 }
 
-static int swap_blocks(volume_t *vol, uint64_t a, uint64_t b)
+static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
 {
 	adapter_t *adapter = (adapter_t *)vol;
-	void *a_buf, *b_buf;
+	void *src_buf, *dst_buf;
 
-	a_buf = adapter->scratch + adapter->wrapped->blocksize;
-	b_buf = (char *)a_buf + vol->blocksize;
+	src_buf = adapter->scratch + adapter->wrapped->blocksize;
+	dst_buf = (char *)src_buf + vol->blocksize;
 
-	if (read_block(vol, a, a_buf))
+	if (read_block(vol, src, src_buf))
 		return -1;
 
-	if (read_block(vol, b, b_buf))
-		return -1;
+	if (flags & (MOVE_SWAP | MOVE_ERASE_SOURCE)) {
+		if (flags & MOVE_ERASE_SOURCE) {
+			memset(dst_buf, 0, vol->blocksize);
+		} else {
+			if (read_block(vol, dst, dst_buf))
+				return -1;
+		}
 
-	if (write_block(vol, b, a_buf))
-		return -1;
+		if (write_block(vol, src, dst_buf))
+			return -1;
+	}
 
-	if (write_block(vol, a, b_buf))
+	if (write_block(vol, dst, src_buf))
 		return -1;
 
 	return 0;
@@ -275,7 +281,7 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize)
 	((volume_t *)adapter)->max_block_count = count;
 	((volume_t *)adapter)->read_block = read_block;
 	((volume_t *)adapter)->write_block = write_block;
-	((volume_t *)adapter)->swap_blocks = swap_blocks;
+	((volume_t *)adapter)->move_block = move_block;
 	((volume_t *)adapter)->discard_blocks = discard_blocks;
 	((volume_t *)adapter)->commit = commit;
 	((volume_t *)adapter)->create_sub_volume = create_sub_volume;

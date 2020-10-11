@@ -162,35 +162,43 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	return 0;
 }
 
-static int swap_blocks(volume_t *vol, uint64_t a, uint64_t b)
+static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
-	bool a_set, b_set;
+	void *src_ptr, *dst_ptr;
+	bool src_set, dst_set;
 
-	a_set = bitmap_is_set(fvol->bitmap, a);
-	b_set = bitmap_is_set(fvol->bitmap, b);
+	src_set = bitmap_is_set(fvol->bitmap, src);
+	dst_set = bitmap_is_set(fvol->bitmap, dst);
 
-	if (!a_set && !b_set)
+	if (!src_set && !dst_set)
 		return 0;
 
-	if (read_block(vol, a, fvol->scratch))
+	src_ptr = fvol->scratch;
+	dst_ptr = fvol->scratch + vol->blocksize;
+
+	if (read_block(vol, src, src_ptr))
 		return -1;
 
-	if (read_block(vol, b, fvol->scratch + vol->blocksize))
-		return -1;
+	if (flags & (MOVE_SWAP | MOVE_ERASE_SOURCE)) {
+		if (flags & MOVE_ERASE_SOURCE) {
+			memset(dst_ptr, 0, vol->blocksize);
+			dst_set = false;
+		} else {
+			if (read_block(vol, dst, dst_ptr))
+				return -1;
+		}
 
-	if (write_block(vol, b, fvol->scratch))
-		return -1;
+		if (write_block(vol, src, dst_ptr))
+			return -1;
 
-	if (write_block(vol, a, fvol->scratch + vol->blocksize))
-		return -1;
-
-	if (!b_set) {
-		bitmap_clear(fvol->bitmap, a);
-	} else if (!a_set) {
-		bitmap_clear(fvol->bitmap, b);
+		bitmap_set_value(fvol->bitmap, src, dst_set);
 	}
 
+	if (write_block(vol, dst, src_ptr))
+		return -1;
+
+	bitmap_set_value(fvol->bitmap, dst, src_set);
 	return 0;
 }
 
@@ -281,7 +289,7 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 	((volume_t *)fvol)->max_block_count = max_count;
 	((volume_t *)fvol)->read_block = read_block;
 	((volume_t *)fvol)->write_block = write_block;
-	((volume_t *)fvol)->swap_blocks = swap_blocks;
+	((volume_t *)fvol)->move_block = move_block;
 	((volume_t *)fvol)->discard_blocks = discard_blocks;
 	((volume_t *)fvol)->commit = commit;
 	((volume_t *)fvol)->create_sub_volume = create_sub_volume;

@@ -62,7 +62,7 @@ static volume_t dummy = {
 
 	.read_block = dummy_read_block,
 	.write_block = dummy_write_block,
-	.swap_blocks = NULL,
+	.move_block = NULL,
 	.discard_blocks = dummy_discard_blocks,
 	.commit = dummy_commit,
 	.create_sub_volume = NULL,
@@ -150,7 +150,7 @@ int main(void)
 	TEST_STR_EQUAL(dummy_buffer, "AAAzzzFFFbbbBBCcccCCCdddDDDd");
 
 	/* swap blocks */
-	ret = vol->swap_blocks(vol, 0, 2);
+	ret = vol->move_block(vol, 0, 2, MOVE_SWAP);
 	TEST_EQUAL_I(ret, 0);
 
 	ret = vol->commit(vol);

@@ -181,7 +181,7 @@ int main(void)
 	TEST_ASSERT(ret != 0);
 
 	/* swap */
-	ret = vol->swap_blocks(vol, 3, 7);
+	ret = vol->move_block(vol, 3, 7, MOVE_SWAP);
 	TEST_EQUAL_I(ret, 0);
 
 	ret = vol->commit(vol);
@@ -229,7 +229,7 @@ int main(void)
 	}
 
 	/* swap with an "unmapped" block that shrinks the file */
-	ret = vol->swap_blocks(vol, 16, 24);
+	ret = vol->move_block(vol, 16, 24, MOVE_SWAP);
 	TEST_EQUAL_I(ret, 0);
 
 	ret = vol->commit(vol);
