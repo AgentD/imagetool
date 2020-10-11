@@ -38,7 +38,7 @@ static void destroy(object_t *base)
 	free(fs);
 }
 
-fstree_t * fstree_create(void)
+fstree_t *fstree_create(void)
 {
 	fstree_t *fs = calloc(1, sizeof(*fs));
 
