@@ -43,6 +43,9 @@ struct volume_t {
 extern "C" {
 #endif
 
+int volume_move_blocks(volume_t *vol, uint64_t src, uint64_t dst,
+		       uint64_t count, int flags);
+
 volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size);
 
 volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize);
