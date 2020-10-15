@@ -33,12 +33,13 @@ static void destroy(object_t *base)
 {
 	fstree_t *fs = (fstree_t *)base;
 
+	object_drop(fs->volume);
 	free_recursive(fs->root);
 	free(fs->inode_table);
 	free(fs);
 }
 
-fstree_t *fstree_create(void)
+fstree_t *fstree_create(volume_t *volume, uint64_t data_lead_in)
 {
 	fstree_t *fs = calloc(1, sizeof(*fs));
 
@@ -62,5 +63,9 @@ fstree_t *fstree_create(void)
 
 	((object_t *)fs)->refcount = 1;
 	((object_t *)fs)->destroy = destroy;
+
+	fs->volume = object_grab(volume);
+	fs->data_lead_in = data_lead_in;
+	fs->data_offset = data_lead_in;
 	return 0;
 }

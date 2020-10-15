@@ -33,7 +33,7 @@ static tree_node_t *merge(tree_node_t *lhs, tree_node_t *rhs)
 	return head;
 }
 
-tree_node_t *fstree_sort_node_list(tree_node_t *head)
+static tree_node_t *fstree_sort_node_list(tree_node_t *head)
 {
 	tree_node_t *it, *half, *prev;
 
@@ -59,7 +59,7 @@ tree_node_t *fstree_sort_node_list(tree_node_t *head)
 	return merge(fstree_sort_node_list(head), fstree_sort_node_list(half));
 }
 
-void fstree_sort_node_recursive(tree_node_t *root)
+static void fstree_sort_node_recursive(tree_node_t *root)
 {
 	tree_node_t *it, *list;
 

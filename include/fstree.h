@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "predef.h"
+#include "volume.h"
 
 enum {
 	TREE_NODE_DIR,
@@ -83,13 +84,17 @@ typedef struct {
 
 	size_t num_inodes;
 	tree_node_t **inode_table;
+
+	volume_t *volume;
+	uint64_t data_lead_in;
+	uint64_t data_offset;
 } fstree_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-fstree_t *fstree_create(void);
+fstree_t *fstree_create(volume_t *volume, uint64_t data_lead_in);
 
 void fstree_canonicalize_path(char *path);
 
@@ -118,18 +123,11 @@ tree_node_t *fstree_add_symlink(fstree_t *fs, const char *path,
 tree_node_t *fstree_add_hard_link(fstree_t *fs, const char *path,
 				  const char *target);
 
-tree_node_t *fstree_sort_node_list(tree_node_t *head);
-
-void fstree_sort_node_recursive(tree_node_t *root);
-
 void fstree_sort(fstree_t *tree);
 
 int fstree_resolve_hard_links(fstree_t *fs);
 
 int fstree_create_inode_table(fstree_t *fs);
-
-int fstree_add_file_block(tree_node_t *n, uint64_t on_disk_location,
-			  uint64_t in_file_location, size_t size);
 
 #ifdef __cplusplus
 }

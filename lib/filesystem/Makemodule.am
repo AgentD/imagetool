@@ -6,7 +6,6 @@ libfilesystem_a_SOURCES += lib/filesystem/canonicalize_path.c
 libfilesystem_a_SOURCES += lib/filesystem/sort.c
 libfilesystem_a_SOURCES += lib/filesystem/resolve_hard_links.c
 libfilesystem_a_SOURCES += lib/filesystem/create_inode_table.c
-libfilesystem_a_SOURCES += lib/filesystem/add_file_block.c
 libfilesystem_a_CFLAGS = $(AM_CFLAGS)
 libfilesystem_a_CPPFLAGS = $(AM_CPPFLAGS)
 
