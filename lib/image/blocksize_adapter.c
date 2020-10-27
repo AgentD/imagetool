@@ -242,15 +242,6 @@ static int commit(volume_t *vol)
 	return adapter->wrapped->commit(adapter->wrapped);
 }
 
-static volume_t *create_sub_volume(volume_t *vol, uint64_t min_count,
-				   uint64_t max_count)
-{
-	(void)vol; (void)min_count; (void)max_count;
-
-	fputs("cannot create sub-volumes on a block-size adapter.\n", stderr);
-	return NULL;
-}
-
 static void destroy(object_t *base)
 {
 	adapter_t *adapter = (adapter_t *)base;
@@ -284,6 +275,5 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize)
 	((volume_t *)adapter)->move_block = move_block;
 	((volume_t *)adapter)->discard_blocks = discard_blocks;
 	((volume_t *)adapter)->commit = commit;
-	((volume_t *)adapter)->create_sub_volume = create_sub_volume;
 	return (volume_t *)adapter;
 }

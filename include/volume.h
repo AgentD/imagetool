@@ -70,9 +70,6 @@ struct volume_t {
 	  Flush any cached data to disk. Returns 0 on success, -1 on failure.
 	 */
 	int (*commit)(volume_t *vol);
-
-	volume_t *(*create_sub_volume)(volume_t *vol, uint64_t min_count,
-				       uint64_t max_count);
 };
 
 #ifdef __cplusplus

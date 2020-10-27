@@ -65,7 +65,6 @@ static volume_t dummy = {
 	.move_block = NULL,
 	.discard_blocks = dummy_discard_blocks,
 	.commit = dummy_commit,
-	.create_sub_volume = NULL,
 };
 
 int main(void)

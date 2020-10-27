@@ -229,17 +229,6 @@ static int commit(volume_t *vol)
 	return 0;
 }
 
-static volume_t *create_sub_volume(volume_t *vol, uint64_t min_count,
-				   uint64_t max_count)
-{
-	file_volume_t *fvol = (file_volume_t *)vol;
-	(void)min_count; (void)max_count;
-
-	fprintf(stderr, "%s: cannot create sub-volumes on a raw file.\n",
-		fvol->filename);
-	return NULL;
-}
-
 volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 {
 	uint64_t i, used, max_count;
@@ -292,7 +281,6 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 	((volume_t *)fvol)->move_block = move_block;
 	((volume_t *)fvol)->discard_blocks = discard_blocks;
 	((volume_t *)fvol)->commit = commit;
-	((volume_t *)fvol)->create_sub_volume = create_sub_volume;
 
 	/* fill the used block bitmap */
 	for (i = 0; i < used; ++i) {
