@@ -87,6 +87,9 @@ static tree_node_t *mknode_at(fstree_t *fs, const char *path, int type,
 			if (n->type == TREE_NODE_HARD_LINK)
 				fstree_canonicalize_path(target);
 		}
+
+		n->next_by_type = fs->nodes_by_type[n->type];
+		fs->nodes_by_type[n->type] = n;
 	}
 
 	return n;

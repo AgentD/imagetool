@@ -12,7 +12,7 @@
 #include "volume.h"
 
 enum {
-	TREE_NODE_DIR,
+	TREE_NODE_DIR = 0,
 	TREE_NODE_FILE,
 	TREE_NODE_FIFO,
 	TREE_NODE_SOCKET,
@@ -20,6 +20,8 @@ enum {
 	TREE_NODE_BLOCK_DEV,
 	TREE_NODE_SYMLINK,
 	TREE_NODE_HARD_LINK,
+
+	TREE_NODE_TYPE_COUNT
 };
 
 enum {
@@ -43,6 +45,9 @@ typedef struct tree_node_t {
 
 	struct tree_node_t *next;
 	struct tree_node_t *parent;
+
+	/* used in nodes_by_type lists in fstree_t */
+	struct tree_node_t *next_by_type;
 
 	const char *name;
 
@@ -76,6 +81,8 @@ typedef struct tree_node_t {
 
 typedef struct {
 	object_t base;
+
+	tree_node_t *nodes_by_type[TREE_NODE_TYPE_COUNT];
 
 	/* default settings for implicitly created directories */
 	uint64_t default_ctime;

@@ -99,6 +99,9 @@ tree_node_t *fstree_node_from_path(fstree_t *fs, const char *path,
 
 			memcpy(it->payload, path, comp_len);
 			((char *)it->payload)[comp_len] = '\0';
+
+			it->next_by_type = fs->nodes_by_type[it->type];
+			fs->nodes_by_type[it->type] = it;
 		}
 
 		path += comp_len;

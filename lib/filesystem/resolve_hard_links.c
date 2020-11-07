@@ -11,33 +11,26 @@
 #include <errno.h>
 #include <stdio.h>
 
-static int resolve_dfs(fstree_t *fs, tree_node_t *n)
+int fstree_resolve_hard_links(fstree_t *fs)
 {
-	tree_node_t *it;
+	tree_node_t *n = fs->nodes_by_type[TREE_NODE_HARD_LINK], *target;
 
-	if (n->type == TREE_NODE_DIR) {
-		for (it = n->data.dir.children; it != NULL; it = it->next) {
-			if (resolve_dfs(fs, it))
-				return -1;
-		}
-	} else if (n->type == TREE_NODE_HARD_LINK) {
-		it = fstree_node_from_path(fs, n->data.link.target,
-					   strlen(n->data.link.target), false);
+	while (n != NULL) {
+		target = fstree_node_from_path(fs, n->data.link.target,
+					       strlen(n->data.link.target),
+					       false);
 
-		if (it == NULL) {
+		if (target == NULL) {
 			fprintf(stderr, "resolving hardlink %s -> %s: %s\n",
 				n->name, n->data.link.target, strerror(errno));
 			return -1;
 		}
 
-		n->data.link.resolved = it;
-		it->link_count += 1;
+		n->data.link.resolved = target;
+		target->link_count += 1;
+
+		n = n->next_by_type;
 	}
 
 	return 0;
-}
-
-int fstree_resolve_hard_links(fstree_t *fs)
-{
-	return resolve_dfs(fs, fs->root);
 }
