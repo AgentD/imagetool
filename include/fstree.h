@@ -22,6 +22,10 @@ enum {
 	TREE_NODE_HARD_LINK,
 };
 
+enum {
+	FSTREE_FILE_FLAG_BYTE_ALIGNED = 0x01,
+};
+
 typedef struct {
 	uint64_t disk_location;
 	uint64_t file_location;
@@ -88,6 +92,11 @@ typedef struct {
 	volume_t *volume;
 	uint64_t data_lead_in;
 	uint64_t data_offset;
+
+	uint32_t gap_before_file;
+	uint32_t gap_after_file;
+
+	int file_flags;
 } fstree_t;
 
 #ifdef __cplusplus
@@ -122,6 +131,12 @@ tree_node_t *fstree_add_symlink(fstree_t *fs, const char *path,
 
 tree_node_t *fstree_add_hard_link(fstree_t *fs, const char *path,
 				  const char *target);
+
+int fstree_file_write(fstree_t *fs, tree_node_t *n, uint64_t offset,
+		      const void *data, size_t size);
+
+int fstree_file_read(fstree_t *fs, tree_node_t *n, uint64_t offset,
+		     void *data, size_t size);
 
 void fstree_sort(fstree_t *tree);
 
