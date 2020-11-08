@@ -191,6 +191,9 @@ test_mknode_LDADD = libfilesystem.a libimage.a libutil.a
 test_node_from_path_SOURCES = tests/node_from_path.c tests/test.h
 test_node_from_path_LDADD = libfilesystem.a libimage.a libutil.a
 
+test_get_path_SOURCES = tests/get_path.c tests/test.h
+test_get_path_LDADD = libfilesystem.a libimage.a libutil.a
+
 check_PROGRAMS += test_tar_ustar0 test_tar_ustar1 test_tar_ustar2
 check_PROGRAMS += test_tar_ustar3 test_tar_ustar4 test_tar_ustar5
 check_PROGRAMS += test_tar_ustar6
@@ -205,6 +208,7 @@ check_PROGRAMS += test_tar_xattr_schily_bin test_tar_target_filled
 check_PROGRAMS += test_get_line test_bitmap test_file_volume
 check_PROGRAMS += test_blocksize_adapter1 test_blocksize_adapter2
 check_PROGRAMS += test_canonicalize_path test_node_from_path test_mknode
+check_PROGRAMS += test_get_path
 
 TESTS += test_tar_ustar0 test_tar_ustar1 test_tar_ustar2 test_tar_ustar3
 TESTS += test_tar_ustar4 test_tar_ustar5 test_tar_ustar6
@@ -218,6 +222,6 @@ TESTS += test_tar_xattr_bsd test_tar_xattr_schily
 TESTS += test_tar_xattr_schily_bin test_tar_target_filled test_get_line
 TESTS += test_bitmap test_file_volume test_blocksize_adapter1
 TESTS += test_blocksize_adapter2
-TESTS += test_canonicalize_path test_node_from_path test_mknode
+TESTS += test_canonicalize_path test_node_from_path test_mknode test_get_path
 
 EXTRA_DIST += $(top_srcdir)/tests/tar $(top_srcdir)/tests/get_line.txt
