@@ -98,7 +98,7 @@ fail_exist:
 	return NULL;
 }
 
-tree_node_t *fstree_add_direcory(fstree_t *fs, const char *path)
+tree_node_t *fstree_add_directory(fstree_t *fs, const char *path)
 {
 	return mknode_at(fs, path, TREE_NODE_DIR, NULL);
 }

@@ -16,34 +16,19 @@ tree_node_t *fstree_node_from_path(fstree_t *fs, const char *path,
 	tree_node_t *it, *n = fs->root;
 	size_t comp_len;
 
-	while (len > 0) {
+	while (len > 0 && *path != '\0') {
 		/* skip preceeding slashes */
-		while (len > 0) {
-			if (*path == '/')
-				break;
-
-			if (*path == '\0') {
-				len = 0;
-				break;
-			}
-
+		if (*path == '/') {
 			++path;
 			--len;
+			continue;
 		}
 
 		/* isolate path component */
 		for (comp_len = 0; comp_len < len; ++comp_len) {
-			if (path[comp_len] == '/')
+			if (path[comp_len] == '/' || path[comp_len] == '\0')
 				break;
-
-			if (path[comp_len] == '\0') {
-				len = comp_len;
-				break;
-			}
 		}
-
-		if (comp_len == 0)
-			break;
 
 		if (n->type != TREE_NODE_DIR) {
 			errno = ENOTDIR;
@@ -71,7 +56,7 @@ tree_node_t *fstree_node_from_path(fstree_t *fs, const char *path,
 			if (strncmp(it->name, path, comp_len) != 0)
 				continue;
 
-			if (strlen(it->name) == comp_len)
+			if (it->name[comp_len] == '\0')
 				break;
 		}
 
@@ -92,7 +77,7 @@ tree_node_t *fstree_node_from_path(fstree_t *fs, const char *path,
 			it->next = n->data.dir.children;
 			n->data.dir.children = it;
 			it->parent = n;
-			it->name = (const char *)n->payload;
+			it->name = (const char *)it->payload;
 			it->type = TREE_NODE_DIR;
 			it->permissions = fs->default_permissions;
 			it->data.dir.created_implicitly = true;

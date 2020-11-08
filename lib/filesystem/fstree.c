@@ -67,5 +67,7 @@ fstree_t *fstree_create(volume_t *volume, uint64_t data_lead_in)
 	fs->volume = object_grab(volume);
 	fs->data_lead_in = data_lead_in;
 	fs->data_offset = data_lead_in;
-	return 0;
+
+	fs->nodes_by_type[TREE_NODE_DIR] = fs->root;
+	return fs;
 }
