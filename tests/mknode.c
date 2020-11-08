@@ -35,13 +35,7 @@ int main(void)
 
 	/* setup fstree */
 	fs = fstree_create(&dummy_vol, 42);
-	TEST_EQUAL_UI(dummy_vol.base.refcount, 2);
 	TEST_NOT_NULL(fs);
-
-	TEST_EQUAL_UI(fs->root->link_count, 0);
-	TEST_EQUAL_UI(fs->root->type, TREE_NODE_DIR);
-	TEST_EQUAL_UI(fs->root->permissions, 0755);
-	TEST_STR_EQUAL(fs->root->name, "");
 
 	fs->default_ctime = 4;
 	fs->default_mtime = 8;
@@ -230,6 +224,5 @@ int main(void)
 
 	/* cleanup */
 	object_drop(fs);
-	TEST_EQUAL_UI(dummy_vol.base.refcount, 1);
 	return EXIT_SUCCESS;
 }
