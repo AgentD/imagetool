@@ -36,7 +36,7 @@ static void map_inodes_dfs(fstree_t *fs, tree_node_t *n, size_t *index)
 	tree_node_t *it;
 
 	for (it = n->data.dir.children; it != NULL; it = it->next) {
-		if (it->type == TREE_NODE_HARD_LINK) {
+		if (it->type != TREE_NODE_HARD_LINK) {
 			it->inode_num = (*index)++;
 			fs->inode_table[it->inode_num] = it;
 		}
