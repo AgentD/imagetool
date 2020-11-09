@@ -33,7 +33,7 @@ static tree_node_t *merge(tree_node_t *lhs, tree_node_t *rhs)
 	return head;
 }
 
-static tree_node_t *fstree_sort_node_list(tree_node_t *head)
+tree_node_t *fstree_sort_node_list(tree_node_t *head)
 {
 	tree_node_t *it, *half, *prev;
 

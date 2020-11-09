@@ -146,6 +146,8 @@ int fstree_file_write(fstree_t *fs, tree_node_t *n, uint64_t offset,
 int fstree_file_read(fstree_t *fs, tree_node_t *n, uint64_t offset,
 		     void *data, size_t size);
 
+tree_node_t *fstree_sort_node_list(tree_node_t *head);
+
 void fstree_sort(fstree_t *tree);
 
 int fstree_resolve_hard_links(fstree_t *fs);
