@@ -16,9 +16,14 @@ int fstree_resolve_hard_links(fstree_t *fs)
 	tree_node_t *n = fs->nodes_by_type[TREE_NODE_HARD_LINK], *target;
 
 	while (n != NULL) {
-		target = fstree_node_from_path(fs, n->data.link.target,
-					       strlen(n->data.link.target),
-					       false);
+		target = fstree_node_from_path(fs, NULL, n->data.link.target,
+					       -1, false);
+
+		if (target == NULL) {
+			target = fstree_node_from_path(fs, n->parent,
+						       n->data.link.target,
+						       -1, false);
+		}
 
 		if (target == NULL) {
 			fprintf(stderr, "resolving hardlink %s -> %s: %s\n",

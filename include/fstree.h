@@ -114,8 +114,9 @@ fstree_t *fstree_create(volume_t *volume, uint64_t data_lead_in);
 
 void fstree_canonicalize_path(char *path);
 
-tree_node_t *fstree_node_from_path(fstree_t *fs, const char *path,
-				   size_t len, bool create_implicit);
+tree_node_t *fstree_node_from_path(fstree_t *fs, tree_node_t *root,
+				   const char *path, size_t len,
+				   bool create_implicit);
 
 char *fstree_get_path(tree_node_t *node);
 

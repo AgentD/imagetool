@@ -10,10 +10,11 @@
 #include <string.h>
 #include <errno.h>
 
-tree_node_t *fstree_node_from_path(fstree_t *fs, const char *path,
-				   size_t len, bool create_implicit)
+tree_node_t *fstree_node_from_path(fstree_t *fs, tree_node_t *root,
+				   const char *path, size_t len,
+				   bool create_implicit)
 {
-	tree_node_t *it, *n = fs->root;
+	tree_node_t *it, *n = root == NULL ? fs->root : root;
 	size_t comp_len;
 
 	while (len > 0 && *path != '\0') {

@@ -32,7 +32,7 @@ static tree_node_t *mknode_at(fstree_t *fs, const char *path, int type,
 
 	suffix_len = strlen(suffix);
 
-	parent = fstree_node_from_path(fs, path, prefix_len, true);
+	parent = fstree_node_from_path(fs, NULL, path, prefix_len, true);
 	if (parent == NULL)
 		return NULL;
 

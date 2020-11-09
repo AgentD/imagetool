@@ -73,42 +73,42 @@ int main(void)
 	e->next = NULL;
 
 	/* query some existing nodes */
-	n = fstree_node_from_path(fs, "dev", -1, false);
+	n = fstree_node_from_path(fs, NULL, "dev", -1, false);
 	TEST_ASSERT(n == a);
 
-	n = fstree_node_from_path(fs, "dev/sda0", -1, false);
+	n = fstree_node_from_path(fs, NULL, "dev/sda0", -1, false);
 	TEST_ASSERT(n == d);
 
-	n = fstree_node_from_path(fs, "/dev", -1, false);
+	n = fstree_node_from_path(fs, NULL, "/dev", -1, false);
 	TEST_ASSERT(n == a);
 
-	n = fstree_node_from_path(fs, "/dev/sda0", -1, false);
+	n = fstree_node_from_path(fs, NULL, "/dev/sda0", -1, false);
 	TEST_ASSERT(n == d);
 
-	n = fstree_node_from_path(fs, "/dev/./sda0", -1, false);
+	n = fstree_node_from_path(fs, NULL, "/dev/./sda0", -1, false);
 	TEST_ASSERT(n == d);
 
-	n = fstree_node_from_path(fs, "/etc/./", -1, false);
+	n = fstree_node_from_path(fs, NULL, "/etc/./", -1, false);
 	TEST_ASSERT(n == b);
 
-	n = fstree_node_from_path(fs, "/etc/../dev/tty0", -1, false);
+	n = fstree_node_from_path(fs, NULL, "/etc/../dev/tty0", -1, false);
 	TEST_ASSERT(n == e);
 
 	/* query some non existing nodes */
-	n = fstree_node_from_path(fs, "/dev/foo", -1, false);
+	n = fstree_node_from_path(fs, NULL, "/dev/foo", -1, false);
 	TEST_NULL(n);
 	TEST_EQUAL_UI(errno, ENOENT);
 
-	n = fstree_node_from_path(fs, "/dev/sda0/foo", -1, false);
+	n = fstree_node_from_path(fs, NULL, "/dev/sda0/foo", -1, false);
 	TEST_NULL(n);
 	TEST_EQUAL_UI(errno, ENOTDIR);
 
 	/* implicitly create directories */
-	n = fstree_node_from_path(fs, "/etc/foo/bar", -1, false);
+	n = fstree_node_from_path(fs, NULL, "/etc/foo/bar", -1, false);
 	TEST_NULL(n);
 	TEST_EQUAL_UI(errno, ENOENT);
 
-	n = fstree_node_from_path(fs, "/etc/foo/bar", -1, true);
+	n = fstree_node_from_path(fs, NULL, "/etc/foo/bar", -1, true);
 	TEST_NOT_NULL(n);
 	TEST_EQUAL_UI(n->type, TREE_NODE_DIR);
 	TEST_STR_EQUAL(n->name, "bar");
