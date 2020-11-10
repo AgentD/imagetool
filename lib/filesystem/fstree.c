@@ -12,10 +12,17 @@
 
 static void free_recursive(tree_node_t *n)
 {
+	file_sparse_holes_t *blk;
 	tree_node_t *it;
 
-	if (n->type == TREE_NODE_FILE)
-		free(n->data.file.blocks);
+	if (n->type == TREE_NODE_FILE) {
+		while (n->data.file.sparse != NULL) {
+			blk = n->data.file.sparse;
+			n->data.file.sparse = blk->next;
+
+			free(blk);
+		}
+	}
 
 	if (n->type == TREE_NODE_DIR) {
 		while (n->data.dir.children != NULL) {
@@ -39,7 +46,7 @@ static void destroy(object_t *base)
 	free(fs);
 }
 
-fstree_t *fstree_create(volume_t *volume, uint64_t data_lead_in)
+fstree_t *fstree_create(volume_t *volume)
 {
 	fstree_t *fs = calloc(1, sizeof(*fs));
 
@@ -65,8 +72,6 @@ fstree_t *fstree_create(volume_t *volume, uint64_t data_lead_in)
 	((object_t *)fs)->destroy = destroy;
 
 	fs->volume = object_grab(volume);
-	fs->data_lead_in = data_lead_in;
-	fs->data_offset = data_lead_in;
 
 	fs->nodes_by_type[TREE_NODE_DIR] = fs->root;
 	return fs;

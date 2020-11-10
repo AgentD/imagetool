@@ -94,7 +94,7 @@ int main(void)
 	int ret;
 
 	// inode table for the empty tree
-	fs = fstree_create(&dummy_vol, 42);
+	fs = fstree_create(&dummy_vol);
 	TEST_NOT_NULL(fs);
 	fstree_sort(fs);
 
@@ -115,7 +115,7 @@ int main(void)
 	object_drop(fs);
 
 	// tree with 3 levels under root, fan out 3
-	fs = fstree_create(&dummy_vol, 42);
+	fs = fstree_create(&dummy_vol);
 	TEST_NOT_NULL(fs);
 
 	TEST_NOT_NULL(fstree_add_fifo(fs, "a/a_a/fifo0"));

@@ -24,15 +24,12 @@ enum {
 	TREE_NODE_TYPE_COUNT
 };
 
-enum {
-	FSTREE_FILE_FLAG_BYTE_ALIGNED = 0x01,
-};
+typedef struct file_sparse_holes_t {
+	struct file_sparse_holes_t *next;
 
-typedef struct {
-	uint64_t disk_location;
-	uint64_t file_location;
-	uint64_t size;
-} file_block_t;
+	uint32_t index;
+	uint32_t count;
+} file_sparse_holes_t;
 
 typedef struct tree_node_t {
 	uint64_t ctime;
@@ -62,9 +59,20 @@ typedef struct tree_node_t {
 		} dir;
 
 		struct {
-			size_t max_blocks;
-			size_t num_blocks;
-			file_block_t *blocks;
+			/* total size in bytes */
+			uint64_t size;
+
+			/* index of the first block */
+			uint64_t start_index;
+
+			/* index of the last block */
+			uint64_t tail_index;
+
+			/* offset into the last block if tail ends are packed */
+			uint32_t tail_offset;
+
+			/* Linked list of sparse regions */
+			file_sparse_holes_t *sparse;
 		} file;
 
 		struct {
@@ -97,20 +105,14 @@ typedef struct {
 	tree_node_t **inode_table;
 
 	volume_t *volume;
-	uint64_t data_lead_in;
 	uint64_t data_offset;
-
-	uint32_t gap_before_file;
-	uint32_t gap_after_file;
-
-	int file_flags;
 } fstree_t;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-fstree_t *fstree_create(volume_t *volume, uint64_t data_lead_in);
+fstree_t *fstree_create(volume_t *volume);
 
 void fstree_canonicalize_path(char *path);
 
@@ -140,12 +142,6 @@ tree_node_t *fstree_add_symlink(fstree_t *fs, const char *path,
 tree_node_t *fstree_add_hard_link(fstree_t *fs, const char *path,
 				  const char *target);
 
-int fstree_file_write(fstree_t *fs, tree_node_t *n, uint64_t offset,
-		      const void *data, size_t size);
-
-int fstree_file_read(fstree_t *fs, tree_node_t *n, uint64_t offset,
-		     void *data, size_t size);
-
 tree_node_t *fstree_sort_node_list(tree_node_t *head);
 
 void fstree_sort(fstree_t *tree);
@@ -153,6 +149,9 @@ void fstree_sort(fstree_t *tree);
 int fstree_resolve_hard_links(fstree_t *fs);
 
 int fstree_create_inode_table(fstree_t *fs);
+
+int fstree_file_read_block(fstree_t *fs, tree_node_t *n,
+			   uint64_t index, void *data);
 
 #ifdef __cplusplus
 }

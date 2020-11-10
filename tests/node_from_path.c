@@ -47,7 +47,7 @@ int main(void)
 	fstree_t *fs;
 
 	/* setup fstree */
-	fs = fstree_create(&dummy_vol, 42);
+	fs = fstree_create(&dummy_vol);
 	TEST_NOT_NULL(fs);
 
 	/* create a happy little tree */

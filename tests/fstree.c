@@ -33,7 +33,7 @@ int main(void)
 	fstree_t *fs;
 	int i;
 
-	fs = fstree_create(&dummy_vol, 42);
+	fs = fstree_create(&dummy_vol);
 	TEST_EQUAL_UI(dummy_vol.base.refcount, 2);
 	TEST_NOT_NULL(fs);
 
@@ -44,12 +44,8 @@ int main(void)
 	TEST_EQUAL_UI(fs->default_permissions, 0755);
 	TEST_EQUAL_UI(fs->num_inodes, 0);
 	TEST_NULL(fs->inode_table);
-	TEST_EQUAL_UI(fs->data_lead_in, 42);
-	TEST_EQUAL_UI(fs->data_offset, 42);
+	TEST_EQUAL_UI(fs->data_offset, 0);
 	TEST_ASSERT(fs->volume == &dummy_vol);
-	TEST_EQUAL_UI(fs->gap_before_file, 0);
-	TEST_EQUAL_UI(fs->gap_after_file, 0);
-	TEST_EQUAL_UI(fs->file_flags, 0);
 
 	TEST_EQUAL_UI(fs->root->ctime, 0);
 	TEST_EQUAL_UI(fs->root->mtime, 0);
