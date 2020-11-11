@@ -206,6 +206,9 @@ test_fstree_sort_LDADD = libfilesystem.a libimage.a libutil.a
 test_gen_inode_table_SOURCES = tests/gen_inode_table.c tests/test.h
 test_gen_inode_table_LDADD = libfilesystem.a libimage.a libutil.a
 
+test_file_read_block_SOURCES = tests/file_read_block.c tests/test.h
+test_file_read_block_LDADD = libfilesystem.a libimage.a libutil.a
+
 check_PROGRAMS += test_tar_ustar0 test_tar_ustar1 test_tar_ustar2
 check_PROGRAMS += test_tar_ustar3 test_tar_ustar4 test_tar_ustar5
 check_PROGRAMS += test_tar_ustar6
@@ -221,7 +224,7 @@ check_PROGRAMS += test_get_line test_bitmap test_file_volume
 check_PROGRAMS += test_blocksize_adapter1 test_blocksize_adapter2
 check_PROGRAMS += test_canonicalize_path test_node_from_path test_mknode
 check_PROGRAMS += test_get_path test_fstree test_resolve_hard_links
-check_PROGRAMS += test_fstree_sort test_gen_inode_table
+check_PROGRAMS += test_fstree_sort test_gen_inode_table test_file_read_block
 
 TESTS += test_tar_ustar0 test_tar_ustar1 test_tar_ustar2 test_tar_ustar3
 TESTS += test_tar_ustar4 test_tar_ustar5 test_tar_ustar6
@@ -237,6 +240,6 @@ TESTS += test_bitmap test_file_volume test_blocksize_adapter1
 TESTS += test_blocksize_adapter2
 TESTS += test_canonicalize_path test_node_from_path test_mknode test_get_path
 TESTS += test_fstree test_resolve_hard_links test_fstree_sort
-TESTS += test_gen_inode_table
+TESTS += test_gen_inode_table test_file_read_block
 
 EXTRA_DIST += $(top_srcdir)/tests/tar $(top_srcdir)/tests/get_line.txt
