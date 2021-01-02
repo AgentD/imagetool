@@ -73,7 +73,7 @@ int main(void)
 	char temp[4];
 	int ret;
 
-	vol = volume_blocksize_adapter_create(&dummy, 3);
+	vol = volume_blocksize_adapter_create(&dummy, 3, 0);
 	TEST_NOT_NULL(vol);
 	TEST_EQUAL_UI(dummy.base.refcount, 2);
 

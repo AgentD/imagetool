@@ -12,7 +12,19 @@ test_blocksize_adapter2_SOURCES += tests/test.h
 test_blocksize_adapter2_LDADD = libimage.a libutil.a
 test_blocksize_adapter2_CPPFLAGS = $(AM_CPPFLAGS)
 
+test_blocksize_adapter3_SOURCES = tests/libimage/blocksize_adapter3.c
+test_blocksize_adapter3_SOURCES += tests/test.h
+test_blocksize_adapter3_LDADD = libimage.a libutil.a
+test_blocksize_adapter3_CPPFLAGS = $(AM_CPPFLAGS)
+
+test_blocksize_adapter4_SOURCES = tests/libimage/blocksize_adapter4.c
+test_blocksize_adapter4_SOURCES += tests/test.h
+test_blocksize_adapter4_LDADD = libimage.a libutil.a
+test_blocksize_adapter4_CPPFLAGS = $(AM_CPPFLAGS)
+
 check_PROGRAMS += test_file_volume
 check_PROGRAMS += test_blocksize_adapter1 test_blocksize_adapter2
+check_PROGRAMS += test_blocksize_adapter3 test_blocksize_adapter4
 
 TESTS += test_file_volume test_blocksize_adapter1 test_blocksize_adapter2
+TESTS += test_blocksize_adapter3 test_blocksize_adapter4

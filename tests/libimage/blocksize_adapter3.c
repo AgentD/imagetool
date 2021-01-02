@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /*
- * blocksize_adapter1.c
+ * blocksize_adapter3.c
  *
  * Copyright (C) 2020 David Oberhollenzer <goliath@infraroot.at>
  */
@@ -78,7 +78,7 @@ int main(void)
 	char temp[8];
 	int ret;
 
-	vol = volume_blocksize_adapter_create(&dummy, 7, 0);
+	vol = volume_blocksize_adapter_create(&dummy, 7, 2);
 	TEST_NOT_NULL(vol);
 	TEST_EQUAL_UI(dummy.base.refcount, 2);
 
@@ -91,19 +91,19 @@ int main(void)
 
 	ret = vol->read_block(vol, 0, temp);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "AAABBBC");
+	TEST_STR_EQUAL(temp, "ABBBCCC");
 
 	ret = vol->read_block(vol, 1, temp);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "CCDDDEE");
+	TEST_STR_EQUAL(temp, "DDDEEEF");
 
 	ret = vol->read_block(vol, 2, temp);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "EFFFGGG");
+	TEST_STR_EQUAL(temp, "FFGGGHH");
 
 	ret = vol->read_block(vol, 3, temp);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "HHHIIIJ");
+	TEST_STR_EQUAL(temp, "HIIIJJJ");
 
 	ret = vol->read_block(vol, 4, temp);
 	TEST_ASSERT(ret != 0);
@@ -115,7 +115,7 @@ int main(void)
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_STR_EQUAL(dummy_buffer, "AAABBBCZZZZZZZEFFFGGGHHHIIIJJJ");
+	TEST_STR_EQUAL(dummy_buffer, "AAABBBCCCZZZZZZZFFGGGHHHIIIJJJ");
 
 	ret = vol->write_block(vol, 3, "LLLLLLLL");
 	TEST_EQUAL_I(ret, 0);
@@ -123,7 +123,7 @@ int main(void)
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_STR_EQUAL(dummy_buffer, "AAABBBCZZZZZZZEFFFGGGLLLLLLLJJ");
+	TEST_STR_EQUAL(dummy_buffer, "AAABBBCCCZZZZZZZFFGGGHHLLLLLLL");
 
 	ret = vol->write_block(vol, 4, "MMMMMMM");
 	TEST_ASSERT(ret != 0);
@@ -131,7 +131,7 @@ int main(void)
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_STR_EQUAL(dummy_buffer, "AAABBBCZZZZZZZEFFFGGGLLLLLLLJJ");
+	TEST_STR_EQUAL(dummy_buffer, "AAABBBCCCZZZZZZZFFGGGHHLLLLLLL");
 
 	/* swap blocks */
 	ret = vol->move_block(vol, 0, 2, MOVE_SWAP);
@@ -140,7 +140,7 @@ int main(void)
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_STR_EQUAL(dummy_buffer, "EFFFGGGZZZZZZZAAABBBCLLLLLLLJJ");
+	TEST_STR_EQUAL(dummy_buffer, "AAFFGGGHHZZZZZZZABBBCCCLLLLLLL");
 
 	/* discard blocks */
 	ret = vol->discard_blocks(vol, 1, 2);
@@ -150,7 +150,7 @@ int main(void)
 	TEST_EQUAL_I(ret, 0);
 
 	ret = memcmp(dummy_buffer,
-		     "EFFFGGG\0\0\0\0\0\0\0\0\0\0\0\0\0\0LLLLLLLJJ", 30);
+		     "AAFFGGGHH\0\0\0\0\0\0\0\0\0\0\0\0\0\0LLLLLLL", 30);
 	TEST_EQUAL_I(ret, 0);
 
 	TEST_EQUAL_I(num_discarded, 4);

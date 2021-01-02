@@ -19,6 +19,8 @@ typedef struct {
 	bool cache_dirty;
 	bool have_cached_block;
 
+	uint32_t offset;
+
 	uint64_t cached_index;
 	uint8_t scratch[];
 } adapter_t;
@@ -90,7 +92,7 @@ static int read_block(volume_t *vol, uint64_t index, void *buffer)
 		return -1;
 	}
 
-	offset = index * vol->blocksize;
+	offset = adapter->offset + index * vol->blocksize;
 	size = vol->blocksize;
 
 	while (size > 0) {
@@ -132,7 +134,7 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 		return -1;
 	}
 
-	offset = index * vol->blocksize;
+	offset = adapter->offset + index * vol->blocksize;
 	size = vol->blocksize;
 
 	while (size > 0) {
@@ -203,7 +205,7 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	if (count > (vol->max_block_count - index))
 		count = vol->max_block_count - index;
 
-	offset = index * vol->blocksize;
+	offset = adapter->offset + index * vol->blocksize;
 	size = count * vol->blocksize;
 
 	while (size > 0) {
@@ -250,7 +252,8 @@ static void destroy(object_t *base)
 	free(base);
 }
 
-volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize)
+volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
+					  uint32_t offset)
 {
 	size_t scratch_size = vol->blocksize + blocksize * 2;
 	adapter_t *adapter = calloc(1, sizeof(*adapter) + scratch_size);
@@ -261,8 +264,9 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize)
 		return NULL;
 	}
 
-	count = (vol->max_block_count * vol->blocksize) / blocksize;
+	count = (vol->max_block_count * vol->blocksize - offset) / blocksize;
 
+	adapter->offset = offset;
 	adapter->wrapped = object_grab(vol);
 
 	((object_t *)adapter)->refcount = 1;

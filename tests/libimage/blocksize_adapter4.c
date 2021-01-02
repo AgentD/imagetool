@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /*
- * blocksize_adapter1.c
+ * blocksize_adapter4.c
  *
  * Copyright (C) 2020 David Oberhollenzer <goliath@infraroot.at>
  */
@@ -9,39 +9,34 @@
 #include "../test.h"
 #include "volume.h"
 
-static char dummy_buffer[31] = "AAABBBCCCDDDEEEFFFGGGHHHIIIJJJ";
+static char dummy_buffer[29] = "aaaaAAAbbbBBBbccCCCccdDDDddd";
 
 static int discard_sequence[10];
 static int num_discarded = 0;
 
-static int compare_ints(const void *lhs, const void *rhs)
-{
-	return *((const int *)lhs) - *((const int *)rhs);
-}
-
 static int dummy_read_block(volume_t *vol, uint64_t index, void *buffer)
 {
 	(void)vol;
-	TEST_ASSERT(index < 10);
-	memcpy(buffer, dummy_buffer + index * 3, 3);
+	TEST_ASSERT(index < 4);
+	memcpy(buffer, dummy_buffer + index * 7, 7);
 	return 0;
 }
 
 static int dummy_write_block(volume_t *vol, uint64_t index, const void *buffer)
 {
 	(void)vol;
-	TEST_ASSERT(index < 10);
-	memcpy(dummy_buffer + index * 3, buffer, 3);
+	TEST_ASSERT(index < 4);
+	memcpy(dummy_buffer + index * 7, buffer, 7);
 	return 0;
 }
 
 static int dummy_discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 {
 	(void)vol;
-	while (index < 10 && count > 0) {
+	while (index < 4 && count > 0) {
 		discard_sequence[num_discarded++] = index;
 
-		memset(dummy_buffer + index * 3, 0, 3);
+		memset(dummy_buffer + index * 7, 0, 7);
 		++index;
 		--count;
 	}
@@ -60,10 +55,10 @@ static volume_t dummy = {
 		.destroy = NULL,
 	},
 
-	.blocksize = 3,
+	.blocksize = 7,
 
 	.min_block_count = 0,
-	.max_block_count = 10,
+	.max_block_count = 4,
 
 	.read_block = dummy_read_block,
 	.write_block = dummy_write_block,
@@ -75,63 +70,79 @@ static volume_t dummy = {
 int main(void)
 {
 	volume_t *vol;
-	char temp[8];
+	char temp[4];
 	int ret;
 
-	vol = volume_blocksize_adapter_create(&dummy, 7, 0);
+	vol = volume_blocksize_adapter_create(&dummy, 3, 4);
 	TEST_NOT_NULL(vol);
 	TEST_EQUAL_UI(dummy.base.refcount, 2);
 
-	TEST_EQUAL_UI(vol->blocksize, 7);
+	TEST_EQUAL_UI(vol->blocksize, 3);
 	TEST_EQUAL_UI(vol->min_block_count, 0);
-	TEST_EQUAL_UI(vol->max_block_count, 4);
+	TEST_EQUAL_UI(vol->max_block_count, 8);
 
 	/* read blocks */
-	temp[7] = '\0';
+	temp[3] = '\0';
 
 	ret = vol->read_block(vol, 0, temp);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "AAABBBC");
+	TEST_STR_EQUAL(temp, "AAA");
 
 	ret = vol->read_block(vol, 1, temp);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "CCDDDEE");
+	TEST_STR_EQUAL(temp, "bbb");
 
 	ret = vol->read_block(vol, 2, temp);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "EFFFGGG");
+	TEST_STR_EQUAL(temp, "BBB");
 
 	ret = vol->read_block(vol, 3, temp);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "HHHIIIJ");
+	TEST_STR_EQUAL(temp, "bcc");
 
 	ret = vol->read_block(vol, 4, temp);
+	TEST_EQUAL_I(ret, 0);
+	TEST_STR_EQUAL(temp, "CCC");
+
+	ret = vol->read_block(vol, 5, temp);
+	TEST_EQUAL_I(ret, 0);
+	TEST_STR_EQUAL(temp, "ccd");
+
+	ret = vol->read_block(vol, 6, temp);
+	TEST_EQUAL_I(ret, 0);
+	TEST_STR_EQUAL(temp, "DDD");
+
+	ret = vol->read_block(vol, 7, temp);
+	TEST_EQUAL_I(ret, 0);
+	TEST_STR_EQUAL(temp, "ddd");
+
+	ret = vol->read_block(vol, 8, temp);
 	TEST_ASSERT(ret != 0);
 
 	/* overwrite blocks */
-	ret = vol->write_block(vol, 1, "ZZZZZZZ");
+	ret = vol->write_block(vol, 1, "zzz");
 	TEST_EQUAL_I(ret, 0);
 
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_STR_EQUAL(dummy_buffer, "AAABBBCZZZZZZZEFFFGGGHHHIIIJJJ");
+	TEST_STR_EQUAL(dummy_buffer, "aaaaAAAzzzBBBbccCCCccdDDDddd");
 
-	ret = vol->write_block(vol, 3, "LLLLLLLL");
+	ret = vol->write_block(vol, 2, "FFF");
 	TEST_EQUAL_I(ret, 0);
 
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_STR_EQUAL(dummy_buffer, "AAABBBCZZZZZZZEFFFGGGLLLLLLLJJ");
+	TEST_STR_EQUAL(dummy_buffer, "aaaaAAAzzzFFFbccCCCccdDDDddd");
 
-	ret = vol->write_block(vol, 4, "MMMMMMM");
+	ret = vol->write_block(vol, 8, "MMM");
 	TEST_ASSERT(ret != 0);
 
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_STR_EQUAL(dummy_buffer, "AAABBBCZZZZZZZEFFFGGGLLLLLLLJJ");
+	TEST_STR_EQUAL(dummy_buffer, "aaaaAAAzzzFFFbccCCCccdDDDddd");
 
 	/* swap blocks */
 	ret = vol->move_block(vol, 0, 2, MOVE_SWAP);
@@ -140,27 +151,31 @@ int main(void)
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_STR_EQUAL(dummy_buffer, "EFFFGGGZZZZZZZAAABBBCLLLLLLLJJ");
+	TEST_STR_EQUAL(dummy_buffer, "aaaaFFFzzzAAAbccCCCccdDDDddd");
 
 	/* discard blocks */
-	ret = vol->discard_blocks(vol, 1, 2);
+	ret = vol->discard_blocks(vol, 0, 3);
 	TEST_EQUAL_I(ret, 0);
 
 	ret = vol->commit(vol);
 	TEST_EQUAL_I(ret, 0);
 
 	ret = memcmp(dummy_buffer,
-		     "EFFFGGG\0\0\0\0\0\0\0\0\0\0\0\0\0\0LLLLLLLJJ", 30);
+		     "aaaa\0\0\0\0\0\0\0\0\0bccCCCccdDDDddd", 29);
+	TEST_EQUAL_I(ret, 0);
+	TEST_EQUAL_I(num_discarded, 0);
+
+	ret = vol->discard_blocks(vol, 3, 2);
 	TEST_EQUAL_I(ret, 0);
 
-	TEST_EQUAL_I(num_discarded, 4);
+	ret = vol->commit(vol);
+	TEST_EQUAL_I(ret, 0);
 
-	qsort(discard_sequence, 4, sizeof(discard_sequence[0]), compare_ints);
-
-	TEST_EQUAL_I(discard_sequence[0], 3);
-	TEST_EQUAL_I(discard_sequence[1], 4);
-	TEST_EQUAL_I(discard_sequence[2], 5);
-	TEST_EQUAL_I(discard_sequence[3], 6);
+	ret = memcmp(dummy_buffer,
+		     "aaaa\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0ccdDDDddd", 29);
+	TEST_EQUAL_I(ret, 0);
+	TEST_EQUAL_I(num_discarded, 1);
+	TEST_EQUAL_I(discard_sequence[0], 1);
 
 	/* cleanup */
 	object_drop(vol);
