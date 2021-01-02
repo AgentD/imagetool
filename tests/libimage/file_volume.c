@@ -6,8 +6,8 @@
  */
 #include "config.h"
 
+#include "../test.h"
 #include "volume.h"
-#include "test.h"
 
 #include <sys/types.h>
 #include <sys/mman.h>

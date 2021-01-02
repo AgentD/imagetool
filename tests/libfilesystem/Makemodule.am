@@ -1,0 +1,38 @@
+test_fstree_SOURCES = tests/libfilesystem/fstree.c tests/test.h
+test_fstree_LDADD = libfilesystem.a libimage.a libutil.a
+
+test_canonicalize_path_SOURCES = tests/libfilesystem/canonicalize_path.c
+test_canonicalize_path_SOURCES += tests/test.h
+test_canonicalize_path_LDADD = libfilesystem.a
+
+test_mknode_SOURCES = tests/libfilesystem/mknode.c tests/test.h
+test_mknode_LDADD = libfilesystem.a libimage.a libutil.a
+
+test_node_from_path_SOURCES = tests/libfilesystem/node_from_path.c tests/test.h
+test_node_from_path_LDADD = libfilesystem.a libimage.a libutil.a
+
+test_get_path_SOURCES = tests/libfilesystem/get_path.c tests/test.h
+test_get_path_LDADD = libfilesystem.a libimage.a libutil.a
+
+test_resolve_hard_links_SOURCES = tests/libfilesystem/resolve_hard_links.c
+test_resolve_hard_links_SOURCES += tests/test.h
+test_resolve_hard_links_LDADD = libfilesystem.a libimage.a libutil.a
+
+test_fstree_sort_SOURCES = tests/libfilesystem/fstree_sort.c tests/test.h
+test_fstree_sort_LDADD = libfilesystem.a libimage.a libutil.a
+
+test_gen_inode_table_SOURCES = tests/libfilesystem/gen_inode_table.c
+test_gen_inode_table_SOURCES += tests/test.h
+test_gen_inode_table_LDADD = libfilesystem.a libimage.a libutil.a
+
+test_file_read_block_SOURCES = tests/libfilesystem/file_read_block.c
+test_file_read_block_SOURCES += tests/test.h
+test_file_read_block_LDADD = libfilesystem.a libimage.a libutil.a
+
+check_PROGRAMS += test_canonicalize_path test_node_from_path test_mknode
+check_PROGRAMS += test_get_path test_fstree test_resolve_hard_links
+check_PROGRAMS += test_fstree_sort test_gen_inode_table test_file_read_block
+
+TESTS += test_canonicalize_path test_node_from_path test_mknode test_get_path
+TESTS += test_fstree test_resolve_hard_links test_fstree_sort
+TESTS += test_gen_inode_table test_file_read_block

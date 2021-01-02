@@ -6,9 +6,9 @@
  */
 #include "config.h"
 
+#include "../test.h"
 #include "fstree.h"
 #include "volume.h"
-#include "test.h"
 
 static void check_children_after_parent(tree_node_t *root)
 {

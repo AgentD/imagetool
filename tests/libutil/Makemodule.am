@@ -1,0 +1,7 @@
+test_bitmap_SOURCES = tests/libutil/bitmap.c tests/test.h
+test_bitmap_LDADD = libutil.a
+test_bitmap_CPPFLAGS = $(AM_CPPFLAGS)
+
+check_PROGRAMS += test_bitmap
+
+TESTS += test_bitmap

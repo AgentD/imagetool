@@ -6,8 +6,8 @@
  */
 #include "config.h"
 
+#include "../test.h"
 #include "fstream.h"
-#include "test.h"
 
 typedef struct {
 	size_t line_num;

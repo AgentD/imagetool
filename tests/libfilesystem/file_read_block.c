@@ -6,9 +6,9 @@
  */
 #include "config.h"
 
+#include "../test.h"
 #include "volume.h"
 #include "fstree.h"
-#include "test.h"
 
 static char dummy_buffer[21] = "AAABBBCCCDDDEEEFFFAAB";
 

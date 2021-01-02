@@ -5,8 +5,9 @@
  * Copyright (C) 2019 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "config.h"
+
+#include "../test.h"
 #include "fstree.h"
-#include "test.h"
 
 static const struct {
 	const char *in;

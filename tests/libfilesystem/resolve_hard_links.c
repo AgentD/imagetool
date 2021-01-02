@@ -6,9 +6,9 @@
  */
 #include "config.h"
 
+#include "../test.h"
 #include "fstree.h"
 #include "volume.h"
-#include "test.h"
 
 static volume_t dummy_vol = {
 	.base = {

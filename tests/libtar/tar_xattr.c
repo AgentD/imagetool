@@ -1,20 +1,13 @@
 /* SPDX-License-Identifier: GPL-3.0-or-later */
 /*
- * tar_xattr_bin.c
+ * tar_xattr.c
  *
  * Copyright (C) 2019 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "config.h"
-#include "tar.h"
-#include "test.h"
 
-static const uint8_t value[] = {
-	0x00, 0x00, 0x00, 0x02,
-	0x00, 0x30, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00,
-	0x00, 0x00, 0x00, 0x00,
-};
+#include "../test.h"
+#include "tar.h"
 
 int main(void)
 {
@@ -38,9 +31,9 @@ int main(void)
 	TEST_STR_EQUAL(buffer, "test\n");
 
 	TEST_NOT_NULL(hdr.xattr);
-	TEST_STR_EQUAL(hdr.xattr->key, "security.capability");
-	TEST_EQUAL_UI(hdr.xattr->value_len, sizeof(value));
-	TEST_ASSERT(memcmp(hdr.xattr->value, value, sizeof(value)) == 0);
+	TEST_STR_EQUAL(hdr.xattr->key, "user.mime_type");
+	TEST_STR_EQUAL((const char *)hdr.xattr->value, "text/plain");
+	TEST_EQUAL_UI(hdr.xattr->value_len, 10);
 	TEST_NULL(hdr.xattr->next);
 
 	clear_header(&hdr);
