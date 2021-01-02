@@ -158,7 +158,7 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 
 		offset += target_size;
 		size -= target_size;
-		buffer = (char *)buffer + target_size;
+		buffer = (const char *)buffer + target_size;
 	}
 
 	return 0;

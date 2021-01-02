@@ -69,7 +69,7 @@ fail_ov:
 
 int read_number(const char *str, int digits, uint64_t *out)
 {
-	if (*((unsigned char *)str) & 0x80)
+	if (*((const unsigned char *)str) & 0x80)
 		return read_binary(str, digits, out);
 
 	return read_octal(str, digits, out);
