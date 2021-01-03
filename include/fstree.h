@@ -150,8 +150,8 @@ int fstree_resolve_hard_links(fstree_t *fs);
 
 int fstree_create_inode_table(fstree_t *fs);
 
-int fstree_file_read_block(fstree_t *fs, tree_node_t *n,
-			   uint64_t index, void *data);
+int fstree_file_read(fstree_t *fs, tree_node_t *n,
+		     uint64_t offset, void *data, size_t size);
 
 #ifdef __cplusplus
 }

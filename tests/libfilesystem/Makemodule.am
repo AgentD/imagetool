@@ -25,14 +25,14 @@ test_gen_inode_table_SOURCES = tests/libfilesystem/gen_inode_table.c
 test_gen_inode_table_SOURCES += tests/test.h
 test_gen_inode_table_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_file_read_block_SOURCES = tests/libfilesystem/file_read_block.c
-test_file_read_block_SOURCES += tests/test.h
-test_file_read_block_LDADD = libfilesystem.a libimage.a libutil.a
+test_file_read_SOURCES = tests/libfilesystem/file_read.c
+test_file_read_SOURCES += tests/test.h
+test_file_read_LDADD = libfilesystem.a libimage.a libutil.a
 
 check_PROGRAMS += test_canonicalize_path test_node_from_path test_mknode
 check_PROGRAMS += test_get_path test_fstree test_resolve_hard_links
-check_PROGRAMS += test_fstree_sort test_gen_inode_table test_file_read_block
+check_PROGRAMS += test_fstree_sort test_gen_inode_table test_file_read
 
 TESTS += test_canonicalize_path test_node_from_path test_mknode test_get_path
 TESTS += test_fstree test_resolve_hard_links test_fstree_sort
-TESTS += test_gen_inode_table test_file_read_block
+TESTS += test_gen_inode_table test_file_read
