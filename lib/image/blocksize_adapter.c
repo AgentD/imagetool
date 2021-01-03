@@ -26,6 +26,7 @@ static int read_partial_block(volume_t *vol, uint64_t index,
 	adapter_t *adapter = (adapter_t *)vol;
 	volume_t *wrapped = adapter->wrapped;
 	uint64_t offset;
+	int ret;
 
 	if (index >= vol->max_block_count || blk_offset > vol->blocksize ||
 	    size > (vol->blocksize - blk_offset)) {
@@ -45,12 +46,15 @@ static int read_partial_block(volume_t *vol, uint64_t index,
 			target_size = size;
 
 		if (target_offset == 0 && target_size == wrapped->blocksize) {
-			wrapped->read_block(wrapped, target_idx, buffer);
+			ret = wrapped->read_block(wrapped, target_idx, buffer);
 		} else {
-			wrapped->read_partial_block(wrapped, target_idx,
-						    buffer, target_offset,
-						    target_size);
+			ret = wrapped->read_partial_block(wrapped, target_idx,
+							  buffer, target_offset,
+							  target_size);
 		}
+
+		if (ret)
+			return -1;
 
 		offset += target_size;
 		size -= target_size;
@@ -72,6 +76,7 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 	adapter_t *adapter = (adapter_t *)vol;
 	volume_t *wrapped = adapter->wrapped;
 	uint64_t offset;
+	int ret;
 
 	if (index >= vol->max_block_count || blk_offset > vol->blocksize ||
 	    size > (vol->blocksize - blk_offset)) {
@@ -91,12 +96,15 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 			target_size = size;
 
 		if (target_offset == 0 && target_size == wrapped->blocksize) {
-			wrapped->write_block(wrapped, target_idx, buffer);
+			ret = wrapped->write_block(wrapped, target_idx, buffer);
 		} else {
-			wrapped->write_partial_block(wrapped, target_idx,
-						     buffer, target_offset,
-						     target_size);
+			ret = wrapped->write_partial_block(wrapped, target_idx,
+							   buffer, target_offset,
+							   target_size);
 		}
+
+		if (ret)
+			return -1;
 
 		offset += target_size;
 		size -= target_size;
