@@ -1,6 +1,7 @@
 *.a
 *.o
 *.log
+*~
 .deps
 .dirstamp
 config.h
