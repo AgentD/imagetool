@@ -42,10 +42,34 @@ struct volume_t {
 	int (*read_block)(volume_t *vol, uint64_t index, void *buffer);
 
 	/*
+	  Read only part of a block using its block index and a byte offset
+	  into the block. Both offset and size from there must not cross the
+	  block boundary.
+
+	  Returns 0 on success, -1 on failure.
+	 */
+	int (*read_partial_block)(volume_t *vol, uint64_t index,
+				  void *buffer, uint32_t offset, uint32_t size);
+
+	/*
 	  Write a buffer, holding an entire block to the volume at a specific
 	  block index. Returns 0 on success, -1 on failure.
 	 */
 	int (*write_block)(volume_t *vol, uint64_t index, const void *buffer);
+
+	/*
+	  Overwrite only part of a block using its block index and a byte
+	  offset into the block. Both offset and size from there must not
+	  cross the block boundary.
+
+	  The implementation internally splices together the existing data
+	  in the block with the given data fragment.
+
+	  Returns 0 on success, -1 on failure.
+	 */
+	int (*write_partial_block)(volume_t *vol, uint64_t index,
+				   const void *buffer, uint32_t offset,
+				   uint32_t size);
 
 	/*
 	  Move a single within a volume. A source and destination index are

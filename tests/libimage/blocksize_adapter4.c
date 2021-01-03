@@ -22,11 +22,35 @@ static int dummy_read_block(volume_t *vol, uint64_t index, void *buffer)
 	return 0;
 }
 
+static int dummy_read_partial_block(volume_t *vol, uint64_t index,
+				    void *buffer, uint32_t offset,
+				    uint32_t size)
+{
+	(void)vol;
+	TEST_ASSERT(index < 4);
+	TEST_ASSERT(offset <= 7);
+	TEST_ASSERT(size <= (7 - offset));
+	memcpy(buffer, dummy_buffer + index * 7 + offset, size);
+	return 0;
+}
+
 static int dummy_write_block(volume_t *vol, uint64_t index, const void *buffer)
 {
 	(void)vol;
 	TEST_ASSERT(index < 4);
 	memcpy(dummy_buffer + index * 7, buffer, 7);
+	return 0;
+}
+
+static int dummy_write_partial_block(volume_t *vol, uint64_t index,
+				     const void *buffer, uint32_t offset,
+				     uint32_t size)
+{
+	(void)vol;
+	TEST_ASSERT(index < 4);
+	TEST_ASSERT(offset <= 7);
+	TEST_ASSERT(size <= (7 - offset));
+	memcpy(dummy_buffer + index * 7 + offset, buffer, size);
 	return 0;
 }
 
@@ -61,7 +85,9 @@ static volume_t dummy = {
 	.max_block_count = 4,
 
 	.read_block = dummy_read_block,
+	.read_partial_block = dummy_read_partial_block,
 	.write_block = dummy_write_block,
+	.write_partial_block = dummy_write_partial_block,
 	.move_block = NULL,
 	.discard_blocks = dummy_discard_blocks,
 	.commit = dummy_commit,
@@ -174,8 +200,7 @@ int main(void)
 	ret = memcmp(dummy_buffer,
 		     "aaaa\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0ccdDDDddd", 29);
 	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_I(num_discarded, 1);
-	TEST_EQUAL_I(discard_sequence[0], 1);
+	TEST_EQUAL_I(num_discarded, 0);
 
 	/* cleanup */
 	object_drop(vol);

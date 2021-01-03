@@ -19,6 +19,18 @@ static int compare_ints(const void *lhs, const void *rhs)
 	return *((const int *)lhs) - *((const int *)rhs);
 }
 
+static int dummy_read_partial_block(volume_t *vol, uint64_t index,
+				    void *buffer, uint32_t offset,
+				    uint32_t size)
+{
+	(void)vol;
+	TEST_ASSERT(index < 10);
+	TEST_ASSERT(offset <= 3);
+	TEST_ASSERT(size <= (3 - offset));
+	memcpy(buffer, dummy_buffer + index * 3 + offset, size);
+	return 0;
+}
+
 static int dummy_read_block(volume_t *vol, uint64_t index, void *buffer)
 {
 	(void)vol;
@@ -32,6 +44,18 @@ static int dummy_write_block(volume_t *vol, uint64_t index, const void *buffer)
 	(void)vol;
 	TEST_ASSERT(index < 10);
 	memcpy(dummy_buffer + index * 3, buffer, 3);
+	return 0;
+}
+
+static int dummy_write_partial_block(volume_t *vol, uint64_t index,
+				     const void *buffer, uint32_t offset,
+				     uint32_t size)
+{
+	(void)vol;
+	TEST_ASSERT(index < 10);
+	TEST_ASSERT(offset <= 3);
+	TEST_ASSERT(size <= (3 - offset));
+	memcpy(dummy_buffer + index * 3 + offset, buffer, size);
 	return 0;
 }
 
@@ -66,7 +90,9 @@ static volume_t dummy = {
 	.max_block_count = 10,
 
 	.read_block = dummy_read_block,
+	.read_partial_block = dummy_read_partial_block,
 	.write_block = dummy_write_block,
+	.write_partial_block = dummy_write_partial_block,
 	.move_block = NULL,
 	.discard_blocks = dummy_discard_blocks,
 	.commit = dummy_commit,

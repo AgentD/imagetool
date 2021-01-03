@@ -97,43 +97,75 @@ static void destroy(object_t *base)
 	free(fvol);
 }
 
-static int read_block(volume_t *vol, uint64_t index, void *buffer)
+static int read_partial_block(volume_t *vol, uint64_t index,
+			      void *buffer, uint32_t offset, uint32_t size)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
 
-	if (index >= vol->max_block_count) {
-		fprintf(stderr, "%s: out of bounds read attempted.\n",
-			fvol->filename);
-		return -1;
-	}
+	if (index >= vol->max_block_count)
+		goto fail_bounds;
+
+	if (offset > vol->blocksize)
+		goto fail_bounds;
+
+	if (size > (vol->blocksize - offset))
+		goto fail_bounds;
+
+	if (size == 0)
+		return 0;
 
 	if (!bitmap_is_set(fvol->bitmap, index)) {
-		memset(buffer, 0, vol->blocksize);
+		memset(buffer, 0, size);
 		return 0;
 	}
 
-	return read_retry(fvol->filename, fvol->fd, index * vol->blocksize,
-			  buffer, vol->blocksize);
+	return read_retry(fvol->filename, fvol->fd,
+			  index * vol->blocksize + offset,
+			  buffer, size);
+fail_bounds:
+	fprintf(stderr, "%s: out of bounds read attempted.\n",
+		fvol->filename);
+	return -1;
+}
+
+static int read_block(volume_t *vol, uint64_t index, void *buffer)
+{
+	return read_partial_block(vol, index, buffer, 0, vol->blocksize);
+}
+
+static int write_partial_block(volume_t *vol, uint64_t index,
+			       const void *buffer, uint32_t offset,
+			       uint32_t size)
+{
+	file_volume_t *fvol = (file_volume_t *)vol;
+
+	if (index >= vol->max_block_count)
+		goto fail_bounds;
+
+	if (offset > vol->blocksize)
+		goto fail_bounds;
+
+	if (size > (vol->blocksize - offset))
+		goto fail_bounds;
+
+	if (bitmap_set(fvol->bitmap, index))
+		goto fail_flag;
+
+	return write_retry(fvol->filename, fvol->fd,
+			   index * vol->blocksize + offset,
+			   buffer, size);
+fail_flag:
+	fprintf(stderr, "%s: failed to mark block as used.\n", fvol->filename);
+	return -1;
+fail_bounds:
+	fprintf(stderr, "%s: out of bounds write attempted.\n",
+		fvol->filename);
+	return -1;
 }
 
 static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 {
-	file_volume_t *fvol = (file_volume_t *)vol;
-
-	if (index >= vol->max_block_count) {
-		fprintf(stderr, "%s: out of bounds write attempted.\n",
-			fvol->filename);
-		return -1;
-	}
-
-	if (bitmap_set(fvol->bitmap, index)) {
-		fprintf(stderr, "%s: failed to mark block as used.\n",
-			fvol->filename);
-		return -1;
-	}
-
-	return write_retry(fvol->filename, fvol->fd, index * vol->blocksize,
-			   buffer, vol->blocksize);
+	return write_partial_block(vol, index, buffer, 0, vol->blocksize);
 }
 
 static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
@@ -277,7 +309,9 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 	((volume_t *)fvol)->min_block_count = 0;
 	((volume_t *)fvol)->max_block_count = max_count;
 	((volume_t *)fvol)->read_block = read_block;
+	((volume_t *)fvol)->read_partial_block = read_partial_block;
 	((volume_t *)fvol)->write_block = write_block;
+	((volume_t *)fvol)->write_partial_block = write_partial_block;
 	((volume_t *)fvol)->move_block = move_block;
 	((volume_t *)fvol)->discard_blocks = discard_blocks;
 	((volume_t *)fvol)->commit = commit;
