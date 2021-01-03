@@ -84,6 +84,112 @@ static int write_retry(const char *filename, int fd, uint64_t offset,
 	return 0;
 }
 
+static int transfer_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst,
+			   size_t count)
+{
+	size_t size, diff, processed;
+	loff_t off_in, off_out;
+	ssize_t ret;
+
+	/* fast-path: ask the kernel to copy-on-write remap the region */
+	processed = 0;
+	size = ((volume_t *)fvol)->blocksize * count;
+	off_in = src * size;
+	off_out = dst * size;
+
+	while (processed < size) {
+		ret = copy_file_range(fvol->fd, &off_in,
+				      fvol->fd, &off_out,
+				      size - processed, 0);
+
+		if (ret < 0) {
+			if (errno == EINTR)
+				continue;
+			break;
+		}
+
+		processed += ret;
+	}
+
+	/* fallback: manually copy over the remaining data */
+	while (processed < size) {
+		diff = size - processed;
+		if (diff > ((volume_t *)fvol)->blocksize)
+			diff = ((volume_t *)fvol)->blocksize;
+
+		if (read_retry(fvol->filename, fvol->fd, off_in,
+			       fvol->scratch, diff)) {
+			return -1;
+		}
+
+		if (write_retry(fvol->filename, fvol->fd, off_out,
+				fvol->scratch, diff)) {
+			return -1;
+		}
+	}
+
+	return 0;
+}
+
+static int swap_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst)
+{
+	volume_t *vol = (volume_t *)fvol;
+
+	if (read_retry(fvol->filename, fvol->fd, src * vol->blocksize,
+		       fvol->scratch + vol->blocksize, vol->blocksize)) {
+		return -1;
+	}
+
+	if (transfer_blocks(fvol, dst, src, 1))
+		return -1;
+
+	return write_retry(fvol->filename, fvol->fd, dst * vol->blocksize,
+			   fvol->scratch + vol->blocksize, vol->blocksize);
+}
+
+static int check_bounds(file_volume_t *fvol, uint64_t index,
+			uint32_t offset, uint32_t size)
+{
+	if (index >= ((volume_t *)fvol)->max_block_count)
+		goto fail;
+
+	if (offset > ((volume_t *)fvol)->blocksize)
+		goto fail;
+
+	if (size > (((volume_t *)fvol)->blocksize - offset))
+		goto fail;
+
+	return 0;
+fail:
+	fprintf(stderr, "%s: out of bounds block access attempted.\n",
+		fvol->filename);
+	return -1;
+}
+
+static int truncate_file(int fd, uint64_t size)
+{
+	int ret;
+
+	do {
+		ret = ftruncate(fd, size);
+	} while (ret < 0 && errno == EINTR);
+
+	return ret;
+}
+
+static int punch_hole(int fd, uint64_t offset, uint64_t size)
+{
+	int ret;
+
+	do {
+		ret = fallocate(fd,
+				FALLOC_FL_PUNCH_HOLE | FALLOC_FL_KEEP_SIZE,
+				offset, size);
+	} while (ret < 0 && errno == EINTR);
+
+	return ret;
+}
+
 /*****************************************************************************/
 
 static void destroy(object_t *base)
@@ -102,14 +208,8 @@ static int read_partial_block(volume_t *vol, uint64_t index,
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
 
-	if (index >= vol->max_block_count)
-		goto fail_bounds;
-
-	if (offset > vol->blocksize)
-		goto fail_bounds;
-
-	if (size > (vol->blocksize - offset))
-		goto fail_bounds;
+	if (check_bounds(fvol, index, offset, size))
+		return -1;
 
 	if (size == 0)
 		return 0;
@@ -122,10 +222,6 @@ static int read_partial_block(volume_t *vol, uint64_t index,
 	return read_retry(fvol->filename, fvol->fd,
 			  index * vol->blocksize + offset,
 			  buffer, size);
-fail_bounds:
-	fprintf(stderr, "%s: out of bounds read attempted.\n",
-		fvol->filename);
-	return -1;
 }
 
 static int read_block(volume_t *vol, uint64_t index, void *buffer)
@@ -139,14 +235,8 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
 
-	if (index >= vol->max_block_count)
-		goto fail_bounds;
-
-	if (offset > vol->blocksize)
-		goto fail_bounds;
-
-	if (size > (vol->blocksize - offset))
-		goto fail_bounds;
+	if (check_bounds(fvol, index, offset, size))
+		return -1;
 
 	if (bitmap_set(fvol->bitmap, index))
 		goto fail_flag;
@@ -156,10 +246,6 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 			   buffer, size);
 fail_flag:
 	fprintf(stderr, "%s: failed to mark block as used.\n", fvol->filename);
-	return -1;
-fail_bounds:
-	fprintf(stderr, "%s: out of bounds write attempted.\n",
-		fvol->filename);
 	return -1;
 }
 
@@ -173,6 +259,32 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	file_volume_t *fvol = (file_volume_t *)vol;
 	int ret;
 
+	/* sanity check */
+	if (index >= vol->max_block_count)
+		return 0;
+
+	if (count > (vol->max_block_count - index))
+		count = vol->max_block_count - index;
+
+	if (count == 0)
+		return 0;
+
+	/* fast-path */
+	if (count == (vol->max_block_count - index)) {
+		ret = truncate_file(fvol->fd, index * vol->blocksize);
+	} else {
+		ret = punch_hole(fvol->fd, index * vol->blocksize,
+				 count * vol->blocksize);
+	}
+
+	if (ret == 0) {
+		while (count--)
+			bitmap_clear(fvol->bitmap, index++);
+
+		return 0;
+	}
+
+	/* fallback: manually write block of 0 bytes */
 	memset(fvol->scratch, 0, vol->blocksize);
 
 	while (count--) {
@@ -197,41 +309,69 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
-	void *src_ptr, *dst_ptr;
 	bool src_set, dst_set;
+
+	if (check_bounds(fvol, src, 0, vol->blocksize))
+		return -1;
+
+	if (check_bounds(fvol, dst, 0, vol->blocksize))
+		return -1;
 
 	src_set = bitmap_is_set(fvol->bitmap, src);
 	dst_set = bitmap_is_set(fvol->bitmap, dst);
 
-	if (!src_set && !dst_set)
-		return 0;
+	if (flags & MOVE_SWAP) {
+		if (src == dst || (!src_set && !dst_set))
+			return 0;
 
-	src_ptr = fvol->scratch;
-	dst_ptr = fvol->scratch + vol->blocksize;
+		if (src_set && dst_set)
+			return swap_blocks(fvol, src, dst);
 
-	if (read_block(vol, src, src_ptr))
-		return -1;
-
-	if (flags & (MOVE_SWAP | MOVE_ERASE_SOURCE)) {
-		if (flags & MOVE_ERASE_SOURCE) {
-			memset(dst_ptr, 0, vol->blocksize);
-			dst_set = false;
-		} else {
-			if (read_block(vol, dst, dst_ptr))
+		if (src_set) {
+			if (transfer_blocks(fvol, src, dst, 1))
 				return -1;
+			if (bitmap_set(fvol->bitmap, dst))
+				goto fail_flag;
+			return discard_blocks(vol, src, 1);
 		}
 
-		if (write_block(vol, src, dst_ptr))
+		if (transfer_blocks(fvol, dst, src, 1))
 			return -1;
-
-		bitmap_set_value(fvol->bitmap, src, dst_set);
+		if (bitmap_set(fvol->bitmap, src))
+			goto fail_flag;
+		return discard_blocks(vol, dst, 1);
 	}
 
-	if (write_block(vol, dst, src_ptr))
-		return -1;
+	if (flags & MOVE_ERASE_SOURCE) {
+		if (src == dst)
+			return src_set ? discard_blocks(vol, src, 1) : 0;
 
-	bitmap_set_value(fvol->bitmap, dst, src_set);
+		if (!src_set)
+			return dst_set ? discard_blocks(vol, dst, 1) : 0;
+
+		if (transfer_blocks(fvol, src, dst, 1))
+			return -1;
+		if (bitmap_set(fvol->bitmap, dst))
+			goto fail_flag;
+		return discard_blocks(vol, src, 1);
+	}
+
+	if (src == dst || (!src_set && !dst_set))
+		return 0;
+
+	if (!src_set)
+		return dst_set ? discard_blocks(vol, dst, 1) : 0;
+
+	if (transfer_blocks(fvol, src, dst, 1))
+		return -1;
+	if (bitmap_set(fvol->bitmap, dst))
+		goto fail_flag;
+
 	return 0;
+fail_flag:
+	fprintf(stderr, "%s: failed to mark block as used after move.\n",
+		fvol->filename);
+	return -1;
 }
 
 static int commit(volume_t *vol)
@@ -248,7 +388,7 @@ static int commit(volume_t *vol)
 		size = (index + 1) * vol->blocksize;
 	}
 
-	if (ftruncate(fvol->fd, size) != 0) {
+	if (truncate_file(fvol->fd, size) != 0) {
 		perror(fvol->filename);
 		return -1;
 	}
