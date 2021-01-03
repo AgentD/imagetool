@@ -108,6 +108,11 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size);
 volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 					  uint32_t offset);
 
+int volume_read(volume_t *vol, uint64_t offset, void *data, size_t size);
+
+int volume_write(volume_t *vol, uint64_t offset, const void *data,
+		 size_t size);
+
 #ifdef __cplusplus
 }
 #endif
