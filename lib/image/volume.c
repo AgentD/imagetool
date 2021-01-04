@@ -8,7 +8,7 @@
 #include "volume.h"
 
 int volume_move_blocks(volume_t *vol, uint64_t src, uint64_t dst,
-		       uint64_t count, int flags)
+		       uint64_t count, int mode)
 {
 	uint64_t i, j;
 
@@ -19,12 +19,12 @@ int volume_move_blocks(volume_t *vol, uint64_t src, uint64_t dst,
 		for (i = 0; i < count; ++i) {
 			j = count - 1 - i;
 
-			if (vol->move_block(vol, src + j, dst + j, flags))
+			if (vol->move_block(vol, src + j, dst + j, mode))
 				return -1;
 		}
 	} else {
 		for (i = 0; i < count; ++i) {
-			if (vol->move_block(vol, src + i, dst + i, flags))
+			if (vol->move_block(vol, src + i, dst + i, mode))
 				return -1;
 		}
 	}

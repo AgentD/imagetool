@@ -72,14 +72,16 @@ struct volume_t {
 				   uint32_t size);
 
 	/*
-	  Move a single within a volume. A source and destination index are
-	  given. If the MOVE_SWAP flag is set, the blocks are swapped. If the
-	  MOVE_ERASE_SOURCE flag is set, the source block is discarded after
-	  moving it to the destination.
+	  Move a single block within a volume. A source and destination index
+	  are given.
+
+	  If mode is set to MOVE_SWAP, the blocks are swapped.
+	  If it is MOVE_ERASE_SOURCE, the source block is discarded
+	  after moving it to the destination.
 
 	  Returns 0 on success, -1 on failure.
 	 */
-	int (*move_block)(volume_t *vol, uint64_t src, uint64_t dst, int flags);
+	int (*move_block)(volume_t *vol, uint64_t src, uint64_t dst, int mode);
 
 	/*
 	  Mark a range of blocks as discarded. Any future reads will return
@@ -101,7 +103,7 @@ extern "C" {
 #endif
 
 int volume_move_blocks(volume_t *vol, uint64_t src, uint64_t dst,
-		       uint64_t count, int flags);
+		       uint64_t count, int mode);
 
 volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size);
 

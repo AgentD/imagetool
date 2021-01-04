@@ -108,7 +108,7 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	return 0;
 }
 
-static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
+static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
 {
 	adapter_t *adapter = (adapter_t *)vol;
 	void *src_buf, *dst_buf;
@@ -116,23 +116,28 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
 	src_buf = adapter->scratch;
 	dst_buf = (char *)adapter->scratch + vol->blocksize;
 
-	if (read_block(vol, src, src_buf))
-		return -1;
+	switch (mode) {
+	case MOVE_SWAP:
+		if (read_block(vol, src, src_buf))
+			return -1;
+		if (read_block(vol, dst, dst_buf))
+			return -1;
 
-	if (flags & (MOVE_SWAP | MOVE_ERASE_SOURCE)) {
-		if (flags & MOVE_ERASE_SOURCE) {
-			if (discard_blocks(vol, src, 1))
-				return -1;
-		} else {
-			if (read_block(vol, dst, dst_buf))
-				return -1;
-			if (write_block(vol, src, dst_buf))
-				return -1;
-		}
+		if (write_block(vol, src, dst_buf))
+			return -1;
+		return write_block(vol, dst, src_buf);
+	case MOVE_ERASE_SOURCE:
+		if (read_block(vol, src, src_buf))
+			return -1;
+		if (discard_blocks(vol, src, 1))
+			return -1;
+
+		return write_block(vol, dst, src_buf);
+	default:
+		if (read_block(vol, src, src_buf))
+			return -1;
+		return write_block(vol, dst, src_buf);
 	}
-
-	if (write_block(vol, dst, src_buf))
-		return -1;
 
 	return 0;
 }

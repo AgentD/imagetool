@@ -306,7 +306,7 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	return 0;
 }
 
-static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
+static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
 	bool src_set, dst_set;
@@ -320,7 +320,8 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
 	src_set = bitmap_is_set(fvol->bitmap, src);
 	dst_set = bitmap_is_set(fvol->bitmap, dst);
 
-	if (flags & MOVE_SWAP) {
+	switch (mode) {
+	case MOVE_SWAP:
 		if (src == dst || (!src_set && !dst_set))
 			return 0;
 
@@ -340,9 +341,7 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
 		if (bitmap_set(fvol->bitmap, src))
 			goto fail_flag;
 		return discard_blocks(vol, dst, 1);
-	}
-
-	if (flags & MOVE_ERASE_SOURCE) {
+	case MOVE_ERASE_SOURCE:
 		if (src == dst)
 			return src_set ? discard_blocks(vol, src, 1) : 0;
 
@@ -354,18 +353,19 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int flags)
 		if (bitmap_set(fvol->bitmap, dst))
 			goto fail_flag;
 		return discard_blocks(vol, src, 1);
+	default:
+		if (src == dst || (!src_set && !dst_set))
+			return 0;
+
+		if (!src_set)
+			return dst_set ? discard_blocks(vol, dst, 1) : 0;
+
+		if (transfer_blocks(fvol, src, dst, 1))
+			return -1;
+		if (bitmap_set(fvol->bitmap, dst))
+			goto fail_flag;
+		break;
 	}
-
-	if (src == dst || (!src_set && !dst_set))
-		return 0;
-
-	if (!src_set)
-		return dst_set ? discard_blocks(vol, dst, 1) : 0;
-
-	if (transfer_blocks(fvol, src, dst, 1))
-		return -1;
-	if (bitmap_set(fvol->bitmap, dst))
-		goto fail_flag;
 
 	return 0;
 fail_flag:
