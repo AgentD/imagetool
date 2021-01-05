@@ -241,17 +241,17 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 	if (bitmap_set(fvol->bitmap, index))
 		goto fail_flag;
 
+	if (buffer == NULL) {
+		memset(fvol->scratch, 0, size);
+		buffer = fvol->scratch;
+	}
+
 	return write_retry(fvol->filename, fvol->fd,
 			   index * vol->blocksize + offset,
 			   buffer, size);
 fail_flag:
 	fprintf(stderr, "%s: failed to mark block as used.\n", fvol->filename);
 	return -1;
-}
-
-static int write_block(volume_t *vol, uint64_t index, const void *buffer)
-{
-	return write_partial_block(vol, index, buffer, 0, vol->blocksize);
 }
 
 static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
@@ -304,6 +304,14 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	}
 
 	return 0;
+}
+
+static int write_block(volume_t *vol, uint64_t index, const void *buffer)
+{
+	if (buffer == NULL)
+		return discard_blocks(vol, index, 1);
+
+	return write_partial_block(vol, index, buffer, 0, vol->blocksize);
 }
 
 static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)

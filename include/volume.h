@@ -54,6 +54,9 @@ struct volume_t {
 	/*
 	  Write a buffer, holding an entire block to the volume at a specific
 	  block index. Returns 0 on success, -1 on failure.
+
+	  If buffer is NULL, the function clears the block to zero, which is
+	  effectively the same as using discard_blocks.
 	 */
 	int (*write_block)(volume_t *vol, uint64_t index, const void *buffer);
 
@@ -64,6 +67,9 @@ struct volume_t {
 
 	  The implementation internally splices together the existing data
 	  in the block with the given data fragment.
+
+	  If buffer is NULL, the function clears the region of the block
+	  to zero.
 
 	  Returns 0 on success, -1 on failure.
 	 */

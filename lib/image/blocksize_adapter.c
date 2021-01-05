@@ -59,12 +59,12 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 
 	offset = adapter->offset + index * vol->blocksize + blk_offset;
 
-	return volume_write(adapter->wrapped, offset, buffer, size);
-}
+	if (buffer == NULL) {
+		memset(adapter->scratch, 0, size);
+		buffer = adapter->scratch;
+	}
 
-static int write_block(volume_t *vol, uint64_t index, const void *buffer)
-{
-	return write_partial_block(vol, index, buffer, 0, vol->blocksize);
+	return volume_write(adapter->wrapped, offset, buffer, size);
 }
 
 static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
@@ -106,6 +106,14 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	}
 
 	return 0;
+}
+
+static int write_block(volume_t *vol, uint64_t index, const void *buffer)
+{
+	if (buffer == NULL)
+		return discard_blocks(vol, index, 1);
+
+	return write_partial_block(vol, index, buffer, 0, vol->blocksize);
 }
 
 static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)

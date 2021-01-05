@@ -34,7 +34,9 @@ int volume_write(volume_t *vol, uint64_t offset, const void *data, size_t size)
 
 		offset += diff;
 		size -= diff;
-		data = (const char *)data + diff;
+
+		if (data != NULL)
+			data = (const char *)data + diff;
 	}
 
 	return 0;
