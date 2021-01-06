@@ -208,6 +208,57 @@ int main(void)
 	TEST_EQUAL_I(num_discarded, 1);
 	TEST_EQUAL_I(discard_sequence[0], 0);
 
+	/* partial read */
+	memset(temp, 0, sizeof(temp));
+	ret = vol->read_partial_block(vol, 5, temp, 1, 2);
+	TEST_EQUAL_I(ret, 0);
+	TEST_STR_EQUAL(temp, "cc");
+
+	memset(temp, 0, sizeof(temp));
+	ret = vol->read_partial_block(vol, 5, temp, 0, 3);
+	TEST_EQUAL_I(ret, 0);
+	TEST_STR_EQUAL(temp, "ccc");
+
+	ret = vol->read_partial_block(vol, 5, temp, 0, 4);
+	TEST_ASSERT(ret != 0);
+
+	ret = vol->read_partial_block(vol, 5, temp, 1, 3);
+	TEST_ASSERT(ret != 0);
+
+	/* partial write */
+	ret = vol->write_partial_block(vol, 5, "ZZ", 1, 2);
+	TEST_EQUAL_I(ret, 0);
+	TEST_STR_EQUAL(dummy_buffer + 15, "cZZCCCdddDDDd");
+
+	ret = vol->write_partial_block(vol, 5, "XX", 0, 2);
+	TEST_EQUAL_I(ret, 0);
+	TEST_STR_EQUAL(dummy_buffer + 15, "XXZCCCdddDDDd");
+
+	ret = vol->write_partial_block(vol, 5, "YYY", 1, 3);
+	TEST_ASSERT(ret != 0);
+	TEST_STR_EQUAL(dummy_buffer + 15, "XXZCCCdddDDDd");
+
+	/* partial write holes */
+	ret = vol->write_partial_block(vol, 5, NULL, 1, 2);
+	TEST_EQUAL_I(ret, 0);
+	ret = memcmp(dummy_buffer + 15, "X\0\0CCCdddDDDd", 13);
+	TEST_EQUAL_I(ret, 0);
+
+	ret = vol->write_partial_block(vol, 7, NULL, 0, 2);
+	TEST_EQUAL_I(ret, 0);
+	ret = memcmp(dummy_buffer + 15, "X\0\0CCC\0\0dDDDd", 13);
+	TEST_EQUAL_I(ret, 0);
+
+	ret = vol->write_partial_block(vol, 6, NULL, 0, 3);
+	TEST_EQUAL_I(ret, 0);
+	ret = memcmp(dummy_buffer + 15, "X\0\0\0\0\0\0\0dDDDd", 13);
+	TEST_EQUAL_I(ret, 0);
+
+	ret = vol->write_partial_block(vol, 6, NULL, 0, 4);
+	TEST_ASSERT(ret != 0);
+	ret = memcmp(dummy_buffer + 15, "X\0\0\0\0\0\0\0dDDDd", 13);
+	TEST_EQUAL_I(ret, 0);
+
 	/* cleanup */
 	object_drop(vol);
 	TEST_EQUAL_UI(dummy.base.refcount, 1);
