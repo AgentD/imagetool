@@ -382,6 +382,27 @@ fail_flag:
 	return -1;
 }
 
+static int move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
+			      size_t src_offset, size_t dst_offset,
+			      size_t size)
+{
+	file_volume_t *fvol = (file_volume_t *)vol;
+
+	if (check_bounds(fvol, src, src_offset, size))
+		return -1;
+
+	if (check_bounds(fvol, dst, dst_offset, size))
+		return -1;
+
+	if (read_retry(fvol->filename, fvol->fd, src,
+		       fvol->scratch, size)) {
+		return -1;
+	}
+
+	return write_retry(fvol->filename, fvol->fd, dst,
+			   fvol->scratch, size);
+}
+
 static int commit(volume_t *vol)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
@@ -461,6 +482,7 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 	((volume_t *)fvol)->write_block = write_block;
 	((volume_t *)fvol)->write_partial_block = write_partial_block;
 	((volume_t *)fvol)->move_block = move_block;
+	((volume_t *)fvol)->move_block_partial = move_block_partial;
 	((volume_t *)fvol)->discard_blocks = discard_blocks;
 	((volume_t *)fvol)->commit = commit;
 

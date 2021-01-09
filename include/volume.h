@@ -90,6 +90,16 @@ struct volume_t {
 	int (*move_block)(volume_t *vol, uint64_t src, uint64_t dst, int mode);
 
 	/*
+	  Basically a memmove of a part of a block to some other block or move
+	  a part around within a block.
+
+	  Returns 0 on success, -1 on failure.
+	 */
+	int (*move_block_partial)(volume_t *vol, uint64_t src, uint64_t dst,
+				  size_t src_offset, size_t dst_offset,
+				  size_t size);
+
+	/*
 	  Mark a range of blocks as discarded. Any future reads will return
 	  zero. The underlying implementation may perfrom certain optimzations,
 	  knowing that the blocks are considered erased.

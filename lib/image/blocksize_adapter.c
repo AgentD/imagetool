@@ -150,6 +150,21 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
 	return 0;
 }
 
+static int move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
+			      size_t src_offset, size_t dst_offset,
+			      size_t size)
+{
+	adapter_t *adapter = (adapter_t *)vol;
+
+	if (read_partial_block(vol, src, adapter->scratch,
+			       src_offset, size)) {
+		return -1;
+	}
+
+	return write_partial_block(vol, dst, adapter->scratch,
+				   dst_offset, size);
+}
+
 static int commit(volume_t *vol)
 {
 	adapter_t *adapter = (adapter_t *)vol;
@@ -197,6 +212,7 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 	((volume_t *)adapter)->write_block = write_block;
 	((volume_t *)adapter)->write_partial_block = write_partial_block;
 	((volume_t *)adapter)->move_block = move_block;
+	((volume_t *)adapter)->move_block_partial = move_block_partial;
 	((volume_t *)adapter)->discard_blocks = discard_blocks;
 	((volume_t *)adapter)->commit = commit;
 	return (volume_t *)adapter;
