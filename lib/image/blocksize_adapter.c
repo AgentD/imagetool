@@ -20,18 +20,25 @@ typedef struct {
 	uint8_t scratch[];
 } adapter_t;
 
+static int check_bounds(volume_t *vol, uint64_t index,
+			uint32_t blk_offset, uint32_t size)
+{
+	if (index >= vol->max_block_count || blk_offset > vol->blocksize ||
+	    size > (vol->blocksize - blk_offset)) {
+		fputs("Out of bounds access on block size adapter.\n", stderr);
+		return -1;
+	}
+	return 0;
+}
+
 static int read_partial_block(volume_t *vol, uint64_t index,
 			      void *buffer, uint32_t blk_offset, uint32_t size)
 {
 	adapter_t *adapter = (adapter_t *)vol;
 	uint64_t offset;
 
-	if (index >= vol->max_block_count || blk_offset > vol->blocksize ||
-	    size > (vol->blocksize - blk_offset)) {
-		fputs("Out of bounds read attempted on block size adapter.\n",
-		      stderr);
+	if (check_bounds(vol, index, blk_offset, size))
 		return -1;
-	}
 
 	offset = adapter->offset + index * vol->blocksize + blk_offset;
 
@@ -50,19 +57,10 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 	adapter_t *adapter = (adapter_t *)vol;
 	uint64_t offset;
 
-	if (index >= vol->max_block_count || blk_offset > vol->blocksize ||
-	    size > (vol->blocksize - blk_offset)) {
-		fputs("Out of bounds write attempted on block size adapter.\n",
-		      stderr);
+	if (check_bounds(vol, index, blk_offset, size))
 		return -1;
-	}
 
 	offset = adapter->offset + index * vol->blocksize + blk_offset;
-
-	if (buffer == NULL) {
-		memset(adapter->scratch, 0, size);
-		buffer = adapter->scratch;
-	}
 
 	return volume_write(adapter->wrapped, offset, buffer, size);
 }
@@ -70,7 +68,6 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 {
 	adapter_t *adapter = (adapter_t *)vol;
-	volume_t *wrapped = adapter->wrapped;
 	uint64_t offset, size;
 
 	if (index >= vol->max_block_count)
@@ -79,40 +76,17 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	if (count > (vol->max_block_count - index))
 		count = vol->max_block_count - index;
 
+	if (count == 0)
+		return 0;
+
 	offset = adapter->offset + index * vol->blocksize;
 	size = count * vol->blocksize;
 
-	while (size > 0) {
-		uint64_t target_idx = offset / wrapped->blocksize;
-		size_t target_offset = offset % wrapped->blocksize;
-		size_t target_size = wrapped->blocksize - target_offset;
-
-		if (target_size > size)
-			target_size = size;
-
-		if (target_offset == 0 && target_size == wrapped->blocksize) {
-			wrapped->discard_blocks(wrapped, target_idx, 1);
-		} else {
-			memset(adapter->scratch, 0, target_size);
-
-			wrapped->write_partial_block(wrapped, target_idx,
-						     adapter->scratch,
-						     target_offset,
-						     target_size);
-		}
-
-		offset += target_size;
-		size -= target_size;
-	}
-
-	return 0;
+	return volume_write(adapter->wrapped, offset, NULL, size);
 }
 
 static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 {
-	if (buffer == NULL)
-		return discard_blocks(vol, index, 1);
-
 	return write_partial_block(vol, index, buffer, 0, vol->blocksize);
 }
 

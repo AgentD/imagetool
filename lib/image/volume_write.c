@@ -7,6 +7,16 @@
 #include "config.h"
 #include "volume.h"
 
+static bool is_sparse(const unsigned char *data, size_t size)
+{
+	while (size--) {
+		if (*(data++))
+			return false;
+	}
+
+	return true;
+}
+
 int volume_write(volume_t *vol, uint64_t offset, const void *data, size_t size)
 {
 	uint32_t blk_offset;
@@ -23,7 +33,11 @@ int volume_write(volume_t *vol, uint64_t offset, const void *data, size_t size)
 			diff = size;
 
 		if (blk_offset == 0 && diff == vol->blocksize) {
-			ret = vol->write_block(vol, index, data);
+			if (data == NULL || is_sparse(data, diff)) {
+				ret = vol->discard_blocks(vol, index, 1);
+			} else {
+				ret = vol->write_block(vol, index, data);
+			}
 		} else {
 			ret = vol->write_partial_block(vol, index,
 						       data, blk_offset, diff);

@@ -47,7 +47,11 @@ static int dummy_write_partial_block(volume_t *vol, uint64_t index,
 	TEST_ASSERT(index < 10);
 	TEST_ASSERT(offset <= 3);
 	TEST_ASSERT(size <= (3 - offset));
-	memcpy(dummy_buffer + index * 3 + offset, buffer, size);
+	if (buffer == NULL) {
+		memset(dummy_buffer + index * 3 + offset, 0, size);
+	} else {
+		memcpy(dummy_buffer + index * 3 + offset, buffer, size);
+	}
 	return 0;
 }
 
@@ -55,7 +59,11 @@ static int dummy_write_block(volume_t *vol, uint64_t index, const void *buffer)
 {
 	(void)vol;
 	TEST_ASSERT(index < 10);
-	memcpy(dummy_buffer + index * 3, buffer, 3);
+	if (buffer == NULL) {
+		memset(dummy_buffer + index * 3, 0, 3);
+	} else {
+		memcpy(dummy_buffer + index * 3, buffer, 3);
+	}
 	return 0;
 }
 
