@@ -9,32 +9,30 @@
 
 int volume_read(volume_t *vol, uint64_t offset, void *data, size_t size)
 {
-	uint32_t blk_offset;
-	uint64_t index;
-	size_t diff;
+	uint64_t blk_index = offset / vol->blocksize;
+	uint32_t blk_offset = offset % vol->blocksize;
+	uint32_t blk_size = vol->blocksize - blk_offset;
 	int ret;
 
 	while (size > 0) {
-		index = offset / vol->blocksize;
-		blk_offset = offset % vol->blocksize;
-		diff = vol->blocksize - blk_offset;
+		blk_size = blk_size > size ? size : blk_size;
 
-		if (diff > size)
-			diff = size;
-
-		if (blk_offset == 0 && diff == vol->blocksize) {
-			ret = vol->read_block(vol, index, data);
+		if (blk_offset == 0 && blk_size == vol->blocksize) {
+			ret = vol->read_block(vol, blk_index, data);
 		} else {
-			ret = vol->read_partial_block(vol, index,
-						      data, blk_offset, diff);
+			ret = vol->read_partial_block(vol, blk_index, data,
+						      blk_offset, blk_size);
 		}
 
 		if (ret)
 			return -1;
 
-		offset += diff;
-		size -= diff;
-		data = (char *)data + diff;
+		size -= blk_size;
+		data = (char *)data + blk_size;
+
+		blk_index += 1;
+		blk_offset = 0;
+		blk_size = vol->blocksize;
 	}
 
 	return 0;

@@ -76,9 +76,6 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	if (count > (vol->max_block_count - index))
 		count = vol->max_block_count - index;
 
-	if (count == 0)
-		return 0;
-
 	offset = adapter->offset + index * vol->blocksize;
 	size = count * vol->blocksize;
 
@@ -93,33 +90,23 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
 {
 	adapter_t *adapter = (adapter_t *)vol;
-	void *src_buf, *dst_buf;
+	int ret;
 
-	src_buf = adapter->scratch;
-	dst_buf = (char *)adapter->scratch + vol->blocksize;
+	if (mode == MOVE_SWAP && read_block(vol, dst, adapter->scratch) != 0)
+		return -1;
 
-	switch (mode) {
-	case MOVE_SWAP:
-		if (read_block(vol, src, src_buf))
-			return -1;
-		if (read_block(vol, dst, dst_buf))
-			return -1;
+	ret = volume_memmove(adapter->wrapped,
+			     adapter->offset + dst * vol->blocksize,
+			     adapter->offset + src * vol->blocksize,
+			     vol->blocksize);
+	if (ret)
+		return -1;
 
-		if (write_block(vol, src, dst_buf))
-			return -1;
-		return write_block(vol, dst, src_buf);
-	case MOVE_ERASE_SOURCE:
-		if (read_block(vol, src, src_buf))
-			return -1;
-		if (discard_blocks(vol, src, 1))
-			return -1;
+	if (mode == MOVE_SWAP)
+		return write_block(vol, src, adapter->scratch);
 
-		return write_block(vol, dst, src_buf);
-	default:
-		if (read_block(vol, src, src_buf))
-			return -1;
-		return write_block(vol, dst, src_buf);
-	}
+	if (mode == MOVE_ERASE_SOURCE)
+		return write_block(vol, src, NULL);
 
 	return 0;
 }
@@ -157,15 +144,10 @@ static void destroy(object_t *base)
 volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 					  uint32_t offset)
 {
-	size_t scratch_size;
 	adapter_t *adapter;
 	uint64_t count;
 
-	scratch_size = blocksize * 2;
-	if (vol->blocksize > scratch_size)
-		scratch_size = vol->blocksize;
-
-	adapter = calloc(1, sizeof(*adapter) + scratch_size);
+	adapter = calloc(1, sizeof(*adapter) + blocksize);
 	if (adapter == NULL) {
 		perror("creating block size adapter volume");
 		return NULL;

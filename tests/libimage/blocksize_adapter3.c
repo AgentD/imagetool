@@ -80,6 +80,46 @@ static int dummy_discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	return 0;
 }
 
+static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
+{
+	char temp[3];
+	(void)vol;
+	TEST_ASSERT(src < 10);
+	TEST_ASSERT(dst < 10);
+
+	switch (mode) {
+	case MOVE_SWAP:
+		memcpy(temp, dummy_buffer + dst * 3, 3);
+		memcpy(dummy_buffer + dst * 3, dummy_buffer + src * 3, 3);
+		memcpy(dummy_buffer + src * 3, temp, 3);
+		break;
+	case MOVE_ERASE_SOURCE:
+		memcpy(dummy_buffer + dst * 3, dummy_buffer + src * 3, 3);
+		memset(dummy_buffer + src * 3, '\0', 3);
+		break;
+	default:
+		memmove(dummy_buffer + dst * 3, dummy_buffer + src * 3, 3);
+		break;
+	}
+	return 0;
+}
+
+static int dummy_move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
+				    size_t src_offset, size_t dst_offset,
+				    size_t size)
+{
+	(void)vol;
+	TEST_ASSERT(src < 10);
+	TEST_ASSERT(dst < 10);
+	TEST_ASSERT(src_offset < 3);
+	TEST_ASSERT(dst_offset < 3);
+	TEST_ASSERT((src_offset + size) <= 3);
+	TEST_ASSERT((dst_offset + size) <= 3);
+	memmove(dummy_buffer + dst * 3 + dst_offset,
+		dummy_buffer + src * 3 + src_offset, size);
+	return 0;
+}
+
 static int dummy_commit(volume_t *vol)
 {
 	(void)vol;
@@ -101,7 +141,8 @@ static volume_t dummy = {
 	.read_partial_block = dummy_read_partial_block,
 	.write_block = dummy_write_block,
 	.write_partial_block = dummy_write_partial_block,
-	.move_block = NULL,
+	.move_block = dummy_move_block,
+	.move_block_partial = dummy_move_block_partial,
 	.discard_blocks = dummy_discard_blocks,
 	.commit = dummy_commit,
 };
