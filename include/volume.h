@@ -118,9 +118,6 @@ struct volume_t {
 extern "C" {
 #endif
 
-int volume_move_blocks(volume_t *vol, uint64_t src, uint64_t dst,
-		       uint64_t count, int mode);
-
 volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size);
 
 volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
@@ -130,6 +127,8 @@ int volume_read(volume_t *vol, uint64_t offset, void *data, size_t size);
 
 int volume_write(volume_t *vol, uint64_t offset, const void *data,
 		 size_t size);
+
+int volume_memmove(volume_t *vol, uint64_t dst, uint64_t src, uint64_t size);
 
 #ifdef __cplusplus
 }
