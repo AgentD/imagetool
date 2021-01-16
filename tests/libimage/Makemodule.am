@@ -1,3 +1,15 @@
+test_volume_read_SOURCES = tests/libimage/volume_read.c tests/test.h
+test_volume_read_LDADD = libimage.a libutil.a
+test_volume_read_CPPFLAGS = $(AM_CPPFLAGS)
+
+test_volume_write_SOURCES = tests/libimage/volume_write.c tests/test.h
+test_volume_write_LDADD = libimage.a libutil.a
+test_volume_write_CPPFLAGS = $(AM_CPPFLAGS)
+
+test_volume_memmove_SOURCES = tests/libimage/volume_memmove.c tests/test.h
+test_volume_memmove_LDADD = libimage.a libutil.a
+test_volume_memmove_CPPFLAGS = $(AM_CPPFLAGS)
+
 test_file_volume_SOURCES = tests/libimage/file_volume.c tests/test.h
 test_file_volume_LDADD = libimage.a libutil.a
 test_file_volume_CPPFLAGS = $(AM_CPPFLAGS)
@@ -22,9 +34,11 @@ test_blocksize_adapter4_SOURCES += tests/test.h
 test_blocksize_adapter4_LDADD = libimage.a libutil.a
 test_blocksize_adapter4_CPPFLAGS = $(AM_CPPFLAGS)
 
+check_PROGRAMS += test_volume_read test_volume_write test_volume_memmove
 check_PROGRAMS += test_file_volume
 check_PROGRAMS += test_blocksize_adapter1 test_blocksize_adapter2
 check_PROGRAMS += test_blocksize_adapter3 test_blocksize_adapter4
 
+TESTS += test_volume_read test_volume_write test_volume_memmove
 TESTS += test_file_volume test_blocksize_adapter1 test_blocksize_adapter2
 TESTS += test_blocksize_adapter3 test_blocksize_adapter4
