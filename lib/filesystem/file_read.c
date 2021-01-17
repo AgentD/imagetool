@@ -51,7 +51,7 @@ int fstree_file_read(fstree_t *fs, tree_node_t *n,
 		     uint64_t offset, void *data, size_t size)
 {
 	uint32_t blk_offset, blk_size;
-	uint64_t available, index;
+	uint64_t available, blk_index;
 	int ret;
 
 	if (size == 0)
@@ -69,22 +69,24 @@ int fstree_file_read(fstree_t *fs, tree_node_t *n,
 		size = available;
 	}
 
+	blk_index = offset / fs->volume->blocksize;
+	blk_offset = offset % fs->volume->blocksize;
+	blk_size = fs->volume->blocksize - blk_offset;
+	blk_size = blk_size > size ? size : blk_size;
+
 	while (size > 0) {
-		index = offset / fs->volume->blocksize;
-		blk_offset = offset % fs->volume->blocksize;
-		blk_size = fs->volume->blocksize - blk_offset;
-
-		if (blk_size > size)
-			blk_size = size;
-
-		ret = read_partial_block(fs, n, index, data,
+		ret = read_partial_block(fs, n, blk_index, data,
 					 blk_offset, blk_size);
 		if (ret)
 			return -1;
 
 		size -= blk_size;
-		offset += blk_size;
 		data = (char *)data + blk_size;
+
+		blk_index += 1;
+		blk_offset = 0;
+		blk_size = fs->volume->blocksize;
+		blk_size = blk_size > size ? size : blk_size;
 	}
 
 	return 0;
