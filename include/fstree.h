@@ -161,6 +161,8 @@ bool fstree_file_is_at_end(const fstree_t *fs, const tree_node_t *n);
 int fstree_file_read(fstree_t *fs, tree_node_t *n,
 		     uint64_t offset, void *data, size_t size);
 
+int fstree_file_move_to_end(fstree_t *fs, tree_node_t *n);
+
 #ifdef __cplusplus
 }
 #endif
