@@ -6,16 +6,7 @@
  */
 #include "config.h"
 #include "volume.h"
-
-static bool is_sparse(const unsigned char *data, size_t size)
-{
-	while (size--) {
-		if (*(data++))
-			return false;
-	}
-
-	return true;
-}
+#include "util.h"
 
 int volume_write(volume_t *vol, uint64_t offset, const void *data, size_t size)
 {
@@ -28,7 +19,7 @@ int volume_write(volume_t *vol, uint64_t offset, const void *data, size_t size)
 		blk_size = blk_size > size ? size : blk_size;
 
 		if (blk_offset == 0 && blk_size == vol->blocksize) {
-			if (data == NULL || is_sparse(data, blk_size)) {
+			if (data == NULL || is_memory_zero(data, blk_size)) {
 				ret = vol->discard_blocks(vol, blk_index, 1);
 			} else {
 				ret = vol->write_block(vol, blk_index, data);
