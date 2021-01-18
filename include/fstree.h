@@ -150,6 +150,14 @@ int fstree_resolve_hard_links(fstree_t *fs);
 
 int fstree_create_inode_table(fstree_t *fs);
 
+uint64_t fstree_file_sparse_bytes(const fstree_t *fs, const tree_node_t *n);
+
+uint64_t fstree_file_physical_size(const fstree_t *fs, const tree_node_t *n);
+
+bool fstree_file_is_tail_shared(const fstree_t *fs, const tree_node_t *n);
+
+bool fstree_file_is_at_end(const fstree_t *fs, const tree_node_t *n);
+
 int fstree_file_read(fstree_t *fs, tree_node_t *n,
 		     uint64_t offset, void *data, size_t size);
 
