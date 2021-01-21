@@ -76,33 +76,6 @@ int main(void)
 	size = fstree_file_sparse_bytes(fs, f0);
 	TEST_EQUAL_UI(size, 0);
 
-	/* shared tail */
-	TEST_ASSERT(!fstree_file_is_tail_shared(fs, f0));
-
-	f1->data.file.size = 128;
-
-	TEST_ASSERT(fstree_file_is_tail_shared(fs, f0));
-	TEST_ASSERT(fstree_file_is_tail_shared(fs, f1));
-
-	f1->data.file.tail_index = 1;
-	TEST_ASSERT(!fstree_file_is_tail_shared(fs, f0));
-	TEST_ASSERT(!fstree_file_is_tail_shared(fs, f1));
-
-	/* is at end */
-	f0->data.file.size = 768;
-	f0->data.file.start_index = 0;
-	f0->data.file.tail_index = 1;
-
-	f1->data.file.size = 128;
-	f1->data.file.tail_index = 1;
-
-	fs->data_offset = 2;
-
-	TEST_ASSERT(!fstree_file_is_at_end(fs, f0));
-
-	f1->data.file.tail_index = 0;
-	TEST_ASSERT(fstree_file_is_at_end(fs, f0));
-
 	/* cleanup */
 	object_drop(fs);
 	return EXIT_SUCCESS;

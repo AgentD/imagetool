@@ -65,12 +65,6 @@ typedef struct tree_node_t {
 			/* index of the first block */
 			uint64_t start_index;
 
-			/* index of the last block */
-			uint64_t tail_index;
-
-			/* offset into the last block if tail ends are packed */
-			uint32_t tail_offset;
-
 			/* Linked list of sparse regions */
 			file_sparse_holes_t *sparse;
 		} file;
@@ -153,10 +147,6 @@ int fstree_create_inode_table(fstree_t *fs);
 uint64_t fstree_file_sparse_bytes(const fstree_t *fs, const tree_node_t *n);
 
 uint64_t fstree_file_physical_size(const fstree_t *fs, const tree_node_t *n);
-
-bool fstree_file_is_tail_shared(const fstree_t *fs, const tree_node_t *n);
-
-bool fstree_file_is_at_end(const fstree_t *fs, const tree_node_t *n);
 
 int fstree_file_read(fstree_t *fs, tree_node_t *n,
 		     uint64_t offset, void *data, size_t size);

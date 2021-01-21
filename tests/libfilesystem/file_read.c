@@ -10,14 +10,14 @@
 #include "volume.h"
 #include "fstree.h"
 
-static char dummy_buffer[21] = "AAABBBCCCDDDEEEFFFAAB";
+static char dummy_buffer[24] = "AAABBBCCCDDDAA_EEEFFFB__";
 
 static int dummy_read_partial_block(volume_t *vol, uint64_t index,
 				    void *buffer, uint32_t offset,
 				    uint32_t size)
 {
 	(void)vol;
-	TEST_ASSERT(index < 7);
+	TEST_ASSERT(index < 8);
 	TEST_ASSERT(offset <= 3);
 	TEST_ASSERT(size <= (3 - offset));
 	memcpy(buffer, dummy_buffer + index * 3 + offset, size);
@@ -27,7 +27,7 @@ static int dummy_read_partial_block(volume_t *vol, uint64_t index,
 static int dummy_read_block(volume_t *vol, uint64_t index, void *buffer)
 {
 	(void)vol;
-	TEST_ASSERT(index < 7);
+	TEST_ASSERT(index < 8);
 	memcpy(buffer, dummy_buffer + index * 3, 3);
 	return 0;
 }
@@ -41,7 +41,7 @@ static volume_t dummy = {
 	.blocksize = 3,
 
 	.min_block_count = 0,
-	.max_block_count = 7,
+	.max_block_count = 8,
 
 	.read_partial_block = dummy_read_partial_block,
 	.read_block = dummy_read_block,
@@ -74,14 +74,10 @@ int main(void)
 	/* first file has 4 data blocks, 2 byte tail end */
 	f0->data.file.size = 14;
 	f0->data.file.start_index = 0;
-	f0->data.file.tail_index = 6;
-	f0->data.file.tail_offset = 0;
 
 	/* second file has 2 data blocks, 3 sparse blocks, 1 byte tail end */
 	f1->data.file.size = 16;
-	f1->data.file.start_index = 4;
-	f1->data.file.tail_index = 6;
-	f1->data.file.tail_offset = 2;
+	f1->data.file.start_index = 5;
 
 	f1->data.file.sparse = calloc(1, sizeof(file_sparse_holes_t));
 	TEST_NOT_NULL(f1->data.file.sparse);
@@ -94,10 +90,8 @@ int main(void)
 	f1->data.file.sparse->next->index = 3;
 	f1->data.file.sparse->next->count = 1;
 
-	/* third file has 1 data block and no tail end. Tail index is
-	   deliberately out of bounds to catch invalid access. */
+	/* third file has 1 data block and no tail end */
 	f2->data.file.size = 3;
-	f2->data.file.tail_index = 0xFFFFFFFFFFFFFFFFUL;
 
 	/* read first file at exact block boundaries */
 	data[3] = '\0';

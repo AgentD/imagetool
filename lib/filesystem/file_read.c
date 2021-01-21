@@ -13,13 +13,8 @@ static int read_partial_block(fstree_t *fs, tree_node_t *n,
 			      uint64_t index, void *data,
 			      uint32_t offset, uint32_t size)
 {
-	file_sparse_holes_t *sparse;
-	uint64_t start;
-
-	start = n->data.file.start_index + index;
-
-	/* is it in a sparse region? */
-	sparse = n->data.file.sparse;
+	file_sparse_holes_t *sparse = n->data.file.sparse;
+	uint64_t start = n->data.file.start_index + index;
 
 	while (sparse != NULL) {
 		if (index >= sparse->index &&
@@ -32,12 +27,6 @@ static int read_partial_block(fstree_t *fs, tree_node_t *n,
 			start -= sparse->count;
 
 		sparse = sparse->next;
-	}
-
-	/* read data block or tail end */
-	if (index == (n->data.file.size / fs->volume->blocksize)) {
-		start = n->data.file.tail_index;
-		offset += n->data.file.tail_offset;
 	}
 
 	if (offset == 0 && size == fs->volume->blocksize)
