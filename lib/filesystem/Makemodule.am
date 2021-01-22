@@ -12,6 +12,7 @@ libfilesystem_a_SOURCES += lib/filesystem/file_mark_not_sparse.c
 libfilesystem_a_SOURCES += lib/filesystem/file_read.c
 libfilesystem_a_SOURCES += lib/filesystem/file_move_to_end.c
 libfilesystem_a_SOURCES += lib/filesystem/file_append.c
+libfilesystem_a_SOURCES += lib/filesystem/file_write.c
 libfilesystem_a_CFLAGS = $(AM_CFLAGS)
 libfilesystem_a_CPPFLAGS = $(AM_CPPFLAGS)
 

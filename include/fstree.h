@@ -160,6 +160,9 @@ int fstree_file_move_to_end(fstree_t *fs, tree_node_t *n);
 int fstree_file_append(fstree_t *fs, tree_node_t *n,
 		       const void *data, size_t size);
 
+int fstree_file_write(fstree_t *fs, tree_node_t *n,
+		      uint64_t offset, const void *data, size_t size);
+
 #ifdef __cplusplus
 }
 #endif
