@@ -17,7 +17,7 @@ static int try_merge(tree_node_t *n, uint64_t index)
 
 	while (it != NULL) {
 		if (index >= it->index) {
-			if (it->count < (index - it->index))
+			if (it->count > (index - it->index))
 				return 0;
 
 			if (it->count == (index - it->index)) {
