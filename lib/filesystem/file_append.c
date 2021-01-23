@@ -37,7 +37,7 @@ static int append_to_tail(fstree_t *fs, tree_node_t *n, uint64_t tail_index,
 		if (ret)
 			return -1;
 
-		fs->data_offset += 1;
+		real_index = fs->data_offset++;
 		it->count -= 1;
 
 		if (it->count == 0) {
@@ -99,7 +99,7 @@ int fstree_file_append(fstree_t *fs, tree_node_t *n,
 			if (append_to_tail(fs, n, tail_index, tail_size,
 					   data, diff))
 				return -1;
-		} else if (data == NULL || is_memory_zero(data, size)) {
+		} else if (data == NULL || is_memory_zero(data, diff)) {
 			if (fstree_file_mark_sparse(n, tail_index))
 				return -1;
 		} else {
