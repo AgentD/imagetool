@@ -37,7 +37,7 @@ int fstree_file_move_to_end(fstree_t *fs, tree_node_t *n)
 	/* close the gap */
 	dst = src;
 	src += size;
-	size = fs->data_offset - n->data.file.start_index - blk_count;
+	size = fs->data_offset - n->data.file.start_index;
 	size *= fs->volume->blocksize;
 
 	if (volume_memmove(fs->volume, dst, src, size))
