@@ -25,7 +25,7 @@ static int insert_sparse_block(fstree_t *fs, tree_node_t *n,
 	if (fstree_file_mark_not_sparse(n, index))
 		return -1;
 
-	return fs->volume->discard_blocks(fs->volume, index, 1);
+	return fs->volume->discard_blocks(fs->volume, real_index, 1);
 }
 
 static int write_partial_block(fstree_t *fs, tree_node_t *n,
