@@ -16,6 +16,7 @@ libfilesystem_a_SOURCES += lib/filesystem/fstree/file_move_to_end.c
 libfilesystem_a_SOURCES += lib/filesystem/fstree/file_append.c
 libfilesystem_a_SOURCES += lib/filesystem/fstree/file_write.c
 libfilesystem_a_SOURCES += lib/filesystem/fstree/file_truncate.c
+libfilesystem_a_SOURCES += lib/filesystem/fstree/file_volume.c
 libfilesystem_a_CFLAGS = $(AM_CFLAGS)
 libfilesystem_a_CPPFLAGS = $(AM_CPPFLAGS)
 

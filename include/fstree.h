@@ -235,6 +235,15 @@ int fstree_file_write(fstree_t *fs, tree_node_t *n,
  */
 int fstree_file_truncate(fstree_t *fs, tree_node_t *n, uint64_t size);
 
+/*
+  Create an instance of a volume implementation that is itself based on
+  an fstree file. An arbitrary block size can be specified, which doesn't
+  have to be the same as the one of the underlying volume.
+ */
+volume_t *fstree_file_volume_create(fstree_t *fs, tree_node_t *n,
+				    uint32_t blocksize, uint64_t min_size,
+				    uint64_t max_size);
+
 #ifdef __cplusplus
 }
 #endif
