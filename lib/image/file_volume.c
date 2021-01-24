@@ -126,6 +126,8 @@ static int transfer_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst,
 				fvol->scratch, diff)) {
 			return -1;
 		}
+
+		processed += size;
 	}
 
 	return 0;
@@ -394,12 +396,14 @@ static int move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 	if (check_bounds(fvol, dst, dst_offset, size))
 		return -1;
 
-	if (read_retry(fvol->filename, fvol->fd, src,
+	if (read_retry(fvol->filename, fvol->fd,
+		       src * vol->blocksize + src_offset,
 		       fvol->scratch, size)) {
 		return -1;
 	}
 
-	return write_retry(fvol->filename, fvol->fd, dst,
+	return write_retry(fvol->filename, fvol->fd,
+			   dst * vol->blocksize + dst_offset,
 			   fvol->scratch, size);
 }
 
