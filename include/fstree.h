@@ -24,6 +24,10 @@ enum {
 	TREE_NODE_TYPE_COUNT
 };
 
+enum {
+	FSTREE_FLAG_NO_SPARSE = 0x01,
+};
+
 typedef struct file_sparse_holes_t {
 	struct file_sparse_holes_t *next;
 
@@ -100,6 +104,8 @@ typedef struct {
 
 	volume_t *volume;
 	uint64_t data_offset;
+
+	uint64_t flags;
 } fstree_t;
 
 #ifdef __cplusplus

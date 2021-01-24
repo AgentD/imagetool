@@ -99,7 +99,8 @@ int fstree_file_append(fstree_t *fs, tree_node_t *n,
 			if (append_to_tail(fs, n, tail_index, tail_size,
 					   data, diff))
 				return -1;
-		} else if (data == NULL || is_memory_zero(data, diff)) {
+		} else if (!(fs->flags & FSTREE_FLAG_NO_SPARSE) &&
+			   (data == NULL || is_memory_zero(data, diff))) {
 			if (fstree_file_mark_sparse(n, tail_index))
 				return -1;
 		} else {

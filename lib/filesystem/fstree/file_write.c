@@ -77,7 +77,8 @@ static int write_partial_block(fstree_t *fs, tree_node_t *n,
 	}
 
 	if (offset == 0 && size == fs->volume->blocksize) {
-		if (data == NULL || is_memory_zero(data, size)) {
+		if (!(fs->flags & FSTREE_FLAG_NO_SPARSE) &&
+		    (data == NULL || is_memory_zero(data, size))) {
 			start -= n->data.file.start_index;
 			if (fstree_file_move_to_end(fs, n))
 				return -1;
@@ -89,7 +90,8 @@ static int write_partial_block(fstree_t *fs, tree_node_t *n,
 		return fs->volume->write_block(fs->volume, start, data);
 	}
 
-	if (offset == 0 &&
+	if (!(fs->flags & FSTREE_FLAG_NO_SPARSE) &&
+	    offset == 0 &&
 	    index == (n->data.file.size / fs->volume->blocksize) &&
 	    size == (n->data.file.size % fs->volume->blocksize) &&
 	    (data == NULL || is_memory_zero(data, size))) {
