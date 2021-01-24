@@ -202,3 +202,5 @@ TESTS += test_tar_sparse_gnu test_tar_sparse_gnu0
 TESTS += test_tar_sparse_gnu1 test_tar_sparse_gnu2 test_tar_sparse_gnu3
 TESTS += test_tar_xattr_bsd test_tar_xattr_schily
 TESTS += test_tar_xattr_schily_bin test_tar_target_filled
+
+EXTRA_DIST += tests/libtar/data
