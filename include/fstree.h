@@ -163,6 +163,8 @@ int fstree_file_append(fstree_t *fs, tree_node_t *n,
 int fstree_file_write(fstree_t *fs, tree_node_t *n,
 		      uint64_t offset, const void *data, size_t size);
 
+int fstree_file_truncate(fstree_t *fs, tree_node_t *n, uint64_t size);
+
 #ifdef __cplusplus
 }
 #endif
