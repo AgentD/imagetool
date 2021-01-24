@@ -19,4 +19,10 @@ libfilesystem_a_SOURCES += lib/filesystem/fstree/file_truncate.c
 libfilesystem_a_CFLAGS = $(AM_CFLAGS)
 libfilesystem_a_CPPFLAGS = $(AM_CPPFLAGS)
 
+libfilesystem_a_SOURCES += lib/filesystem/tarfs/tarfs.h
+libfilesystem_a_SOURCES += lib/filesystem/tarfs/tarfs.c
+libfilesystem_a_SOURCES += lib/filesystem/tarfs/write_tree_dfs.c
+libfilesystem_a_SOURCES += lib/filesystem/tarfs/write_file_hdr.c
+libfilesystem_a_SOURCES += lib/filesystem/tarfs/write_hard_link.c
+
 noinst_LIBRARIES += libfilesystem.a
