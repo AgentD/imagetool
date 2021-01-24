@@ -1,4 +1,5 @@
 libfilesystem_a_SOURCES = include/predef.h include/fstree.h
+libfilesystem_a_SOURCES += include/filesystem.h
 libfilesystem_a_SOURCES += lib/filesystem/fstree/fstree.c
 libfilesystem_a_SOURCES += lib/filesystem/fstree/get_path.c
 libfilesystem_a_SOURCES += lib/filesystem/fstree/mknode.c
