@@ -1,55 +1,57 @@
-test_fstree_SOURCES = tests/libfilesystem/fstree.c tests/test.h
+test_fstree_SOURCES = tests/libfilesystem/fstree/fstree.c tests/test.h
 test_fstree_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_canonicalize_path_SOURCES = tests/libfilesystem/canonicalize_path.c
+test_canonicalize_path_SOURCES = tests/libfilesystem/fstree/canonicalize_path.c
 test_canonicalize_path_SOURCES += tests/test.h
 test_canonicalize_path_LDADD = libfilesystem.a
 
-test_mknode_SOURCES = tests/libfilesystem/mknode.c tests/test.h
+test_mknode_SOURCES = tests/libfilesystem/fstree/mknode.c tests/test.h
 test_mknode_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_node_from_path_SOURCES = tests/libfilesystem/node_from_path.c tests/test.h
+test_node_from_path_SOURCES = tests/libfilesystem/fstree/node_from_path.c
+test_node_from_path_SOURCES += tests/test.h
 test_node_from_path_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_get_path_SOURCES = tests/libfilesystem/get_path.c tests/test.h
+test_get_path_SOURCES = tests/libfilesystem/fstree/get_path.c tests/test.h
 test_get_path_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_resolve_hard_links_SOURCES = tests/libfilesystem/resolve_hard_links.c
+test_resolve_hard_links_SOURCES = \
+	tests/libfilesystem/fstree/resolve_hard_links.c
 test_resolve_hard_links_SOURCES += tests/test.h
 test_resolve_hard_links_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_fstree_sort_SOURCES = tests/libfilesystem/fstree_sort.c tests/test.h
+test_fstree_sort_SOURCES = tests/libfilesystem/fstree/fstree_sort.c tests/test.h
 test_fstree_sort_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_gen_inode_table_SOURCES = tests/libfilesystem/gen_inode_table.c
+test_gen_inode_table_SOURCES = tests/libfilesystem/fstree/gen_inode_table.c
 test_gen_inode_table_SOURCES += tests/test.h
 test_gen_inode_table_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_file_read_SOURCES = tests/libfilesystem/file_read.c
+test_file_read_SOURCES = tests/libfilesystem/fstree/file_read.c
 test_file_read_SOURCES += tests/test.h
 test_file_read_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_file_accounting_SOURCES = tests/libfilesystem/file_accounting.c
+test_file_accounting_SOURCES = tests/libfilesystem/fstree/file_accounting.c
 test_file_accounting_SOURCES += tests/test.h
 test_file_accounting_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_file_mark_sparse_SOURCES = tests/libfilesystem/file_mark_sparse.c
+test_file_mark_sparse_SOURCES = tests/libfilesystem/fstree/file_mark_sparse.c
 test_file_mark_sparse_SOURCES += tests/test.h
 test_file_mark_sparse_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_file_move_to_end_SOURCES = tests/libfilesystem/file_move_to_end.c
+test_file_move_to_end_SOURCES = tests/libfilesystem/fstree/file_move_to_end.c
 test_file_move_to_end_SOURCES += tests/test.h
 test_file_move_to_end_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_file_append_SOURCES = tests/libfilesystem/file_append.c
+test_file_append_SOURCES = tests/libfilesystem/fstree/file_append.c
 test_file_append_SOURCES += tests/test.h
 test_file_append_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_file_write_SOURCES = tests/libfilesystem/file_write.c
+test_file_write_SOURCES = tests/libfilesystem/fstree/file_write.c
 test_file_write_SOURCES += tests/test.h
 test_file_write_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_file_truncate_SOURCES = tests/libfilesystem/file_truncate.c
+test_file_truncate_SOURCES = tests/libfilesystem/fstree/file_truncate.c
 test_file_truncate_SOURCES += tests/test.h
 test_file_truncate_LDADD = libfilesystem.a libimage.a libutil.a
 
