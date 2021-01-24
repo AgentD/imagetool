@@ -29,6 +29,19 @@ typedef struct ostream_t {
 } ostream_t;
 
 /**
+ * @struct null_ostream_t
+ *
+ * @extends ostream_t
+ *
+ * @brief An ostream that discards all data and counts the bytes written.
+ */
+typedef struct {
+	ostream_t base;
+
+	uint64_t bytes_written;
+} null_ostream_t;
+
+/**
  * @struct istream_t
  *
  * @extends object_t
@@ -380,6 +393,18 @@ const char *fstream_compressor_name_from_id(int id);
  * @return True if the compressor is supported, false if not.
  */
 bool fstream_compressor_exists(int id);
+
+/**
+ * @brief Create a dummy sink stream that discards all data.
+ *
+ * @memberof null_ostream_t
+ *
+ * This is mainly usefull to figure out how many bytes would have been
+ * written, but making sure they don't go anywhere.
+ *
+ * @return A null-stream instance on success, NULL on failure.
+ */
+null_ostream_t *null_ostream_create(void);
 
 #ifdef __cplusplus
 }
