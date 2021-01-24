@@ -118,16 +118,53 @@ struct volume_t {
 extern "C" {
 #endif
 
+/*
+  Creates a volume that wrapps a Unix file descriptor. The filename is copied
+  internally and used to print error messages. The blocksize is derived from
+  the file descriptor using stat(2).
+ */
 volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size);
 
+/*
+  Creates a volume that internally wrapps another volume and emulates having
+  a different blocksize. It can also be set to start at an arbitrary byte
+  offset from the beginning of the original volume. Maximum size is derived
+  from the wrapped volume.
+ */
 volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 					  uint32_t offset);
 
+/*
+  Helper function that allows reading arbitrary byte sized chunks of data at
+  arbitrary byte offsets from a volume. It internally calls read_partial_block
+  and read_block on the volume to paste the data together.
+
+  Returns 0 on success.
+ */
 int volume_read(volume_t *vol, uint64_t offset, void *data, size_t size);
 
+/*
+  Helper function that allows writing arbitrary byte sized buffers at
+  arbitrary byte offsets in a volume. It internally calls write_partial_block
+  and write_block on the volume to write the data.
+
+  If data is NULL, it zero-fills from the specified region and optionally
+  calls discard_blocks if applicable.
+
+  The function also auto-detects zero blocks being and uses discard instead.
+
+  Returns 0 on success.
+ */
 int volume_write(volume_t *vol, uint64_t offset, const void *data,
 		 size_t size);
 
+/*
+  Helper function that implements memmove for volumes. It supports arbitrary
+  byte offsets & sizes and internally uses move_block and move_block_partial
+  to shuffle the data around.
+
+  Returns 0 on success.
+ */
 int volume_memmove(volume_t *vol, uint64_t dst, uint64_t src, uint64_t size);
 
 #ifdef __cplusplus

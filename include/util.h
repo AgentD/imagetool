@@ -14,6 +14,9 @@
 extern "C" {
 #endif
 
+/*
+  Returns true if the given region of memory is filled with zero-bytes only.
+ */
 bool is_memory_zero(const void *blob, size_t size);
 
 #ifdef __cplusplus

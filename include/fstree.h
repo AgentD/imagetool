@@ -144,25 +144,89 @@ int fstree_resolve_hard_links(fstree_t *fs);
 
 int fstree_create_inode_table(fstree_t *fs);
 
+/*
+  Returns the total number of sparse bytes a file has. This can be less than
+  the sum of all sparse blocks times the block size, since the last sparse
+  region could actually be a tail end only.
+ */
 uint64_t fstree_file_sparse_bytes(const fstree_t *fs, const tree_node_t *n);
 
+/*
+  Returns the total number of bytes a file has stored on a volume. This is
+  basically the files size minus the number of sparse bytes.
+ */
 uint64_t fstree_file_physical_size(const fstree_t *fs, const tree_node_t *n);
 
+/*
+  Mark a block as sparse. The given block index is relative to the beginning
+  of the file.
+
+  No actual data is changed, only the sparse file accounting of
+  the file itself.
+
+  Returns zero on success.
+ */
 int fstree_file_mark_sparse(tree_node_t *n, uint64_t index);
 
+/*
+  Mark a block as not being sparse. The given block index is relative to the
+  beginning of the file.
+
+  No actual data is changed, only the sparse file accounting of
+  the file itself.
+
+  Returns zero on success.
+ */
 int fstree_file_mark_not_sparse(tree_node_t *n, uint64_t index);
 
+/*
+  Read back data from a file at an arbitrary byte offset. Any read
+  beyond the end of a file returns zero bytes.
+
+  Returns zero on success.
+ */
 int fstree_file_read(fstree_t *fs, tree_node_t *n,
 		     uint64_t offset, void *data, size_t size);
 
+/*
+  Move the on-disk data of a file to the end of the used region on the
+  onderlying volume.
+
+  Returns zero on success.
+ */
 int fstree_file_move_to_end(fstree_t *fs, tree_node_t *n);
 
+/*
+  Append a chunk of data to a file. The given pointer can be NULL to append a
+  bunch of zero bytes. Sparse blocks are detected internally and the file
+  accounting is updated accordingly.
+
+  Returns zero on success.
+ */
 int fstree_file_append(fstree_t *fs, tree_node_t *n,
 		       const void *data, size_t size);
 
+/*
+  Write a chunk of data at an arbitary byte offset in a file. Writing past
+  the end-of-file causes data to be appended to the file. If writing starts
+  after the end, the region in between is filled with (possibly sparse)
+  zero-bytes.
+
+  Internally takes care of breaking up sparse regions if writing into one, or
+  detecting sparse block writes and updating the file accounting accordingly.
+
+  Returns zero on success.
+ */
 int fstree_file_write(fstree_t *fs, tree_node_t *n,
 		      uint64_t offset, const void *data, size_t size);
 
+/*
+  Make sure a file has the exact specified size. If data is cut off, the files
+  that come after it are moved up. If the size is greater than the current file
+  size, the file is expanded and padded with zero-bytes (if possible sparse).
+
+  Returns zero on success.
+ */
 int fstree_file_truncate(fstree_t *fs, tree_node_t *n, uint64_t size);
 
 #ifdef __cplusplus
