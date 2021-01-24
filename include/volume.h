@@ -167,6 +167,14 @@ int volume_write(volume_t *vol, uint64_t offset, const void *data,
  */
 int volume_memmove(volume_t *vol, uint64_t dst, uint64_t src, uint64_t size);
 
+/*
+  Create an ostream_t instance that writes to a specific region of an
+  underlying volume. The given offset and size are in bytes, the name
+  is copied internally and used for error reporting.
+ */
+ostream_t *volume_ostream_create(volume_t *vol, const char *name,
+				 uint64_t offset, uint64_t max_size);
+
 #ifdef __cplusplus
 }
 #endif

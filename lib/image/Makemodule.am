@@ -1,6 +1,7 @@
 libimage_a_SOURCES = lib/image/file_volume.c lib/image/volume_memmove.c
 libimage_a_SOURCES += lib/image/blocksize_adapter.c
 libimage_a_SOURCES += lib/image/volume_read.c lib/image/volume_write.c
+libimage_a_SOURCES += lib/image/volume_ostream.c
 libimage_a_SOURCES += include/volume.h include/predef.h
 libimage_a_CFLAGS = $(AM_CFLAGS)
 libimage_a_CPPFLAGS = $(AM_CPPFLAGS)
