@@ -202,6 +202,7 @@ int main(void)
 
 	TEST_STR_EQUAL(dummy_buffer, "X___AAAABBBBCCXXYYYYZZA_EEEEFFFFBB__");
 	TEST_EQUAL_UI(used, 9);
+	TEST_EQUAL_UI(fs->data_offset, used);
 
 	TEST_EQUAL_UI(f0->data.file.size, 19);
 	TEST_EQUAL_UI(f0->data.file.start_index, 1);
@@ -231,6 +232,7 @@ int main(void)
 
 	TEST_STR_EQUAL(dummy_buffer, "AAAABBBBCCXXYYYYZZA_EEEEFFFFBB__FGGGG");
 	TEST_EQUAL_UI(used, 10);
+	TEST_EQUAL_UI(fs->data_offset, used);
 
 	TEST_EQUAL_UI(f0->data.file.size, 19);
 	TEST_EQUAL_UI(f0->data.file.start_index, 0);
@@ -260,6 +262,7 @@ int main(void)
 
 	TEST_STR_EQUAL(dummy_buffer, "AAAABBBBCCXXYYYYZZA_EEEEFFFFBB__FGGGG");
 	TEST_EQUAL_UI(used, 10);
+	TEST_EQUAL_UI(fs->data_offset, used);
 
 	TEST_EQUAL_UI(f0->data.file.size, 19);
 	TEST_EQUAL_UI(f0->data.file.start_index, 0);
@@ -288,6 +291,7 @@ int main(void)
 	TEST_EQUAL_I(ret, 0);
 
 	TEST_EQUAL_UI(used, 11);
+	TEST_EQUAL_UI(fs->data_offset, used);
 	ret = memcmp(dummy_buffer,
 		     "AAAABBBBCCXXYYYYZZA_FGGGG\0\0\0\0\0XXEEEEFFFFBB__",
 		     used * BLK_SIZE);
@@ -320,6 +324,7 @@ int main(void)
 	TEST_EQUAL_I(ret, 0);
 
 	TEST_EQUAL_UI(used, 12);
+	TEST_EQUAL_UI(fs->data_offset, used);
 	ret = memcmp(dummy_buffer,
 		     "AAAABBBBCCXXYYYYZZA_FGGGG\0\0\0\0\0XXEEEEFFFFBB__FFF\0",
 		     used * BLK_SIZE);
@@ -334,6 +339,75 @@ int main(void)
 	TEST_EQUAL_UI(f3->data.file.size, 3);
 	TEST_EQUAL_UI(f3->data.file.start_index, 11);
 
+	TEST_NOT_NULL(f1->data.file.sparse);
+	TEST_EQUAL_UI(f1->data.file.sparse->index, 1);
+	TEST_EQUAL_UI(f1->data.file.sparse->count, 1);
+	TEST_NOT_NULL(f1->data.file.sparse->next);
+	TEST_EQUAL_UI(f1->data.file.sparse->next->index, 3);
+	TEST_EQUAL_UI(f1->data.file.sparse->next->count, 1);
+	TEST_NULL(f1->data.file.sparse->next->next);
+	TEST_NULL(f3->data.file.sparse);
+
+	/* write zero bytes to carve out sparse area */
+	ret = fstree_file_write(fs, f0, 2, "\0\0\0\0\0\0\0\0", 8);
+	TEST_EQUAL_I(ret, 0);
+
+	TEST_EQUAL_UI(used, 11);
+	TEST_EQUAL_UI(fs->data_offset, used);
+	ret = memcmp(dummy_buffer,
+		     "FGGGG\0\0\0\0\0XXEEEEFFFFBB__FFF\0AA\0\0\0\0XXYYYYZZA_",
+		     used * BLK_SIZE);
+	TEST_EQUAL_I(ret, 0);
+
+	TEST_EQUAL_UI(f0->data.file.size, 19);
+	TEST_EQUAL_UI(f0->data.file.start_index, 7);
+	TEST_EQUAL_UI(f1->data.file.size, 22);
+	TEST_EQUAL_UI(f1->data.file.start_index, 2);
+	TEST_EQUAL_UI(f2->data.file.size, 5);
+	TEST_EQUAL_UI(f2->data.file.start_index, 0);
+	TEST_EQUAL_UI(f3->data.file.size, 3);
+	TEST_EQUAL_UI(f3->data.file.start_index, 6);
+
+	TEST_NOT_NULL(f0->data.file.sparse);
+	TEST_EQUAL_UI(f0->data.file.sparse->index, 1);
+	TEST_EQUAL_UI(f0->data.file.sparse->count, 1);
+	TEST_NULL(f0->data.file.sparse->next);
+	TEST_NOT_NULL(f1->data.file.sparse);
+	TEST_EQUAL_UI(f1->data.file.sparse->index, 1);
+	TEST_EQUAL_UI(f1->data.file.sparse->count, 1);
+	TEST_NOT_NULL(f1->data.file.sparse->next);
+	TEST_EQUAL_UI(f1->data.file.sparse->next->index, 3);
+	TEST_EQUAL_UI(f1->data.file.sparse->next->count, 1);
+	TEST_NULL(f1->data.file.sparse->next->next);
+	TEST_NULL(f3->data.file.sparse);
+
+	/* cut off a tail end with sparse data */
+	ret = fstree_file_write(fs, f0, 16, "\0\0\0", 3);
+	TEST_EQUAL_I(ret, 0);
+
+	TEST_EQUAL_UI(used, 10);
+	TEST_EQUAL_UI(fs->data_offset, used);
+	ret = memcmp(dummy_buffer,
+		     "FGGGG\0\0\0\0\0XXEEEEFFFFBB__FFF\0AA\0\0\0\0XXYYYY",
+		     used * BLK_SIZE);
+	TEST_EQUAL_I(ret, 0);
+
+	TEST_EQUAL_UI(f0->data.file.size, 19);
+	TEST_EQUAL_UI(f0->data.file.start_index, 7);
+	TEST_EQUAL_UI(f1->data.file.size, 22);
+	TEST_EQUAL_UI(f1->data.file.start_index, 2);
+	TEST_EQUAL_UI(f2->data.file.size, 5);
+	TEST_EQUAL_UI(f2->data.file.start_index, 0);
+	TEST_EQUAL_UI(f3->data.file.size, 3);
+	TEST_EQUAL_UI(f3->data.file.start_index, 6);
+
+	TEST_NOT_NULL(f0->data.file.sparse);
+	TEST_EQUAL_UI(f0->data.file.sparse->index, 1);
+	TEST_EQUAL_UI(f0->data.file.sparse->count, 1);
+	TEST_NOT_NULL(f0->data.file.sparse->next);
+	TEST_EQUAL_UI(f0->data.file.sparse->next->index, 4);
+	TEST_EQUAL_UI(f0->data.file.sparse->next->count, 1);
+	TEST_NULL(f0->data.file.sparse->next->next);
 	TEST_NOT_NULL(f1->data.file.sparse);
 	TEST_EQUAL_UI(f1->data.file.sparse->index, 1);
 	TEST_EQUAL_UI(f1->data.file.sparse->count, 1);

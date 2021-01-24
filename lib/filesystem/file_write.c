@@ -28,6 +28,24 @@ static int insert_sparse_block(fstree_t *fs, tree_node_t *n,
 	return fs->volume->discard_blocks(fs->volume, real_index, 1);
 }
 
+static int remove_file_block(fstree_t *fs, tree_node_t *n,
+			     uint64_t real_index, uint64_t index)
+{
+	uint64_t dst = real_index * fs->volume->blocksize;
+	uint64_t src = dst + fs->volume->blocksize;
+	uint64_t size = fs->data_offset - real_index - 1;
+
+	if (volume_memmove(fs->volume, dst, src, size * fs->volume->blocksize))
+		return -1;
+
+	fs->data_offset -= 1;
+
+	if (fstree_file_mark_sparse(n, index))
+		return -1;
+
+	return fs->volume->discard_blocks(fs->volume, fs->data_offset, 1);
+}
+
 static int write_partial_block(fstree_t *fs, tree_node_t *n,
 			       uint64_t index, const void *data,
 			       uint32_t offset, uint32_t size)
@@ -58,8 +76,30 @@ static int write_partial_block(fstree_t *fs, tree_node_t *n,
 			start -= it->count;
 	}
 
-	if (offset == 0 && size == fs->volume->blocksize)
+	if (offset == 0 && size == fs->volume->blocksize) {
+		if (data == NULL || is_memory_zero(data, size)) {
+			start -= n->data.file.start_index;
+			if (fstree_file_move_to_end(fs, n))
+				return -1;
+			start += n->data.file.start_index;
+
+			return remove_file_block(fs, n, start, index);
+		}
+
 		return fs->volume->write_block(fs->volume, start, data);
+	}
+
+	if (offset == 0 &&
+	    index == (n->data.file.size / fs->volume->blocksize) &&
+	    size == (n->data.file.size % fs->volume->blocksize) &&
+	    (data == NULL || is_memory_zero(data, size))) {
+		start -= n->data.file.start_index;
+		if (fstree_file_move_to_end(fs, n))
+			return -1;
+		start += n->data.file.start_index;
+
+		return remove_file_block(fs, n, start, index);
+	}
 
 	return fs->volume->write_partial_block(fs->volume, start, data,
 					       offset, size);
