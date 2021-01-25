@@ -34,129 +34,85 @@ and some `dd` magic to make it work with partitions. If the tools you use can
 only pack files from a directory, you may need to unpack the tarball and do
 some fakeroot magic.
 
-Imagine, instead, you could simply describe the partition layout in a
+Imagine, instead, you could simply describe everything you want in a simple
 configuration file as follows:
 
-	{
-		"type": "msdos",
-		"align": "1M",
+	mbrdisk {
+		type msdos
+		align 1M
 
-		"partitions": [
-			{
-				"type": "primary",
-				"boot": true,
+		partition {
+			type primary
+			boot true
 
-				"filesystem": {
-					"type": "fat32",
-					"name": "bootvolume",
-
-					"volumefiles": [
-						{
-							"path": "initrd.xz",
-
-							"filesystem": {
-								"type": "initrd",
-								"name": "kernelinitrd",
-
-								"compression": "xz"
-							}
-						}, {
-							"path": "rootfs.sqfs",
-
-							"filesystem": {
-								"type": "squashfs",
-								"name": "rootfs"
-							}
-						}
-					]
-				}
-			}, {
-				"type": "primary",
-
-				"filesystem": {
-					"type": "ext4",
-					"name": "homedirs"
-				}
-			}
-		]
-	}
-
-We have an dos style partition table with 2 partitions, a FAT32 one and an ext4
-one. Note that the FAT32 partition has a list of `volumefiles`, which is
-basically a way to create special files that can then function in the same way
-as a partition, with a nested filesystem on their own.
-
-Each filesystem has a name attached that we use in a seperate  configuration
-file to populate the filesystems:
-
-	{
-		"type": "mountgroup",
-		"name": "main",
-
-		"mountpoints": [
-			{ "vdir": "/", "target": "rootfs" },
-			{ "vdir": "/home", "target": "homedirs" },
-			{ "vdir": "/boot", "target": "bootvolume" }
-		],
-
-		"datasource": [
-			{
-				"type": "tar",
-				"path": "rootfs.tar.gz"
-			}
-		]
-	}, {
-		"type": "mountgroup",
-		"name": "initrd",
-
-		"mountpoints": [
-			{ "vdir": "/", "target": "kernelinitrd" }
-		],
-
-		"datasource": [
-			{
-				"type": "listing",
-				"filesource": "."
-
-				"listing": [
-					"dir dev 0755 0 0",
-					"dir lib 0755 0 0",
-					"dir bin 0755 0 0",
-					"dir sys 0755 0 0",
-					"dir proc 0755 0 0",
-					"dir newroot 0755 0 0",
-					"dir images 0755 0 0",
-					"slink sbin 0777 0 0 bin",
-					"nod dev/console 600 0 0 c 5 1",
-					"file init 0755 0 0 initrd.sh"
-				]
-			}, {
-				"type": "filter",
-
-				"filterInclude": [
-					"bin/busybox",
-					"lib/ld*.so*",
-					"lib/libc*.so*"
-				],
-
-				"datasource": [
-					{
-						"type": "tar",
-						"path": "rootfs.tar.gz"
+			fat32 "bootvolume" {
+				volumefile "/initrd.xz" {
+					cpio "kernelinitrd" {
+						compression "xz"
 					}
-				]
+				}
+
+				volumefile "/rootfs.sqfs" {
+					squashfs "rootfs"
+				}
 			}
-		]
+		}
+
+		partition {
+			type primary
+
+			ext4 "homedirs"
+		}
 	}
 
-This file completely describes how to split the contents of the tarball up into
-the different filesystems on different partitions. For the initrd, a listing
-similar to `geninitramfs` is used, in combination with a filter that splits out
-busybox and friends from the rootfs tarball.
+	mountgroup {
+		bind "/:rootfs"
+		bind "/home:homedirs"
+		bind "/boot:bootvolume"
+
+		tarunpack "rootfs.tar.gz"
+	}
+
+	mountgroup {
+		bind "/:kernelinitrd"
+
+		filelist "./" {
+			dir dev 0755 0 0
+			dir lib 0755 0 0
+			dir bin 0755 0 0
+			dir sys 0755 0 0
+			dir proc 0755 0 0
+			dir newroot 0755 0 0
+			dir images 0755 0 0
+			slink sbin 0777 0 0 bin
+			nod dev/console 600 0 0 c 5 1
+			file init 0755 0 0 initrd.sh
+		}
+
+		filter {
+			allow "bin/busybox"
+			allow "lib/ld*.so*"
+			allow "lib/libc*.so*"
+
+			tarunpack "rootfs.tar.gz"
+		}
+	}
+
+We have an DOS style partition table with 2 partitions, one is FAT32 formated,
+the other one ext4 formated. The FAT32 partition has a list of `volumefiles`,
+which is basically a way to create special files that can then function in the
+same way as a partition, with a nested filesystem on their own.
+
+Each filesystem has a name attached that we then use to populate the
+filesystems. Each "mountgroup" specifies a list of named filesystems that data
+is directed to. A tarball is unpacked "into" the mountgroup, splitting up its
+contents across the different filesystems on different partitions. For the
+initrd, a listing similar to `geninitramfs` is used, in combination with a
+filter that splits out busybox and friends from the rootfs tarball.
 
 Finally, a single program is run to generate the image from the description:
 
-	$ mkimage -l layout.json -p data.json -O sdcard.img
+	$ mkimage -c layout.cfg -O sdcard.img
 
 
 ## Plans

@@ -1,0 +1,44 @@
+test_gcfg_dec_num_SOURCES = tests/libgcfg/dec_num.c tests/libgcfg/dummy_file.c
+test_gcfg_dec_num_SOURCES += tests/libgcfg/test.h
+test_gcfg_dec_num_LDADD = libgcfg.a
+
+test_gcfg_xdigit_SOURCES = tests/libgcfg/xdigit.c tests/libgcfg/test.h
+test_gcfg_xdigit_LDADD = libgcfg.a
+
+test_gcfg_parse_number_SOURCES = tests/libgcfg/parse_number.c
+test_gcfg_parse_number_SOURCES += tests/libgcfg/dummy_file.c
+test_gcfg_parse_number_SOURCES += tests/libgcfg/test.h
+test_gcfg_parse_number_LDADD = libgcfg.a
+
+test_gcfg_parse_string_SOURCES = tests/libgcfg/parse_string.c
+test_gcfg_parse_string_SOURCES += tests/libgcfg/dummy_file.c
+test_gcfg_parse_string_SOURCES += tests/libgcfg/test.h
+test_gcfg_parse_string_LDADD = libgcfg.a
+
+test_gcfg_parse_boolean_SOURCES = tests/libgcfg/parse_boolean.c
+test_gcfg_parse_boolean_SOURCES += tests/libgcfg/dummy_file.c
+test_gcfg_parse_boolean_SOURCES += tests/libgcfg/test.h
+test_gcfg_parse_boolean_LDADD = libgcfg.a
+
+test_gcfg_parse_size_SOURCES = tests/libgcfg/parse_size.c
+test_gcfg_parse_size_SOURCES += tests/libgcfg/dummy_file.c
+test_gcfg_parse_size_SOURCES += tests/libgcfg/test.h
+test_gcfg_parse_size_LDADD = libgcfg.a
+
+test_gcfg_is_valid_utf8_SOURCES = tests/libgcfg/is_valid_utf8.c
+test_gcfg_is_valid_utf8_SOURCES += tests/libgcfg/test.h
+test_gcfg_is_valid_utf8_LDADD = libgcfg.a
+
+test_gcfg_parse_vector_SOURCES = tests/libgcfg/parse_vector.c
+test_gcfg_parse_vector_SOURCES += tests/libgcfg/dummy_file.c
+test_gcfg_parse_vector_SOURCES += tests/libgcfg/test.h
+test_gcfg_parse_vector_LDADD = libgcfg.a
+
+check_PROGRAMS += test_gcfg_dec_num test_gcfg_xdigit test_gcfg_is_valid_utf8
+check_PROGRAMS += test_gcfg_parse_number test_gcfg_parse_string
+check_PROGRAMS += test_gcfg_parse_boolean test_gcfg_parse_size
+check_PROGRAMS += test_gcfg_parse_vector
+
+TESTS += test_gcfg_dec_num test_gcfg_xdigit test_gcfg_is_valid_utf8
+TESTS += test_gcfg_parse_number test_gcfg_parse_string test_gcfg_parse_boolean
+TESTS += test_gcfg_parse_size test_gcfg_parse_vector

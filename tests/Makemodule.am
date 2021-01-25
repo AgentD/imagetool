@@ -3,3 +3,5 @@ include tests/libfstream/Makemodule.am
 include tests/libtar/Makemodule.am
 include tests/libimage/Makemodule.am
 include tests/libfilesystem/Makemodule.am
+include tests/libgcfg/Makemodule.am
+

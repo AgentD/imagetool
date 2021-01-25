@@ -19,5 +19,6 @@ include lib/tar/Makemodule.am
 include lib/util/Makemodule.am
 include lib/image/Makemodule.am
 include lib/filesystem/Makemodule.am
+include lib/gcfg/Makemodule.am
 include bin/imagebuild/Makemodule.am
 include tests/Makemodule.am
