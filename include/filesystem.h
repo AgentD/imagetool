@@ -31,27 +31,11 @@ typedef struct filesystem_t {
 	int (*build_format)(struct filesystem_t *fs);
 } filesystem_t;
 
-typedef struct filesystem_factory_t {
-	object_t base;
-
-	/*
-	  The name of this particular filesystem (e.g. "FAT32" or "SquashFS").
-	 */
-	const char *name;
-
-	/*
-	  Create an instance of a filesystem. The given volume is used to store
-	  data. Be aware that the filesystem may choose to create an internal
-	  wrapper volume on top of this one.
-	 */
-	filesystem_t *(*create_instance)(volume_t *volume);
-} filesystem_factory_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-filesystem_factory_t *filesystem_factory_tar_create(void);
+filesystem_t *filesystem_tar_create(volume_t *volume);
 
 #ifdef __cplusplus
 }

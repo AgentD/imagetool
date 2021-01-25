@@ -136,8 +136,6 @@ static int estimate_tree_size(filesystem_t *fs, uint64_t *size)
 	return 0;
 }
 
-/****************************************************************************/
-
 static int tarfs_build_format(filesystem_t *fs)
 {
 	ostream_t *vstrm = NULL;
@@ -201,9 +199,7 @@ static void tarfs_destroy(object_t *base)
 	free(fs);
 }
 
-/****************************************************************************/
-
-static filesystem_t *tarfs_create_instance(volume_t *volume)
+filesystem_t *filesystem_tar_create(volume_t *volume)
 {
 	filesystem_t *fs = calloc(1, sizeof(*fs));
 	volume_t *wrapper;
@@ -241,25 +237,4 @@ fail_wrapper:
 fail_free:
 	free(fs);
 	return NULL;
-}
-
-static void tarfs_factory_destroy(object_t *obj)
-{
-	free(obj);
-}
-
-filesystem_factory_t *filesystem_factory_tar_create(void)
-{
-	filesystem_factory_t *factory = calloc(1, sizeof(*factory));
-
-	if (factory == NULL) {
-		perror("creating tar filesystem factory");
-		return NULL;
-	}
-
-	((object_t *)factory)->refcount = 1;
-	((object_t *)factory)->destroy = tarfs_factory_destroy;
-	factory->name = "tar";
-	factory->create_instance = tarfs_create_instance;
-	return factory;
 }

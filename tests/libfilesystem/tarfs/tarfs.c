@@ -68,7 +68,6 @@ static int compare_results(int afd, int bfd)
 
 int main(void)
 {
-	filesystem_factory_t *factory;
 	int fd, reffd, ret;
 	filesystem_t *fs;
 	tree_node_t *n;
@@ -82,14 +81,8 @@ int main(void)
 	TEST_NOT_NULL(vol);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 1);
 
-	/* crate the tarfs factory */
-	factory = filesystem_factory_tar_create();
-	TEST_NOT_NULL(factory);
-	TEST_STR_EQUAL(factory->name, "tar");
-	TEST_EQUAL_UI(((object_t *)factory)->refcount, 1);
-
 	/* create the actual tar filesystem */
-	fs = factory->create_instance(vol);
+	fs = filesystem_tar_create(vol);
 	TEST_NOT_NULL(fs);
 	TEST_EQUAL_UI(((object_t *)fs)->refcount, 1);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 2);
@@ -166,6 +159,5 @@ int main(void)
 
 	/* complete cleanup */
 	object_drop(vol);
-	object_drop(factory);
 	return EXIT_SUCCESS;
 }
