@@ -1,0 +1,6 @@
+libimgtool_a_SOURCES = include/fsdeptracker.h
+libimgtool_a_SOURCES += lib/imgtool/fsdeptracker.c
+libimgtool_a_CFLAGS = $(AM_CFLAGS)
+libimgtool_a_CPPFLAGS = $(AM_CPPFLAGS)
+
+noinst_LIBRARIES += libimgtool.a
