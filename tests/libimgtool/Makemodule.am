@@ -1,0 +1,9 @@
+test_filesource_dir_SOURCES = tests/libimgtool/filesource/directory.c
+test_filesource_dir_SOURCES += tests/test.h
+test_filesource_dir_LDADD = libimgtool.a libfstream.a libutil.a
+test_filesource_dir_CPPFLAGS = $(AM_CPPFLAGS)
+test_filesource_dir_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libtar/data
+
+check_PROGRAMS += test_filesource_dir
+
+TESTS += test_filesource_dir

@@ -4,4 +4,4 @@ include tests/libtar/Makemodule.am
 include tests/libimage/Makemodule.am
 include tests/libfilesystem/Makemodule.am
 include tests/libgcfg/Makemodule.am
-
+include tests/libimgtool/Makemodule.am
