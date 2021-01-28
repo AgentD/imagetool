@@ -16,8 +16,15 @@ test_filesource_tar2_LDADD += libfstream.a libutil.a
 test_filesource_tar2_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_tar2_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libtar/data/sparse-files/gnu.tar
 
+test_filesink_SOURCES = tests/libimgtool/filesink.c tests/test.h
+test_filesink_LDADD = libimgtool.a libfilesystem.a libimage.a
+test_filesink_LDADD += libfstream.a libutil.a
+test_filesink_CPPFLAGS = $(AM_CPPFLAGS)
+
 check_PROGRAMS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
+check_PROGRAMS += test_filesink
 
 TESTS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
+TESTS += test_filesink
 
 EXTRA_DIST += tests/libimgtool/filesource/tar1.tar
