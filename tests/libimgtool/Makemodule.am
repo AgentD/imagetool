@@ -4,6 +4,20 @@ test_filesource_dir_LDADD = libimgtool.a libfstream.a libutil.a
 test_filesource_dir_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_dir_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libtar/data
 
-check_PROGRAMS += test_filesource_dir
+test_filesource_tar1_SOURCES = tests/libimgtool/filesource/tar1.c tests/test.h
+test_filesource_tar1_LDADD = libimgtool.a libtar.a libfilesystem.a
+test_filesource_tar1_LDADD += libfstream.a libutil.a
+test_filesource_tar1_CPPFLAGS = $(AM_CPPFLAGS)
+test_filesource_tar1_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar1.tar
 
-TESTS += test_filesource_dir
+test_filesource_tar2_SOURCES = tests/libimgtool/filesource/tar2.c tests/test.h
+test_filesource_tar2_LDADD = libimgtool.a libtar.a libfilesystem.a
+test_filesource_tar2_LDADD += libfstream.a libutil.a
+test_filesource_tar2_CPPFLAGS = $(AM_CPPFLAGS)
+test_filesource_tar2_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libtar/data/sparse-files/gnu.tar
+
+check_PROGRAMS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
+
+TESTS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
+
+EXTRA_DIST += tests/libimgtool/filesource/tar1.tar

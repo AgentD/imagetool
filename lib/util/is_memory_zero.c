@@ -29,7 +29,7 @@ bool is_memory_zero(const void *blob, size_t size)
 	if (size < U64THRESHOLD)
 		return test_u8(blob, size);
 
-	diff = (intptr_t)blob % sizeof(uint64_t);
+	diff = (uintptr_t)blob % sizeof(uint64_t);
 
 	if (diff != 0) {
 		diff = sizeof(uint64_t) - diff;

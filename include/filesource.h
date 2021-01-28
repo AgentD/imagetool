@@ -50,6 +50,8 @@ extern "C" {
 
 file_source_t *file_source_directory_create(const char *path);
 
+file_source_t *file_source_tar_create(const char *path);
+
 #ifdef __cplusplus
 }
 #endif
