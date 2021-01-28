@@ -138,6 +138,20 @@ ostream_t *ostream_open_stdout(void);
 istream_t *istream_open_file(const char *path);
 
 /**
+ * @brief Create an input stream from an existing file decriptor.
+ *
+ * @memberof istream_t
+ *
+ * If the function succeeds, it takes over ownership of the file decriptor.
+ *
+ * @param path A path to the file to open or create.
+ * @param fd The file descriptor to read from.
+ *
+ * @return A pointer to an output stream on success, NULL on failure.
+ */
+istream_t *istream_open_fd(const char *path, int fd);
+
+/**
  * @brief Create an input stream that reads from standard input.
  *
  * @memberof istream_t

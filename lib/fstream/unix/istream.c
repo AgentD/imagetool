@@ -63,7 +63,7 @@ static void file_destroy(object_t *obj)
 	free(file);
 }
 
-istream_t *istream_open_file(const char *path)
+istream_t *istream_open_fd(const char *path, int fd)
 {
 	file_istream_t *file = calloc(1, sizeof(*file));
 	object_t *obj = (object_t *)file;
@@ -80,23 +80,36 @@ istream_t *istream_open_file(const char *path)
 		goto fail_free;
 	}
 
-	file->fd = open(path, O_RDONLY);
-	if (file->fd < 0) {
-		perror(path);
-		goto fail_path;
-	}
-
+	file->fd = fd;
 	strm->buffer = file->buffer;
 	strm->precache = file_precache;
 	strm->get_filename = file_get_filename;
 	obj->refcount = 1;
 	obj->destroy = file_destroy;
 	return strm;
-fail_path:
-	free(file->path);
 fail_free:
 	free(file);
 	return NULL;
+}
+
+istream_t *istream_open_file(const char *path)
+{
+	istream_t *out;
+	int fd;
+
+	fd = open(path, O_RDONLY);
+	if (fd < 0) {
+		perror(path);
+		return NULL;
+	}
+
+	out = istream_open_fd(path, fd);
+	if (out == NULL) {
+		close(fd);
+		return NULL;
+	}
+
+	return out;
 }
 
 istream_t *istream_open_stdin(void)
