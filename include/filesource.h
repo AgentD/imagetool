@@ -9,6 +9,7 @@
 
 #include "predef.h"
 #include "fstream.h"
+#include "gcfg.h"
 
 typedef enum {
 	FILE_SOURCE_DIR = 0,
@@ -44,6 +45,10 @@ typedef struct file_source_t {
 			       istream_t **stream_out);
 } file_source_t;
 
+
+typedef struct file_source_listing_t file_source_listing_t;
+
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -51,6 +56,12 @@ extern "C" {
 file_source_t *file_source_directory_create(const char *path);
 
 file_source_t *file_source_tar_create(const char *path);
+
+file_source_listing_t *file_source_listing_create(const char *sourcedir);
+
+int file_source_listing_add_line(file_source_listing_t *listing,
+				 const char *line,
+				 gcfg_file_t *file);
 
 #ifdef __cplusplus
 }

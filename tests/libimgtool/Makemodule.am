@@ -21,10 +21,17 @@ test_filesink_LDADD = libimgtool.a libfilesystem.a libimage.a
 test_filesink_LDADD += libfstream.a libutil.a
 test_filesink_CPPFLAGS = $(AM_CPPFLAGS)
 
+test_source_listing_SOURCES = tests/libimgtool/filesource/listing.c tests/test.h
+test_source_listing_LDADD = libimgtool.a libfilesystem.a libimage.a
+test_source_listing_LDADD += libfstream.a libutil.a
+test_source_listing_CPPFLAGS = $(AM_CPPFLAGS)
+test_source_listing_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/listing
+
 check_PROGRAMS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
-check_PROGRAMS += test_filesink
+check_PROGRAMS += test_source_listing test_filesink
 
 TESTS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
-TESTS += test_filesink
+TESTS += test_source_listing test_filesink
 
 EXTRA_DIST += tests/libimgtool/filesource/tar1.tar
+EXTRA_DIST += tests/libimgtool/filesource/listing
