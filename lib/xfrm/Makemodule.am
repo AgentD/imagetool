@@ -1,0 +1,26 @@
+libxfrm_a_SOURCES = include/xfrm.h include/predef.h
+libxfrm_a_CFLAGS = $(AM_CFLAGS)
+libxfrm_a_CFLAGS += $(ZSTD_CFLAGS)
+libxfrm_a_CPPFLAGS = $(AM_CPPFLAGS)
+
+if WITH_XZ
+libxfrm_a_SOURCES += lib/xfrm/xz.c
+libxfrm_a_CFLAGS += $(XZ_CFLAGS)
+endif
+
+if WITH_BZIP2
+libxfrm_a_SOURCES += lib/xfrm/bzip2.c
+libxfrm_a_CFLAGS += $(BZIP2_CFLAGS)
+endif
+
+if WITH_GZIP
+libxfrm_a_SOURCES += lib/xfrm/gzip.c
+libxfrm_a_CFLAGS += $(ZLIB_CFLAGS)
+endif
+
+if WITH_ZSTD
+libxfrm_a_SOURCES += lib/xfrm/zstd.c
+libxfrm_a_CFLAGS += $(ZLIB_CFLAGS)
+endif
+
+noinst_LIBRARIES += libxfrm.a

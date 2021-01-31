@@ -5,3 +5,4 @@ include tests/libimage/Makemodule.am
 include tests/libfilesystem/Makemodule.am
 include tests/libgcfg/Makemodule.am
 include tests/libimgtool/Makemodule.am
+include tests/libxfrm/Makemodule.am
