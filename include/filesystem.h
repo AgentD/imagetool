@@ -37,6 +37,8 @@ extern "C" {
 
 filesystem_t *filesystem_tar_create(volume_t *volume);
 
+filesystem_t *filesystem_cpio_create(volume_t *volume);
+
 #ifdef __cplusplus
 }
 #endif
