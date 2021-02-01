@@ -6,15 +6,53 @@ test_filesource_dir_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libtar/data
 
 test_filesource_tar1_SOURCES = tests/libimgtool/filesource/tar1.c tests/test.h
 test_filesource_tar1_LDADD = libimgtool.a libtar.a libfilesystem.a
-test_filesource_tar1_LDADD += libfstream.a libutil.a
+test_filesource_tar1_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
+test_filesource_tar1_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
 test_filesource_tar1_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_tar1_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar1.tar
 
 test_filesource_tar2_SOURCES = tests/libimgtool/filesource/tar2.c tests/test.h
 test_filesource_tar2_LDADD = libimgtool.a libtar.a libfilesystem.a
-test_filesource_tar2_LDADD += libfstream.a libutil.a
+test_filesource_tar2_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
+test_filesource_tar2_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
 test_filesource_tar2_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_tar2_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libtar/data/sparse-files/gnu.tar
+
+if WITH_GZIP
+test_filesource_tar3_SOURCES = tests/libimgtool/filesource/tar1.c tests/test.h
+test_filesource_tar3_LDADD = libimgtool.a libtar.a libfilesystem.a
+test_filesource_tar3_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
+test_filesource_tar3_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
+test_filesource_tar3_CPPFLAGS = $(AM_CPPFLAGS)
+test_filesource_tar3_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar3.tar.gz
+endif
+
+if WITH_XZ
+test_filesource_tar4_SOURCES = tests/libimgtool/filesource/tar1.c tests/test.h
+test_filesource_tar4_LDADD = libimgtool.a libtar.a libfilesystem.a
+test_filesource_tar4_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
+test_filesource_tar4_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
+test_filesource_tar4_CPPFLAGS = $(AM_CPPFLAGS)
+test_filesource_tar4_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar4.tar.xz
+endif
+
+if WITH_BZIP2
+test_filesource_tar5_SOURCES = tests/libimgtool/filesource/tar1.c tests/test.h
+test_filesource_tar5_LDADD = libimgtool.a libtar.a libfilesystem.a
+test_filesource_tar5_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
+test_filesource_tar5_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
+test_filesource_tar5_CPPFLAGS = $(AM_CPPFLAGS)
+test_filesource_tar5_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar5.tar.bz2
+endif
+
+if WITH_ZSTD
+test_filesource_tar6_SOURCES = tests/libimgtool/filesource/tar1.c tests/test.h
+test_filesource_tar6_LDADD = libimgtool.a libtar.a libfilesystem.a
+test_filesource_tar6_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
+test_filesource_tar6_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
+test_filesource_tar6_CPPFLAGS = $(AM_CPPFLAGS)
+test_filesource_tar6_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar6.tar.zst
+endif
 
 test_filesink_SOURCES = tests/libimgtool/filesink.c tests/test.h
 test_filesink_LDADD = libimgtool.a libfilesystem.a libimage.a
@@ -33,5 +71,29 @@ check_PROGRAMS += test_source_listing test_filesink
 TESTS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
 TESTS += test_source_listing test_filesink
 
+if WITH_GZIP
+check_PROGRAMS += test_filesource_tar3
+TESTS += test_filesource_tar3
+endif
+
+if WITH_XZ
+check_PROGRAMS += test_filesource_tar4
+TESTS += test_filesource_tar4
+endif
+
+if WITH_BZIP2
+check_PROGRAMS += test_filesource_tar5
+TESTS += test_filesource_tar5
+endif
+
+if WITH_ZSTD
+check_PROGRAMS += test_filesource_tar6
+TESTS += test_filesource_tar6
+endif
+
 EXTRA_DIST += tests/libimgtool/filesource/tar1.tar
+EXTRA_DIST += tests/libimgtool/filesource/tar3.tar.gz
+EXTRA_DIST += tests/libimgtool/filesource/tar4.tar.xz
+EXTRA_DIST += tests/libimgtool/filesource/tar5.tar.bz2
+EXTRA_DIST += tests/libimgtool/filesource/tar6.tar.zst
 EXTRA_DIST += tests/libimgtool/filesource/listing

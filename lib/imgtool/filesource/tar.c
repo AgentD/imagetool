@@ -302,11 +302,64 @@ static void destroy(object_t *obj)
 	free(tar);
 }
 
+enum {
+	MAGIC_COMPRESSOR_GZIP = 1,
+	MAGIC_COMPRESSOR_XZ = 2,
+	MAGIC_COMPRESSOR_ZSTD = 3,
+	MAGIC_COMPRESSOR_BZIP2 = 4,
+};
+
+static const struct {
+	int id;
+	const uint8_t *value;
+	size_t len;
+} compress_magic[] = {
+	{ MAGIC_COMPRESSOR_GZIP, (const uint8_t *)"\x1F\x8B\x08", 3 },
+	{ MAGIC_COMPRESSOR_XZ, (const uint8_t *)("\xFD" "7zXZ"), 6 },
+	{ MAGIC_COMPRESSOR_ZSTD, (const uint8_t *)"\x28\xB5\x2F\xFD", 4 },
+	{ MAGIC_COMPRESSOR_BZIP2, (const uint8_t *)"BZh", 3 },
+};
+
+static int tar_probe(const uint8_t *data, size_t size)
+{
+	size_t offset = offsetof(tar_header_t, magic);
+
+	if (size < sizeof(tar_header_t))
+		return -1;
+
+	return memcmp(data + offset, "ustar", 5);
+}
+
+static int find_the_magic(istream_t *strm)
+{
+	size_t i;
+	int ret;
+
+	if (tar_probe(strm->buffer, strm->buffer_used))
+		return 0;
+
+	for (i = 0; i < sizeof(compress_magic) / sizeof(compress_magic[0]); ++i) {
+		if (strm->buffer_used < compress_magic[i].len)
+			continue;
+
+		ret = memcmp(strm->buffer, compress_magic[i].value,
+			     compress_magic[i].len);
+
+		if (ret == 0)
+			return compress_magic[i].id;
+	}
+
+	return 0;
+}
+
 file_source_t *file_source_tar_create(const char *path)
 {
 	file_source_tar_t *tar = calloc(1, sizeof(*tar));
 	file_source_t *fs = (file_source_t *)tar;
 	object_t *obj = (object_t *)fs;
+	xfrm_stream_t *xfrm;
+	istream_t *wrapper;
+	int magic = 0;
 
 	if (tar == NULL) {
 		perror(path);
@@ -314,13 +367,56 @@ file_source_t *file_source_tar_create(const char *path)
 	}
 
 	tar->tar_stream = istream_open_file(path);
-	if (tar->tar_stream == NULL) {
-		free(tar);
-		return NULL;
+	if (tar->tar_stream == NULL)
+		goto fail_free;
+
+	if (tar->tar_stream->buffer_used == 0) {
+		if (istream_precache(tar->tar_stream))
+			goto fail_stream;
+
+		magic = find_the_magic(tar->tar_stream);
+	}
+
+	if (magic > 0) {
+		switch (magic) {
+		case MAGIC_COMPRESSOR_GZIP:
+			xfrm = decompressor_stream_gzip_create();
+			break;
+		case MAGIC_COMPRESSOR_XZ:
+			xfrm = decompressor_stream_xz_create();
+			break;
+		case MAGIC_COMPRESSOR_ZSTD:
+			xfrm = decompressor_stream_zstd_create();
+			break;
+		case MAGIC_COMPRESSOR_BZIP2:
+			xfrm = decompressor_stream_bzip2_create();
+			break;
+		default:
+			xfrm = NULL;
+			break;
+		}
+
+		if (xfrm == NULL)
+			goto fail_stream;
+
+		wrapper = istream_xfrm_create(tar->tar_stream, xfrm);
+		if (wrapper == NULL)
+			goto fail_xfrm;
+
+		object_drop(xfrm);
+		object_drop(tar->tar_stream);
+		tar->tar_stream = wrapper;
 	}
 
 	fs->get_next_record = get_next_record;
 	obj->destroy = destroy;
 	obj->refcount = 1;
 	return fs;
+fail_xfrm:
+	object_drop(xfrm);
+fail_stream:
+	object_drop(tar->tar_stream);
+fail_free:
+	free(tar);
+	return NULL;
 }

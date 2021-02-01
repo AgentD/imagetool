@@ -75,25 +75,6 @@ enum {
 	ISTREAM_LINE_SKIP_EMPTY = 0x04,
 };
 
-enum {
-	/**
-	 * @brief Deflate compressor with gzip headers.
-	 *
-	 * This actually creates a gzip compatible file, including a
-	 * gzip header and trailer.
-	 */
-	FSTREAM_COMPRESSOR_GZIP = 1,
-
-	FSTREAM_COMPRESSOR_XZ = 2,
-
-	FSTREAM_COMPRESSOR_ZSTD = 3,
-
-	FSTREAM_COMPRESSOR_BZIP2 = 4,
-
-	FSTREAM_COMPRESSOR_MIN = 1,
-	FSTREAM_COMPRESSOR_MAX = 4,
-};
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -193,24 +174,6 @@ ostream_t *ostream_xfrm_create(ostream_t *strm, xfrm_stream_t *xfrm);
  * @return A pointer to an input stream on success, NULL on failure.
  */
 istream_t *istream_xfrm_create(istream_t *strm, xfrm_stream_t *xfrm);
-
-/**
- * @brief Probe the buffered data in an istream to check if it is compressed.
- *
- * @memberof istream_t
- *
- * This function peeks into the internal buffer of an input stream to check
- * for magic signatures of various compressors.
- *
- * @param strm A pointer to an input stream to check
- * @param probe A callback used to check if raw/decoded data matches an
- *              expected format. Returns 0 if not, -1 on failure and +1
- *              on success.
- *
- * @return A compressor ID on success, 0 if no match was found, -1 on failure.
- */
-int istream_detect_compressor(istream_t *strm,
-			      int (*probe)(const uint8_t *data, size_t size));
 
 /**
  * @brief Append a block of data to an output stream.
@@ -374,33 +337,6 @@ int istream_skip(istream_t *strm, uint64_t size);
  */
 int32_t ostream_append_from_istream(ostream_t *out, istream_t *in,
 				    uint32_t size);
-
-/**
- * @brief Resolve a compressor name to an ID.
- *
- * @param name A compressor name.
- *
- * @return A compressor ID on success, -1 on failure.
- */
-int fstream_compressor_id_from_name(const char *name);
-
-/**
- * @brief Resolve a id to a  compressor name.
- *
- * @param id A compressor ID.
- *
- * @return A compressor name on success, NULL on failure.
- */
-const char *fstream_compressor_name_from_id(int id);
-
-/**
- * @brief Check if support for a given compressor has been built in.
- *
- * @param id A compressor ID.
- *
- * @return True if the compressor is supported, false if not.
- */
-bool fstream_compressor_exists(int id);
 
 /**
  * @brief Create a dummy sink stream that discards all data.
