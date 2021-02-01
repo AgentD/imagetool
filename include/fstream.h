@@ -8,6 +8,7 @@
 #define FSTREAM_H
 
 #include "predef.h"
+#include "xfrm.h"
 
 /**
  * @struct ostream_t
@@ -161,44 +162,37 @@ istream_t *istream_open_fd(const char *path, int fd);
 istream_t *istream_open_stdin(void);
 
 /**
- * @brief Create an output stream that transparently compresses data.
+ * @brief Create an output stream that transparently transforms data.
  *
  * @memberof ostream_t
  *
- * This function creates an output stream that transparently compresses all
- * data appended to it and writes the compressed data to an underlying, wrapped
- * output stream.
- *
- * The new stream takes ownership of the wrapped stream and destroys it when
- * the compressor stream is destroyed. If this function fails, the wrapped
- * stream is also destroyed.
+ * This function creates an output stream that transparently
+ * transforms (e.g. compresses) all data appended to it and writes the
+ * result data to an underlying, wrapped output stream.
  *
  * @param strm A pointer to another stream that should be wrapped.
- * @param comp_id An identifier describing the compressor to use.
+ * @param xfrm A pointer to the transformation stream to use for
+ *             processing all data written to the stream.
  *
  * @return A pointer to an output stream on success, NULL on failure.
  */
-ostream_t *ostream_compressor_create(ostream_t *strm, int comp_id);
+ostream_t *ostream_xfrm_create(ostream_t *strm, xfrm_stream_t *xfrm);
 
 /**
- * @brief Create an input stream that transparently uncompresses data.
+ * @brief Create an input stream that transparently transforms data.
  *
  * @memberof istream_t
  *
  * This function creates an input stream that wraps an underlying input stream
- * that is compressed and transparently uncompresses the data when reading
- * from it.
- *
- * The new stream takes ownership of the wrapped stream and destroys it when
- * the compressor stream is destroyed. If this function fails, the wrapped
- * stream is also destroyed.
+ * that is encoded/compressed/etc... and transparently transforms the data when
+ * reading from it.
  *
  * @param strm A pointer to another stream that should be wrapped.
- * @param comp_id An identifier describing the compressor to use.
+ * @param xfrm A pointer to the transformation stream to feed all data through.
  *
  * @return A pointer to an input stream on success, NULL on failure.
  */
-istream_t *istream_compressor_create(istream_t *strm, int comp_id);
+istream_t *istream_xfrm_create(istream_t *strm, xfrm_stream_t *xfrm);
 
 /**
  * @brief Probe the buffered data in an istream to check if it is compressed.

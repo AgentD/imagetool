@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2019 David Oberhollenzer <goliath@infraroot.at>
  */
-#include "../internal.h"
+#include "internal.h"
 
 static const struct {
 	int id;
