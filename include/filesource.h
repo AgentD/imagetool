@@ -47,6 +47,13 @@ typedef struct file_source_t {
 
 
 typedef struct file_source_listing_t file_source_listing_t;
+typedef struct file_source_filter_t file_source_filter_t;
+
+
+typedef enum {
+	FILE_SOURCE_FILTER_ALLOW = 0,
+	FILE_SOURCE_FILTER_DISCARD,
+} FILE_SOURCE_FILTER;
 
 
 #ifdef __cplusplus
@@ -62,6 +69,13 @@ file_source_listing_t *file_source_listing_create(const char *sourcedir);
 int file_source_listing_add_line(file_source_listing_t *listing,
 				 const char *line,
 				 gcfg_file_t *file);
+
+
+file_source_filter_t *file_source_filter_create(file_source_t *wrapped);
+
+int file_source_filter_add_glob_rule(file_source_filter_t *filter,
+				     const char *pattern,
+				     int target);
 
 #ifdef __cplusplus
 }
