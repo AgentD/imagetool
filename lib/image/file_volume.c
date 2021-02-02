@@ -25,6 +25,7 @@ typedef struct {
 	int fd;
 
 	bitmap_t *bitmap;
+	uint64_t bytes_used;
 
 	uint8_t scratch[];
 } file_volume_t;
@@ -167,6 +168,7 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 			       uint32_t size)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
+	uint64_t last;
 
 	if (check_bounds(fvol, index, offset, size))
 		return -1;
@@ -179,6 +181,10 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 		buffer = fvol->scratch;
 	}
 
+	last = index * vol->blocksize + offset + size;
+	if (last > fvol->bytes_used)
+		fvol->bytes_used = last;
+
 	return write_retry(fvol->filename, fvol->fd,
 			   index * vol->blocksize + offset,
 			   buffer, size);
@@ -190,6 +196,7 @@ fail_flag:
 static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
+	uint64_t last_index, total_size;
 	int ret;
 
 	/* sanity check */
@@ -214,7 +221,7 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 		while (count--)
 			bitmap_clear(fvol->bitmap, index++);
 
-		return 0;
+		goto out;
 	}
 
 	/* fallback: manually write block of 0 bytes */
@@ -236,6 +243,18 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 		++index;
 	}
 
+out:
+	last_index = bitmap_msb_index(fvol->bitmap);
+
+	if (last_index == 0 && !bitmap_is_set(fvol->bitmap, 0)) {
+		total_size = 0;
+	} else {
+		total_size = (last_index + 1) * vol->blocksize;
+	}
+
+	if (total_size < fvol->bytes_used)
+		fvol->bytes_used = total_size;
+
 	return 0;
 }
 
@@ -251,6 +270,7 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
 	bool src_set, dst_set;
+	uint64_t size;
 
 	if (check_bounds(fvol, src, 0, vol->blocksize))
 		return -1;
@@ -270,6 +290,10 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst)
 	if (transfer_blocks(fvol, src, dst, 1))
 		return -1;
 
+	size = (dst + 1) * vol->blocksize;
+	if (size > fvol->bytes_used)
+		fvol->bytes_used = size;
+
 	if (bitmap_set(fvol->bitmap, dst))
 		goto fail_flag;
 
@@ -285,6 +309,7 @@ static int move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 			      size_t size)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
+	uint64_t maxsz;
 
 	if (check_bounds(fvol, src, src_offset, size))
 		return -1;
@@ -298,6 +323,10 @@ static int move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 		return -1;
 	}
 
+	maxsz = dst * vol->blocksize + dst_offset + size;
+	if (maxsz > fvol->bytes_used)
+		fvol->bytes_used = maxsz;
+
 	return write_retry(fvol->filename, fvol->fd,
 			   dst * vol->blocksize + dst_offset,
 			   fvol->scratch, size);
@@ -306,18 +335,8 @@ static int move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 static int commit(volume_t *vol)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
-	uint64_t size;
-	size_t index;
 
-	index = bitmap_msb_index(fvol->bitmap);
-
-	if (index == 0 && !bitmap_is_set(fvol->bitmap, 0)) {
-		size = 0;
-	} else {
-		size = (index + 1) * vol->blocksize;
-	}
-
-	if (truncate_file(fvol->fd, size) != 0) {
+	if (truncate_file(fvol->fd, fvol->bytes_used) != 0) {
 		perror(fvol->filename);
 		return -1;
 	}
@@ -372,6 +391,7 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 		goto fail;
 
 	fvol->fd = fd;
+	fvol->bytes_used = used * blocksize;
 	((object_t *)fvol)->refcount = 1;
 	((object_t *)fvol)->destroy = destroy;
 	((volume_t *)fvol)->blocksize = blocksize;

@@ -18,24 +18,19 @@
 
 #define REF_FILE STRVALUE(TESTFILE)
 
-#define NUM_EXPECTED_BLOCKS (16)
+static char abuf[5244], bbuf[5244];
 
 static int compare_results(int afd, int bfd)
 {
-	char abuf[512], bbuf[512];
-	int i;
+	if (read_retry("generated file", afd, 0, abuf, sizeof(abuf)))
+		return -1;
 
-	for (i = 0; i < NUM_EXPECTED_BLOCKS; ++i) {
-		if (read_retry("generated file", afd, i * 512, abuf, 512))
-			return -1;
+	if (read_retry("reference file", bfd, 0, bbuf, sizeof(bbuf)))
+		return -1;
 
-		if (read_retry("reference file", bfd, i * 512, bbuf, 512))
-			return -1;
-
-		if (memcmp(abuf, bbuf, 512) != 0) {
-			fputs("tar file not equal to reference!\n", stderr);
-			return -1;
-		}
+	if (memcmp(abuf, bbuf, sizeof(abuf)) != 0) {
+		fputs("tar file not equal to reference!\n", stderr);
+		return -1;
 	}
 
 	return 0;

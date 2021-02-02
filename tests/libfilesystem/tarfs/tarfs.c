@@ -18,7 +18,7 @@
 
 #define REF_FILE STRVALUE(TESTFILE)
 
-#define NUM_EXPECTED_BLOCKS (32)
+#define NUM_EXPECTED_BLOCKS (25)
 
 static int compare_results(int afd, int bfd)
 {
