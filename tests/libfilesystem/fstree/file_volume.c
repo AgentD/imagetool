@@ -70,11 +70,9 @@ static int dummy_write_block(volume_t *vol, uint64_t index, const void *buffer)
 	return 0;
 }
 
-static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst,
-			    int mode)
+static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
 	(void)vol;
-	TEST_EQUAL_I(mode, 0);
 	TEST_ASSERT(src < BLK_COUNT);
 	TEST_ASSERT(dst < BLK_COUNT);
 
@@ -350,28 +348,14 @@ int main(void)
 	TEST_NULL(f0->data.file.sparse->next);
 
 	/* move blocks */
-	ret = vol->move_block(vol, 0, 3, MOVE_SWAP);
+	ret = vol->move_block(vol, 0, 3);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(used, 7);
 	TEST_EQUAL_UI(fs->data_offset, used);
-	ret = memcmp(dummy_buffer, "X___EEEEFFFFBB__CCC\0\0AAADDD\0", 28);
+	ret = memcmp(dummy_buffer, "X___EEEEFFFFBB__AAA\0\0AAADDD\0", 28);
 	TEST_EQUAL_I(ret, 0);
 
-	ret = vol->move_block(vol, 0, 3, 0);
-	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(used, 7);
-	TEST_EQUAL_UI(fs->data_offset, used);
-	ret = memcmp(dummy_buffer, "X___EEEEFFFFBB__CCC\0\0CCCDDD\0", 28);
-	TEST_EQUAL_I(ret, 0);
-
-	ret = vol->move_block(vol, 4, 0, MOVE_ERASE_SOURCE);
-	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(used, 6);
-	TEST_EQUAL_UI(fs->data_offset, used);
-	ret = memcmp(dummy_buffer, "X___EEEEFFFFBB__DDD\0\0CCC", 24);
-	TEST_EQUAL_I(ret, 0);
-
-	TEST_EQUAL_UI(f0->data.file.size, 12);
+	TEST_EQUAL_UI(f0->data.file.size, 15);
 	TEST_EQUAL_UI(f0->data.file.start_index, 4);
 	TEST_EQUAL_UI(f1->data.file.size, 22);
 	TEST_EQUAL_UI(f1->data.file.start_index, 1);

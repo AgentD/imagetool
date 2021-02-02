@@ -13,12 +13,11 @@ static const char *initial = "AAABBBCCCDDDEEEFFFGGGHHHIIIJJJ";
 
 static char dummy_buffer[31];
 
-static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
+static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
 	(void)vol;
 	TEST_ASSERT(src < 10);
 	TEST_ASSERT(dst < 10);
-	TEST_EQUAL_I(mode, 0);
 
 	memmove(dummy_buffer + dst * 3, dummy_buffer + src * 3, 3);
 	return 0;

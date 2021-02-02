@@ -70,11 +70,9 @@ static int dummy_write_block(volume_t *vol, uint64_t index, const void *buffer)
 	return 0;
 }
 
-static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst,
-			    int mode)
+static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
 	(void)vol;
-	TEST_EQUAL_I(mode, 0);
 	TEST_ASSERT(src < BLK_COUNT);
 	TEST_ASSERT(dst < BLK_COUNT);
 

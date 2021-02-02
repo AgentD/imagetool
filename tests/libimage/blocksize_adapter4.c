@@ -75,27 +75,12 @@ static int dummy_discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	return 0;
 }
 
-static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
+static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
-	char temp[7];
 	(void)vol;
 	TEST_ASSERT(src < 4);
 	TEST_ASSERT(dst < 4);
-
-	switch (mode) {
-	case MOVE_SWAP:
-		memcpy(temp, dummy_buffer + dst * 7, 7);
-		memcpy(dummy_buffer + dst * 7, dummy_buffer + src * 7, 7);
-		memcpy(dummy_buffer + src * 7, temp, 7);
-		break;
-	case MOVE_ERASE_SOURCE:
-		memcpy(dummy_buffer + dst * 7, dummy_buffer + src * 7, 7);
-		memset(dummy_buffer + src * 7, '\0', 7);
-		break;
-	default:
-		memmove(dummy_buffer + dst * 7, dummy_buffer + src * 7, 7);
-		break;
-	}
+	memmove(dummy_buffer + dst * 7, dummy_buffer + src * 7, 7);
 	return 0;
 }
 
@@ -218,15 +203,6 @@ int main(void)
 	TEST_EQUAL_I(ret, 0);
 
 	TEST_STR_EQUAL(dummy_buffer, "aaaaAAAzzzFFFbccCCCccdDDDddd");
-
-	/* swap blocks */
-	ret = vol->move_block(vol, 0, 2, MOVE_SWAP);
-	TEST_EQUAL_I(ret, 0);
-
-	ret = vol->commit(vol);
-	TEST_EQUAL_I(ret, 0);
-
-	TEST_STR_EQUAL(dummy_buffer, "aaaaFFFzzzAAAbccCCCccdDDDddd");
 
 	/* partial read */
 	memset(temp, 0, sizeof(temp));

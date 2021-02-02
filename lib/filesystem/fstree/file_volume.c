@@ -115,31 +115,12 @@ static int fsvol_discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	return 0;
 }
 
-static int fsvol_move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
+static int fsvol_move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
 	file_volume_t *fsvol = (file_volume_t *)vol;
 
 	if (fsvol_read_block(vol, src, fsvol->scratch))
 		return -1;
-
-	switch (mode) {
-	case MOVE_SWAP:
-		if (fsvol_read_block(vol, dst,
-				     fsvol->scratch + vol->blocksize)) {
-			return -1;
-		}
-		if (fsvol_write_block(vol, src,
-				      fsvol->scratch + vol->blocksize)) {
-			return -1;
-		}
-		break;
-	case MOVE_ERASE_SOURCE:
-		if (fsvol_discard_blocks(vol, src, 1))
-			return -1;
-		break;
-	default:
-		break;
-	}
 
 	return fsvol_write_block(vol, dst, fsvol->scratch);
 }

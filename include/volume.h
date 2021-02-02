@@ -12,11 +12,6 @@
 
 typedef struct volume_t volume_t;
 
-enum {
-	MOVE_SWAP = 0x01,
-	MOVE_ERASE_SOURCE = 0x02,
-};
-
 /*
   A "volume" represents what Unix might call a block device. It manages a chunk
   of data that is divided into uniformly sized blocks that can be read,
@@ -81,13 +76,9 @@ struct volume_t {
 	  Move a single block within a volume. A source and destination index
 	  are given.
 
-	  If mode is set to MOVE_SWAP, the blocks are swapped.
-	  If it is MOVE_ERASE_SOURCE, the source block is discarded
-	  after moving it to the destination.
-
 	  Returns 0 on success, -1 on failure.
 	 */
-	int (*move_block)(volume_t *vol, uint64_t src, uint64_t dst, int mode);
+	int (*move_block)(volume_t *vol, uint64_t src, uint64_t dst);
 
 	/*
 	  Basically a memmove of a part of a block to some other block or move

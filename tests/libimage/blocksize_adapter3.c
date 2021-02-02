@@ -80,27 +80,12 @@ static int dummy_discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	return 0;
 }
 
-static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
+static int dummy_move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
-	char temp[3];
 	(void)vol;
 	TEST_ASSERT(src < 10);
 	TEST_ASSERT(dst < 10);
-
-	switch (mode) {
-	case MOVE_SWAP:
-		memcpy(temp, dummy_buffer + dst * 3, 3);
-		memcpy(dummy_buffer + dst * 3, dummy_buffer + src * 3, 3);
-		memcpy(dummy_buffer + src * 3, temp, 3);
-		break;
-	case MOVE_ERASE_SOURCE:
-		memcpy(dummy_buffer + dst * 3, dummy_buffer + src * 3, 3);
-		memset(dummy_buffer + src * 3, '\0', 3);
-		break;
-	default:
-		memmove(dummy_buffer + dst * 3, dummy_buffer + src * 3, 3);
-		break;
-	}
+	memmove(dummy_buffer + dst * 3, dummy_buffer + src * 3, 3);
 	return 0;
 }
 
@@ -208,15 +193,6 @@ int main(void)
 
 	TEST_STR_EQUAL(dummy_buffer, "AAABBBCCCZZZZZZZFFGGGHHLLLLLLL");
 
-	/* swap blocks */
-	ret = vol->move_block(vol, 0, 2, MOVE_SWAP);
-	TEST_EQUAL_I(ret, 0);
-
-	ret = vol->commit(vol);
-	TEST_EQUAL_I(ret, 0);
-
-	TEST_STR_EQUAL(dummy_buffer, "AAFFGGGHHZZZZZZZABBBCCCLLLLLLL");
-
 	/* discard blocks */
 	ret = vol->discard_blocks(vol, 1, 2);
 	TEST_EQUAL_I(ret, 0);
@@ -225,7 +201,7 @@ int main(void)
 	TEST_EQUAL_I(ret, 0);
 
 	ret = memcmp(dummy_buffer,
-		     "AAFFGGGHH\0\0\0\0\0\0\0\0\0\0\0\0\0\0LLLLLLL", 30);
+		     "AAABBBCCC\0\0\0\0\0\0\0\0\0\0\0\0\0\0LLLLLLL", 30);
 	TEST_EQUAL_I(ret, 0);
 
 	TEST_EQUAL_I(num_discarded, 4);
@@ -241,22 +217,22 @@ int main(void)
 	memset(temp, 0, sizeof(temp));
 	ret = vol->read_partial_block(vol, 0, temp, 0, 3);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "FFG");
+	TEST_STR_EQUAL(temp, "ABB");
 
 	memset(temp, 0, sizeof(temp));
 	ret = vol->read_partial_block(vol, 0, temp, 3, 2);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "GG");
+	TEST_STR_EQUAL(temp, "BC");
 
 	memset(temp, 0, sizeof(temp));
 	ret = vol->read_partial_block(vol, 0, temp, 4, 3);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "GHH");
+	TEST_STR_EQUAL(temp, "CCC");
 
 	memset(temp, 0, sizeof(temp));
 	ret = vol->read_partial_block(vol, 0, temp, 0, 7);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(temp, "FFGGGHH");
+	TEST_STR_EQUAL(temp, "ABBBCCC");
 
 	ret = vol->read_partial_block(vol, 0, temp, 4, 5);
 	TEST_ASSERT(ret != 0);
@@ -264,25 +240,25 @@ int main(void)
 	/* partial write */
 	ret = vol->write_partial_block(vol, 0, "ZZZ", 1, 3);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(dummy_buffer, "AAFZZZGHH");
+	TEST_STR_EQUAL(dummy_buffer, "AAAZZZCCC");
 
 	ret = vol->write_partial_block(vol, 0, "XX", 5, 2);
 	TEST_EQUAL_I(ret, 0);
-	TEST_STR_EQUAL(dummy_buffer, "AAFZZZGXX");
+	TEST_STR_EQUAL(dummy_buffer, "AAAZZZCXX");
 
 	ret = vol->write_partial_block(vol, 0, "YYY", 5, 3);
 	TEST_ASSERT(ret != 0);
-	TEST_STR_EQUAL(dummy_buffer, "AAFZZZGXX");
+	TEST_STR_EQUAL(dummy_buffer, "AAAZZZCXX");
 
 	/* partial write holes */
 	ret = vol->write_partial_block(vol, 0, NULL, 1, 3);
 	TEST_EQUAL_I(ret, 0);
-	ret = memcmp(dummy_buffer, "AAF\0\0\0GXX", 7);
+	ret = memcmp(dummy_buffer, "AAA\0\0\0CXX", 7);
 	TEST_EQUAL_I(ret, 0);
 
 	ret = vol->write_partial_block(vol, 0, NULL, 5, 2);
 	TEST_EQUAL_I(ret, 0);
-	ret = memcmp(dummy_buffer, "AAF\0\0\0G\0\0", 7);
+	ret = memcmp(dummy_buffer, "AAA\0\0\0C\0\0", 7);
 	TEST_EQUAL_I(ret, 0);
 
 	/* cleanup */

@@ -87,28 +87,14 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 	return write_partial_block(vol, index, buffer, 0, vol->blocksize);
 }
 
-static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
+static int move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
 	adapter_t *adapter = (adapter_t *)vol;
-	int ret;
 
-	if (mode == MOVE_SWAP && read_block(vol, dst, adapter->scratch) != 0)
-		return -1;
-
-	ret = volume_memmove(adapter->wrapped,
-			     adapter->offset + dst * vol->blocksize,
-			     adapter->offset + src * vol->blocksize,
-			     vol->blocksize);
-	if (ret)
-		return -1;
-
-	if (mode == MOVE_SWAP)
-		return write_block(vol, src, adapter->scratch);
-
-	if (mode == MOVE_ERASE_SOURCE)
-		return write_block(vol, src, NULL);
-
-	return 0;
+	return volume_memmove(adapter->wrapped,
+			      adapter->offset + dst * vol->blocksize,
+			      adapter->offset + src * vol->blocksize,
+			      vol->blocksize);
 }
 
 static int move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,

@@ -80,22 +80,6 @@ static int transfer_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst,
 	return 0;
 }
 
-static int swap_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst)
-{
-	volume_t *vol = (volume_t *)fvol;
-
-	if (read_retry(fvol->filename, fvol->fd, src * vol->blocksize,
-		       fvol->scratch + vol->blocksize, vol->blocksize)) {
-		return -1;
-	}
-
-	if (transfer_blocks(fvol, dst, src, 1))
-		return -1;
-
-	return write_retry(fvol->filename, fvol->fd, dst * vol->blocksize,
-			   fvol->scratch + vol->blocksize, vol->blocksize);
-}
-
 static int check_bounds(file_volume_t *fvol, uint64_t index,
 			uint32_t offset, uint32_t size)
 {
@@ -263,7 +247,7 @@ static int write_block(volume_t *vol, uint64_t index, const void *buffer)
 	return write_partial_block(vol, index, buffer, 0, vol->blocksize);
 }
 
-static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
+static int move_block(volume_t *vol, uint64_t src, uint64_t dst)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
 	bool src_set, dst_set;
@@ -277,52 +261,17 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst, int mode)
 	src_set = bitmap_is_set(fvol->bitmap, src);
 	dst_set = bitmap_is_set(fvol->bitmap, dst);
 
-	switch (mode) {
-	case MOVE_SWAP:
-		if (src == dst || (!src_set && !dst_set))
-			return 0;
+	if (src == dst || (!src_set && !dst_set))
+		return 0;
 
-		if (src_set && dst_set)
-			return swap_blocks(fvol, src, dst);
+	if (!src_set)
+		return dst_set ? discard_blocks(vol, dst, 1) : 0;
 
-		if (src_set) {
-			if (transfer_blocks(fvol, src, dst, 1))
-				return -1;
-			if (bitmap_set(fvol->bitmap, dst))
-				goto fail_flag;
-			return discard_blocks(vol, src, 1);
-		}
+	if (transfer_blocks(fvol, src, dst, 1))
+		return -1;
 
-		if (transfer_blocks(fvol, dst, src, 1))
-			return -1;
-		if (bitmap_set(fvol->bitmap, src))
-			goto fail_flag;
-		return discard_blocks(vol, dst, 1);
-	case MOVE_ERASE_SOURCE:
-		if (src == dst)
-			return src_set ? discard_blocks(vol, src, 1) : 0;
-
-		if (!src_set)
-			return dst_set ? discard_blocks(vol, dst, 1) : 0;
-
-		if (transfer_blocks(fvol, src, dst, 1))
-			return -1;
-		if (bitmap_set(fvol->bitmap, dst))
-			goto fail_flag;
-		return discard_blocks(vol, src, 1);
-	default:
-		if (src == dst || (!src_set && !dst_set))
-			return 0;
-
-		if (!src_set)
-			return dst_set ? discard_blocks(vol, dst, 1) : 0;
-
-		if (transfer_blocks(fvol, src, dst, 1))
-			return -1;
-		if (bitmap_set(fvol->bitmap, dst))
-			goto fail_flag;
-		break;
-	}
+	if (bitmap_set(fvol->bitmap, dst))
+		goto fail_flag;
 
 	return 0;
 fail_flag:

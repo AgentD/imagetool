@@ -27,7 +27,7 @@ static int copy_forward(volume_t *vol, uint64_t dst, uint64_t src,
 
 		if (src_offset == 0 && dst_offset == 0 &&
 		    diff == vol->blocksize) {
-			ret = vol->move_block(vol, src_idx, dst_idx, 0);
+			ret = vol->move_block(vol, src_idx, dst_idx);
 		} else {
 			ret = vol->move_block_partial(vol, src_idx, dst_idx,
 						      src_offset, dst_offset,
@@ -74,7 +74,7 @@ static int copy_backward(volume_t *vol, uint64_t dst,
 
 		if (src_offset == 0 && dst_offset == 0 &&
 		    diff == vol->blocksize) {
-			ret = vol->move_block(vol, src_idx, dst_idx, 0);
+			ret = vol->move_block(vol, src_idx, dst_idx);
 		} else {
 			ret = vol->move_block_partial(vol, src_idx, dst_idx,
 						      src_offset, dst_offset,
