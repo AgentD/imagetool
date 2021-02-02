@@ -7,6 +7,7 @@
 #include "config.h"
 #include "volume.h"
 #include "bitmap.h"
+#include "util.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -29,60 +30,6 @@ typedef struct {
 } file_volume_t;
 
 /*****************************************************************************/
-
-static int read_retry(const char *filename, int fd, uint64_t offset,
-		      void *data, size_t size)
-{
-	while (size > 0) {
-		ssize_t ret = pread(fd, data, size, offset);
-
-		if (ret < 0) {
-			if (errno == EINTR)
-				continue;
-
-			perror(filename);
-			return -1;
-		}
-
-		if (ret == 0) {
-			fprintf(stderr, "%s: truncated read\n", filename);
-			return -1;
-		}
-
-		data = (char *)data + ret;
-		size -= ret;
-		offset += ret;
-	}
-
-	return 0;
-}
-
-static int write_retry(const char *filename, int fd, uint64_t offset,
-		       const void *data, size_t size)
-{
-	while (size > 0) {
-		ssize_t ret = pwrite(fd, data, size, offset);
-
-		if (ret < 0) {
-			if (errno == EINTR)
-				continue;
-
-			perror(filename);
-			return -1;
-		}
-
-		if (ret == 0) {
-			fprintf(stderr, "%s: truncated write\n", filename);
-			return -1;
-		}
-
-		data = (const char *)data + ret;
-		size -= ret;
-		offset += ret;
-	}
-
-	return 0;
-}
 
 static int transfer_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst,
 			   size_t count)

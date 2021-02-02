@@ -8,6 +8,7 @@
 
 #include "../../test.h"
 #include "filesystem.h"
+#include "util.h"
 
 #include <sys/mman.h>
 
@@ -19,42 +20,16 @@
 
 #define NUM_EXPECTED_BLOCKS (16)
 
-static int read_retry(const char *errstr, int fd, void *data, size_t size)
-{
-	ssize_t ret;
-
-	while (size > 0) {
-		ret = read(fd, data, size);
-
-		if (ret == 0) {
-			fprintf(stderr, "%s: file truncated\n", errstr);
-			return -1;
-		}
-
-		if (ret < 0) {
-			if (errno == EINTR)
-				continue;
-			perror(errstr);
-			return -1;
-		}
-
-		data = (char *)data + ret;
-		size -= ret;
-	}
-
-	return 0;
-}
-
 static int compare_results(int afd, int bfd)
 {
 	char abuf[512], bbuf[512];
 	int i;
 
 	for (i = 0; i < NUM_EXPECTED_BLOCKS; ++i) {
-		if (read_retry("generated file", afd, abuf, 512))
+		if (read_retry("generated file", afd, i * 512, abuf, 512))
 			return -1;
 
-		if (read_retry("reference file", bfd, bbuf, 512))
+		if (read_retry("reference file", bfd, i * 512, bbuf, 512))
 			return -1;
 
 		if (memcmp(abuf, bbuf, 512) != 0) {
