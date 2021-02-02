@@ -36,7 +36,7 @@ static int process_data(xfrm_stream_t *stream, const void *in,
 		flush_mode = XFRM_STREAM_FLUSH_NONE;
 
 	while (in_size > 0 && out_size > 0) {
-		gzip->strm.next_in = in;
+		gzip->strm.next_in = (void *)in;
 		gzip->strm.avail_in = in_size;
 
 		gzip->strm.next_out = out;
