@@ -83,12 +83,13 @@ static void destroy(object_t *obj)
 	free(gzip);
 }
 
-static xfrm_stream_t *create_stream(bool compress, bool fmt_gzip)
+static xfrm_stream_t *create_stream(const compressor_config_t *cfg,
+				    bool compress, bool fmt_gzip)
 {
 	xfrm_stream_gzip_t *gzip = calloc(1, sizeof(*gzip));
 	xfrm_stream_t *xfrm = (xfrm_stream_t *)gzip;
 	object_t *obj = (object_t *)xfrm;
-	int ret;
+	int ret, strategy;
 
 	if (gzip == NULL) {
 		perror("creating gzip stream compressor");
@@ -96,9 +97,20 @@ static xfrm_stream_t *create_stream(bool compress, bool fmt_gzip)
 	}
 
 	if (compress) {
-		ret = deflateInit2(&gzip->strm, 9, Z_DEFLATED,
-				   fmt_gzip ? (16 + 15) : 15, 8,
-				   Z_DEFAULT_STRATEGY);
+		strategy = Z_DEFAULT_STRATEGY;
+
+		if (cfg->flags & COMP_FLAG_GZIP_FILTERED)
+			strategy = Z_FILTERED;
+		if (cfg->flags & COMP_FLAG_GZIP_HUFFMAN)
+			strategy = Z_HUFFMAN_ONLY;
+		if (cfg->flags & COMP_FLAG_GZIP_RLE)
+			strategy = Z_RLE;
+		if (cfg->flags & COMP_FLAG_GZIP_FIXED)
+			strategy = Z_FIXED;
+
+		ret = deflateInit2(&gzip->strm, cfg->level, Z_DEFLATED,
+				   cfg->opt.gzip.window_size +
+				   (fmt_gzip ? 16 : 0), 8, strategy);
 	} else {
 		ret = inflateInit2(&gzip->strm, fmt_gzip ? (16 + 15) : 15);
 	}
@@ -116,22 +128,22 @@ static xfrm_stream_t *create_stream(bool compress, bool fmt_gzip)
 	return xfrm;
 }
 
-xfrm_stream_t *compressor_stream_gzip_create(void)
+xfrm_stream_t *compressor_stream_gzip_create(const compressor_config_t *cfg)
 {
-	return create_stream(true, true);
+	return create_stream(cfg, true, true);
 }
 
 xfrm_stream_t *decompressor_stream_gzip_create(void)
 {
-	return create_stream(false, true);
+	return create_stream(NULL, false, true);
 }
 
-xfrm_stream_t *compressor_stream_zlib_create(void)
+xfrm_stream_t *compressor_stream_zlib_create(const compressor_config_t *cfg)
 {
-	return create_stream(true, false);
+	return create_stream(cfg, true, false);
 }
 
 xfrm_stream_t *decompressor_stream_zlib_create(void)
 {
-	return create_stream(false, false);
+	return create_stream(NULL, false, false);
 }

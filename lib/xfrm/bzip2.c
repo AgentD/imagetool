@@ -85,7 +85,8 @@ static void destroy(object_t *obj)
 	free(bzip2);
 }
 
-static xfrm_stream_t *stream_create(bool compress)
+static xfrm_stream_t *stream_create(const compressor_config_t *cfg,
+				    bool compress)
 {
 	xfrm_stream_bzip2_t *bzip2 = calloc(1, sizeof(*bzip2));
 	xfrm_stream_t *xfrm = (xfrm_stream_t *)bzip2;
@@ -98,7 +99,8 @@ static xfrm_stream_t *stream_create(bool compress)
 	}
 
 	if (compress) {
-		ret = BZ2_bzCompressInit(&bzip2->strm, 9, 0, 30);
+		ret = BZ2_bzCompressInit(&bzip2->strm, cfg->level, 0,
+					 cfg->opt.bzip2.work_factor);
 	} else {
 		ret = BZ2_bzDecompressInit(&bzip2->strm, 0, 0);
 	}
@@ -117,12 +119,12 @@ static xfrm_stream_t *stream_create(bool compress)
 	return xfrm;
 }
 
-xfrm_stream_t *compressor_stream_bzip2_create(void)
+xfrm_stream_t *compressor_stream_bzip2_create(const compressor_config_t *cfg)
 {
-	return stream_create(true);
+	return stream_create(cfg, true);
 }
 
 xfrm_stream_t *decompressor_stream_bzip2_create(void)
 {
-	return stream_create(false);
+	return stream_create(NULL, false);
 }

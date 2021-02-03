@@ -94,11 +94,13 @@ static void destroy(object_t *obj)
 	free(zstd);
 }
 
-static xfrm_stream_t *stream_create(bool compress)
+static xfrm_stream_t *stream_create(const compressor_config_t *cfg,
+				    bool compress)
 {
 	xfrm_zstd_t *zstd = calloc(1, sizeof(*zstd));
 	xfrm_stream_t *strm = (xfrm_stream_t *)zstd;
 	object_t *obj = (object_t *)strm;
+	(void)cfg;
 
 	if (zstd == NULL) {
 		perror("creating zstd stream compressor");
@@ -126,13 +128,13 @@ fail_strm:
 	return NULL;
 }
 
-xfrm_stream_t *compressor_stream_zstd_create(void)
+xfrm_stream_t *compressor_stream_zstd_create(const compressor_config_t *cfg)
 {
-	return stream_create(true);
+	return stream_create(cfg, true);
 }
 
 xfrm_stream_t *decompressor_stream_zstd_create(void)
 {
-	return stream_create(false);
+	return stream_create(NULL, false);
 }
 #endif /* HAVE_ZSTD_STREAM */
