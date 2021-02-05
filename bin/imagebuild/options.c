@@ -7,21 +7,21 @@
 #include "imagebuild.h"
 
 static struct option long_opts[] = {
-	{ "layout", required_argument, NULL, 'l' },
+	{ "config", required_argument, NULL, 'c' },
 	{ "output", required_argument, NULL, 'O' },
 	{ "version", no_argument, NULL, 'V' },
 	{ "help", no_argument, NULL, 'h' },
 	{ NULL, 0, NULL, 0 },
 };
 
-static const char *short_opts = "l:O:hV";
+static const char *short_opts = "c:O:hV";
 
 static const char *help_string =
 "Usage: %s [OPTIONS...]\n"
 "\n"
 "Mandatory options:\n"
 "\n"
-"  --layout, -l <file>  A JSON file specifying the disk image layout.\n"
+"  --config, -c <file>  The path to the main configuration file.\n"
 "  --output, -O <file>  The name of the output file to generate.\n"
 "\n";
 
@@ -37,8 +37,8 @@ void process_options(options_t *opt, int argc, char **argv)
 			break;
 
 		switch (i) {
-		case 'l':
-			opt->layout_path = optarg;
+		case 'c':
+			opt->config_path = optarg;
 			break;
 		case 'O':
 			opt->output_path = optarg;
@@ -54,7 +54,7 @@ void process_options(options_t *opt, int argc, char **argv)
 		}
 	}
 
-	if (opt->layout_path == NULL) {
+	if (opt->config_path == NULL) {
 		fputs("No layout file specified.\n", stderr);
 		goto fail_arg;
 	}

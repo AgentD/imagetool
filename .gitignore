@@ -19,4 +19,6 @@ Makefile
 Makefile.in
 aclocal.m4
 test_*
+*.trs
+*.sh
 /imagebuild

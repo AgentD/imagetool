@@ -9,13 +9,24 @@
 
 #include "config.h"
 
+#include "fsdeptracker.h"
+#include "filesystem.h"
+#include "filesource.h"
+#include "filesink.h"
+#include "volume.h"
+#include "gcfg.h"
+
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include <unistd.h>
+#include <ctype.h>
+#include <errno.h>
 #include <stdio.h>
+#include <fcntl.h>
 
 typedef struct {
-	const char *layout_path;
+	const char *config_path;
 	const char *output_path;
 } options_t;
 

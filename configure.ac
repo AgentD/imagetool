@@ -166,6 +166,7 @@ AX_COMPILE_CHECK_SIZEOF(long long)
 ##### generate output #####
 
 AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([tests/imgtool/test1.sh], [chmod +x tests/imgtool/test1.sh])
 
 AC_OUTPUT([Makefile])
 
