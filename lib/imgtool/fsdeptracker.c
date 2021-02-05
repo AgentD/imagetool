@@ -283,3 +283,18 @@ int fs_dep_tracker_commit(fs_dep_tracker_t *tracker)
 
 	return 0;
 }
+
+filesystem_t *fs_dep_tracker_get_fs_by_name(fs_dep_tracker_t *dep,
+					    const char *name)
+{
+	fs_dependency_node_t *it;
+
+	for (it = dep->nodes; it != NULL; it = it->next) {
+		if (it->type == FS_DEPENDENCY_FILESYSTEM &&
+		    strcmp(it->name, name) == 0) {
+			break;
+		}
+	}
+
+	return it == NULL ? NULL : object_grab(it->data.filesystem);
+}

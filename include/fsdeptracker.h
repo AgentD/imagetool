@@ -71,6 +71,9 @@ int fs_dep_tracker_add_fs(fs_dep_tracker_t *dep,
 			  filesystem_t *fs, volume_t *parent,
 			  const char *name);
 
+filesystem_t *fs_dep_tracker_get_fs_by_name(fs_dep_tracker_t *dep,
+					    const char *name);
+
 /*
   Call build_format() on all filesystems and commit() on all volumes, in the
   correct dependency order.
