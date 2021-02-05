@@ -6,6 +6,7 @@
  */
 #include "config.h"
 #include "volume.h"
+#include "util.h"
 
 #include <stdlib.h>
 #include <string.h>
@@ -139,7 +140,10 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 		return NULL;
 	}
 
-	count = (vol->max_block_count * vol->blocksize - offset) / blocksize;
+	if (MUL64_OV(vol->max_block_count, vol->blocksize, &count))
+		count = 0xFFFFFFFFFFFFFFFFUL;
+
+	count = (count - offset) / blocksize;
 
 	adapter->offset = offset;
 	adapter->wrapped = object_grab(vol);

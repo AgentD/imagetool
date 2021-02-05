@@ -11,6 +11,8 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#define MUL64_OV(a, b, res) __builtin_mul_overflow(a, b, res)
+
 #ifdef __cplusplus
 extern "C" {
 #endif
