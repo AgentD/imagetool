@@ -176,6 +176,7 @@ static tree_node_t *create_node(fstree_t *fs, const file_source_record_t *rec,
 	if (n == NULL) {
 		fprintf(stderr, "Adding %s: %s\n",
 			rec->full_path, strerror(errno));
+		return NULL;
 	}
 
 	n->uid = rec->uid;
