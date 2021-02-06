@@ -112,5 +112,5 @@ EXTRA_DIST += tests/libimgtool/filesource/tar3.tar.gz
 EXTRA_DIST += tests/libimgtool/filesource/tar4.tar.xz
 EXTRA_DIST += tests/libimgtool/filesource/tar5.tar.bz2
 EXTRA_DIST += tests/libimgtool/filesource/tar6.tar.zst
-EXTRA_DIST += tests/libimgtool/filesource/listing
+EXTRA_DIST += tests/libimgtool/filesource/listing/hello.txt
 EXTRA_DIST += tests/libimgtool/stacking/stacking1.tar
