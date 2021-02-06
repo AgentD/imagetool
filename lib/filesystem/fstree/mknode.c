@@ -42,7 +42,7 @@ static tree_node_t *mknode_at(fstree_t *fs, const char *path, int type,
 	}
 
 	for (n = parent->data.dir.children; n != NULL; n = n->next) {
-		if (strncmp(n->name, suffix, suffix_len) == 0)
+		if (strcmp(n->name, suffix) == 0)
 			break;
 	}
 
