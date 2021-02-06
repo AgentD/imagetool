@@ -151,7 +151,6 @@ static void fsvol_destroy(object_t *obj)
 	file_volume_t *fsvol = (file_volume_t *)obj;
 
 	object_drop(fsvol->fstree);
-	object_drop(fsvol->node);
 	free(obj);
 }
 
