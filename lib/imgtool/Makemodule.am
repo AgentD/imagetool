@@ -4,6 +4,7 @@ libimgtool_a_SOURCES += lib/imgtool/filesource/directory.c
 libimgtool_a_SOURCES += lib/imgtool/filesource/tar.c
 libimgtool_a_SOURCES += lib/imgtool/filesource/listing.c
 libimgtool_a_SOURCES += lib/imgtool/filesource/filter.c
+libimgtool_a_SOURCES += lib/imgtool/filesource/aggregate.c
 libimgtool_a_CFLAGS = $(AM_CFLAGS)
 libimgtool_a_CPPFLAGS = $(AM_CPPFLAGS)
 

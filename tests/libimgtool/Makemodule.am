@@ -69,11 +69,17 @@ test_source_filter_SOURCES = tests/libimgtool/filesource/filter.c tests/test.h
 test_source_filter_CPPFLAGS = $(AM_CPPFLAGS)
 test_source_filter_LDADD = libimgtool.a libutil.a
 
+test_source_aggregate_SOURCES = tests/libimgtool/filesource/aggregate.c tests/test.h
+test_source_aggregate_CPPFLAGS = $(AM_CPPFLAGS)
+test_source_aggregate_LDADD = libimgtool.a libutil.a
+
 check_PROGRAMS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
 check_PROGRAMS += test_source_listing test_source_filter test_filesink
+check_PROGRAMS += test_source_aggregate
 
 TESTS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
 TESTS += test_source_listing test_source_filter test_filesink
+TESTS += test_source_aggregate
 
 if WITH_GZIP
 check_PROGRAMS += test_filesource_tar3

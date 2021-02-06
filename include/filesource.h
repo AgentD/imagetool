@@ -48,6 +48,7 @@ typedef struct file_source_t {
 
 typedef struct file_source_listing_t file_source_listing_t;
 typedef struct file_source_filter_t file_source_filter_t;
+typedef struct file_source_aggregate_t file_source_aggregate_t;
 
 
 typedef enum {
@@ -69,6 +70,14 @@ file_source_listing_t *file_source_listing_create(const char *sourcedir);
 int file_source_listing_add_line(file_source_listing_t *listing,
 				 const char *line,
 				 gcfg_file_t *file);
+
+
+file_source_aggregate_t *file_source_aggregate_create(void);
+
+void file_source_aggregate_reset(file_source_aggregate_t *source);
+
+int file_source_aggregate_add(file_source_aggregate_t *source,
+			      file_source_t *sub);
 
 
 file_source_filter_t *file_source_filter_create(file_source_t *wrapped);
