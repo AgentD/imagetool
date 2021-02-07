@@ -15,8 +15,10 @@ static int append_zero_size_files(filesystem_t *fs, ostream_t *vstrm,
 		if (fstree_file_physical_size(fs->fstree, fit) != 0)
 			continue;
 
-		if (tarfs_write_file_hdr(vstrm, counter, fit))
+		if (tarfs_write_header(vstrm, fit, *counter))
 			return -1;
+
+		(*counter) += 1;
 	}
 
 	return 0;
@@ -28,8 +30,10 @@ static int append_hard_links(filesystem_t *fs, ostream_t *vstrm,
 	tree_node_t *fit = fs->fstree->nodes_by_type[TREE_NODE_HARD_LINK];
 
 	for (; fit != NULL; fit = fit->next_by_type) {
-		if (tarfs_write_hard_link(vstrm, counter, fit))
+		if (tarfs_write_hard_link(vstrm, fit, *counter))
 			return -1;
+
+		(*counter) += 1;
 	}
 
 	return 0;
@@ -54,11 +58,9 @@ static int insert_file_headers(filesystem_t *fs, unsigned int *counter)
 			continue;
 
 		null_sink->bytes_written = 0;
-		ret = tarfs_write_file_hdr((ostream_t *)null_sink,
-					   counter, fit);
+		ret = tarfs_write_header((ostream_t *)null_sink, fit, *counter);
 		if (ret)
 			return -1;
-		*counter -= 1;
 
 		start = fit->data.file.start_index *
 			fs->fstree->volume->blocksize;
@@ -74,13 +76,39 @@ static int insert_file_headers(filesystem_t *fs, unsigned int *counter)
 		if (vstrm == NULL)
 			return -1;
 
-		if (tarfs_write_file_hdr(vstrm, counter, fit))
+		if (tarfs_write_header(vstrm, fit, *counter))
 			return -1;
 
+		*counter += 1;
 		vstrm = object_drop(vstrm);
 	}
 
 	object_drop(null_sink);
+	return 0;
+}
+
+static int write_tree_dfs(ostream_t *out, unsigned int *counter,
+			  tree_node_t *n)
+{
+	int ret;
+
+	if (n->type == TREE_NODE_FILE || n->type == TREE_NODE_HARD_LINK)
+		return 0;
+
+	if (n->parent != NULL) {
+		ret = tarfs_write_header(out, n, *counter);
+		if (ret != 0)
+			return -1;
+
+		(*counter) += 1;
+	}
+
+	if (n->type == TREE_NODE_DIR) {
+		for (n = n->data.dir.children; n != NULL; n = n->next) {
+			if (write_tree_dfs(out, counter, n))
+				return -1;
+		}
+	}
 	return 0;
 }
 
@@ -92,10 +120,8 @@ static int estimate_tree_size(filesystem_t *fs, uint64_t *size)
 	if (null_sink == NULL)
 		return -1;
 
-	if (tarfs_write_tree_dfs((ostream_t *)null_sink, &counter,
-				 fs->fstree->root)) {
+	if (write_tree_dfs((ostream_t *)null_sink, &counter, fs->fstree->root))
 		return -1;
-	}
 
 	*size = null_sink->bytes_written;
 	object_drop(null_sink);
@@ -128,7 +154,7 @@ static int tarfs_build_format(filesystem_t *fs)
 		goto fail_internal;
 
 	counter = 0;
-	if (tarfs_write_tree_dfs(vstrm, &counter, fs->fstree->root))
+	if (write_tree_dfs(vstrm, &counter, fs->fstree->root))
 		goto fail;
 	vstrm = object_drop(vstrm);
 

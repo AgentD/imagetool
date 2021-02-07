@@ -21,23 +21,11 @@
 extern "C" {
 #endif
 
-int tarfs_write_tree_dfs(ostream_t *out, unsigned int *counter,
-			 tree_node_t *n);
+int tarfs_write_header(ostream_t *fp, const tree_node_t *n,
+		       unsigned int counter);
 
-int tarfs_write_file_hdr(ostream_t *out, unsigned int *counter,
-			 tree_node_t *n);
-
-int tarfs_write_hard_link(ostream_t *out, unsigned int *counter,
-			  tree_node_t *n);
-
-int padd_file(ostream_t *fp, uint64_t size);
-
-int write_tar_header(ostream_t *fp, const struct stat *sb, const char *name,
-		     const char *slink_target, const tar_xattr_t *xattr,
-		     unsigned int counter);
-
-int write_hard_link(ostream_t *fp, const struct stat *sb, const char *name,
-		    const char *target, unsigned int counter);
+int tarfs_write_hard_link(ostream_t *fp, const tree_node_t *n,
+			  unsigned int counter);
 
 #ifdef __cplusplus
 }
