@@ -54,8 +54,6 @@ int read_number(const char *str, int digits, uint64_t *out);
 
 int pax_read_decimal(const char *str, uint64_t *out);
 
-void update_checksum(tar_header_t *hdr);
-
 bool is_checksum_valid(const tar_header_t *hdr);
 
 sparse_map_t *read_sparse_map(const char *line);

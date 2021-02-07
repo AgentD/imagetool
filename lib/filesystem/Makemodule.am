@@ -26,6 +26,8 @@ libfilesystem_a_SOURCES += lib/filesystem/tarfs/tarfs.c
 libfilesystem_a_SOURCES += lib/filesystem/tarfs/write_tree_dfs.c
 libfilesystem_a_SOURCES += lib/filesystem/tarfs/write_file_hdr.c
 libfilesystem_a_SOURCES += lib/filesystem/tarfs/write_hard_link.c
+libfilesystem_a_SOURCES += lib/filesystem/tarfs/write_header.c
+libfilesystem_a_SOURCES += lib/filesystem/tarfs/padd_file.c
 
 libfilesystem_a_SOURCES += lib/filesystem/cpiofs/cpiofs.h
 libfilesystem_a_SOURCES += lib/filesystem/cpiofs/cpiofs.c

@@ -115,20 +115,6 @@ typedef struct {
 
 #define TAR_RECORD_SIZE (512)
 
-/*
-  Returns < 0 on failure, > 0 if cannot encode, 0 on success.
-  Prints error/warning messages to stderr.
-
-  The counter is an incremental record counter used if additional
-  headers need to be generated.
-*/
-int write_tar_header(ostream_t *fp, const struct stat *sb, const char *name,
-		     const char *slink_target, const tar_xattr_t *xattr,
-		     unsigned int counter);
-
-int write_hard_link(ostream_t *fp, const struct stat *sb, const char *name,
-		    const char *target, unsigned int counter);
-
 /* calcuate and skip the zero padding */
 int skip_padding(istream_t *fp, uint64_t size);
 
@@ -140,11 +126,5 @@ int read_header(istream_t *fp, tar_header_decoded_t *out);
 void free_xattr_list(tar_xattr_t *list);
 
 void clear_header(tar_header_decoded_t *hdr);
-
-/*
-  Write zero bytes to an output file to padd it to the tar record size.
-  Returns 0 on success. On failure, prints error message to stderr.
-*/
-int padd_file(ostream_t *fp, uint64_t size);
 
 #endif /* TAR_H */

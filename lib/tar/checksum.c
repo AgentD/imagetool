@@ -26,15 +26,6 @@ static unsigned int get_checksum(const tar_header_t *hdr)
 	return chksum;
 }
 
-void update_checksum(tar_header_t *hdr)
-{
-	unsigned int chksum = get_checksum(hdr);
-
-	sprintf(hdr->chksum, "%06o", chksum);
-	hdr->chksum[6] = '\0';
-	hdr->chksum[7] = ' ';
-}
-
 bool is_checksum_valid(const tar_header_t *hdr)
 {
 	unsigned int calculated_chksum = get_checksum(hdr);
