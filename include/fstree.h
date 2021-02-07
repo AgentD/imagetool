@@ -120,7 +120,7 @@ tree_node_t *fstree_node_from_path(fstree_t *fs, tree_node_t *root,
 				   const char *path, size_t len,
 				   bool create_implicit);
 
-char *fstree_get_path(tree_node_t *node);
+char *fstree_get_path(const tree_node_t *node);
 
 tree_node_t *fstree_add_directory(fstree_t *fs, const char *path);
 

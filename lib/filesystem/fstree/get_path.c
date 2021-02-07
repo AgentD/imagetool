@@ -11,7 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-static size_t path_length(tree_node_t *node)
+static size_t path_length(const tree_node_t *node)
 {
 	if (node->parent == NULL)
 		return 0;
@@ -19,7 +19,7 @@ static size_t path_length(tree_node_t *node)
 	return path_length(node->parent) + 1 + strlen(node->name);
 }
 
-static char *path_print(char *str, tree_node_t *node)
+static char *path_print(char *str, const tree_node_t *node)
 {
 	if (node->parent == NULL)
 		return str;
@@ -30,7 +30,7 @@ static char *path_print(char *str, tree_node_t *node)
 	return str + strlen(str);
 }
 
-char *fstree_get_path(tree_node_t *node)
+char *fstree_get_path(const tree_node_t *node)
 {
 	size_t len;
 	char *str;
