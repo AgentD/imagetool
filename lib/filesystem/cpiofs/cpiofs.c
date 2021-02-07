@@ -6,40 +6,6 @@
  */
 #include "cpiofs.h"
 
-static int cpio_add_gap(fstree_t *fs, uint64_t index, uint64_t size)
-{
-	uint64_t src, dst, totalsz, diff;
-	tree_node_t *fit;
-
-	/* move the file data out of the way */
-	if (size % fs->volume->blocksize)
-		size += fs->volume->blocksize - size % fs->volume->blocksize;
-
-	src = index * fs->volume->blocksize;
-	dst = src + size;
-
-	totalsz = (fs->data_offset - index) * fs->volume->blocksize;
-
-	if (volume_memmove(fs->volume, dst, src, totalsz))
-		return -1;
-
-	/* adjust the file offsets of everything after the gap */
-	diff = size / fs->volume->blocksize;
-	fs->data_offset += diff;
-
-	fit = fs->nodes_by_type[TREE_NODE_FILE];
-
-	while (fit != NULL) {
-		if (fit->data.file.start_index >= index)
-			fit->data.file.start_index += diff;
-
-		fit = fit->next_by_type;
-	}
-
-	/* clear the gap we just created */
-	return fs->volume->discard_blocks(fs->volume, index, diff);
-}
-
 static int write_tree(filesystem_t *fs, ostream_t *strm)
 {
 	tree_node_t *n, *tgt, dummy;
@@ -125,8 +91,8 @@ static int insert_file_headers(filesystem_t *fs)
 		start = fit->data.file.start_index *
 			fs->fstree->volume->blocksize;
 
-		ret = cpio_add_gap(fs->fstree, fit->data.file.start_index,
-				   null_sink->bytes_written);
+		ret = fstree_add_gap(fs->fstree, fit->data.file.start_index,
+				     null_sink->bytes_written);
 		if (ret)
 			return -1;
 
@@ -185,7 +151,7 @@ static int cpio_build_format(filesystem_t *fs)
 	if (estimate_tree_size(fs, &size))
 		goto fail_internal;
 
-	if (cpio_add_gap(fs->fstree, 0, size))
+	if (fstree_add_gap(fs->fstree, 0, size))
 		goto fail_internal;
 
 	vstrm = volume_ostream_create(fs->fstree->volume, "cpio filesystem",

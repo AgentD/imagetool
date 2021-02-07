@@ -243,6 +243,12 @@ int fstree_file_truncate(fstree_t *fs, tree_node_t *n, uint64_t size);
 volume_t *fstree_file_volume_create(fstree_t *fs, tree_node_t *n,
 				    uint32_t blocksize, uint64_t min_size,
 				    uint64_t max_size);
+/*
+  At a specified index on the underlying volume, move the file data out of
+  the way to create space for a specified amount of bytes. The file accounting
+  is adjusted accordingly.
+ */
+int fstree_add_gap(fstree_t *fs, uint64_t index, uint64_t size);
 
 #ifdef __cplusplus
 }
