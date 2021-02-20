@@ -29,4 +29,11 @@ libfilesystem_a_SOURCES += lib/filesystem/cpiofs/cpiofs.h
 libfilesystem_a_SOURCES += lib/filesystem/cpiofs/cpiofs.c
 libfilesystem_a_SOURCES += lib/filesystem/cpiofs/format.c
 
+libfilesystem_a_SOURCES += lib/filesystem/fatfs/fatfs.h
+libfilesystem_a_SOURCES += lib/filesystem/fatfs/fatfs.c
+libfilesystem_a_SOURCES += lib/filesystem/fatfs/dirent.c
+libfilesystem_a_SOURCES += lib/filesystem/fatfs/super.c
+libfilesystem_a_SOURCES += lib/filesystem/fatfs/fat.c
+libfilesystem_a_SOURCES += lib/filesystem/fatfs/conv.c
+
 noinst_LIBRARIES += libfilesystem.a

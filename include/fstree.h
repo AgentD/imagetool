@@ -59,6 +59,14 @@ typedef struct tree_node_t {
 		struct {
 			struct tree_node_t *children;
 
+			/* Used by the filesystem driver to store the on disk
+			   location of the FS specific data structure. */
+			uint64_t start;
+
+			/* Used by the filesystem driver to store the on disk
+			   size of the FS specific data structure. */
+			uint64_t size;
+
 			bool created_implicitly;
 		} dir;
 
