@@ -165,6 +165,8 @@ tree_node_t *fstree_sort_node_list_by_type(tree_node_t *head,
 
 /*
   Recursively sort the entire tree by name.
+
+  All the node by type lists are also sorted.
  */
 void fstree_sort(fstree_t *tree);
 

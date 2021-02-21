@@ -135,7 +135,58 @@ static void fstree_sort_node_recursive(tree_node_t *root)
 	}
 }
 
+static tree_node_t *linearize_dir_tree(tree_node_t *root, int type)
+{
+	tree_node_t *list = NULL, *list_last = NULL;
+	tree_node_t *it, *sublist;
+
+	for (it = root->data.dir.children; it != NULL; it = it->next) {
+		if (it->type == type) {
+			if (list == NULL) {
+				list = it;
+			} else {
+				list_last->next_by_type = it;
+			}
+
+			list_last = it;
+			it->next_by_type = NULL;
+		}
+	}
+
+	for (it = root->data.dir.children; it != NULL; it = it->next) {
+		if (it->type != TREE_NODE_DIR)
+			continue;
+
+		sublist = linearize_dir_tree(it, type);
+		if (sublist == NULL)
+			continue;
+
+		if (list == NULL) {
+			list = sublist;
+			list_last = sublist;
+		} else {
+			list_last->next_by_type = sublist;
+		}
+
+		while (list_last->next_by_type != NULL)
+			list_last = list_last->next_by_type;
+	}
+
+	return list;
+}
+
 void fstree_sort(fstree_t *tree)
 {
+	tree_node_t *list;
+	int i;
+
 	fstree_sort_node_recursive(tree->root);
+
+	for (i = 0; i < TREE_NODE_TYPE_COUNT; ++i) {
+		list = linearize_dir_tree(tree->root, i);
+		tree->nodes_by_type[i] = list;
+	}
+
+	tree->root->next_by_type = tree->nodes_by_type[TREE_NODE_DIR];
+	tree->nodes_by_type[TREE_NODE_DIR] = tree->root;
 }
