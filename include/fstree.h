@@ -108,6 +108,9 @@ typedef struct {
 	uint64_t flags;
 } fstree_t;
 
+typedef int (*node_compare_fun_t)(const tree_node_t *lhs,
+				  const tree_node_t *rhs);
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -142,8 +145,27 @@ tree_node_t *fstree_add_symlink(fstree_t *fs, const char *path,
 tree_node_t *fstree_add_hard_link(fstree_t *fs, const char *path,
 				  const char *target);
 
-tree_node_t *fstree_sort_node_list(tree_node_t *head);
+/*
+  Sort a list of nodes using a custom comparison callback.
 
+  The nodes are chained together using their next pointer, i.e. they
+  represent the contents of a directory.
+ */
+tree_node_t *fstree_sort_node_list(tree_node_t *head, node_compare_fun_t cb);
+
+/*
+  Sort a list of nodes using a custom comparison callback.
+
+  The nodes are chained together using their next_by_type pointer,
+  i.e. they represent nodes with the same type, not necessarily in
+  the same directory.
+ */
+tree_node_t *fstree_sort_node_list_by_type(tree_node_t *head,
+					   node_compare_fun_t cb);
+
+/*
+  Recursively sort the entire tree by name.
+ */
 void fstree_sort(fstree_t *tree);
 
 int fstree_resolve_hard_links(fstree_t *fs);
