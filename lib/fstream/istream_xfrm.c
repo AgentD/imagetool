@@ -22,7 +22,7 @@ static int precache(istream_t *base)
 	uint32_t in_diff, out_diff;
 	int ret, mode = XFRM_STREAM_FLUSH_NONE;
 
-	do {
+	for (;;) {
 		ret = istream_precache(wrapped);
 		if (ret != 0)
 			return ret;
@@ -50,7 +50,10 @@ static int precache(istream_t *base)
 			base->eof = true;
 			break;
 		}
-	} while (ret == XFRM_STREAM_OK);
+
+		if (ret != XFRM_STREAM_OK || out_diff == 0)
+			break;
+	}
 
 	return 0;
 fail:
