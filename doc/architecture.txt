@@ -1,0 +1,159 @@
+
+ The basic architecture of the software follows a typical lasagna software
+ design, with individual components spread across project internal static
+ libraries that are layered on top of each other:
+  _________________________________________________________
+ |                                                         |
+ |                         imgtool                         |
+ |_________________________________________________________|
+  ________________________________________      ___________
+ |                                        |    |           |
+ |              libimgtool.a              |    | libgcfg.a |
+ |________________________________________|    |___________|
+  _________________      _________________
+ |                 |    |                 |
+ | libfilesystem.a |    |    libtar.a     |
+ |_________________|    |_________________|
+ |                 |
+ |   libimage.a    |
+ |_________________|
+  ________________________________________
+ |                                        |
+ |              libfstream.a              |
+ |________________________________________|
+ |                                        |
+ |               libxfrm.a                |
+ |________________________________________|
+ |                                        |
+ |               libutil.a                |
+ |________________________________________|
+
+
+ From bottom to top:
+
+  - libutil.a contains a collection of helper functions, as well as a basic
+    object_t type for implementing reference counted objects.
+
+  - libxfrm.a contains abstract data types for processing a stream of
+    bytes (xfrm_stream_t) and blocks of data (xfrm_block_t).
+
+    Currently the following xfrm_stream_t implementations are available:
+      - bzip2 stream compression/decompression
+      - xz stream compression/decompression
+      - gzip stream compression/decompression
+      - zlib stream compression/decompression
+      - zstd stream compression/decompression
+
+  - libfstream.a contains abstract data types for handling binary stream
+    data I/O (ostream_t and istream_t).
+
+    The underlying function pointers and raw internals are exposed to allow
+    implementing custom streams, but users are expected to go through the
+    supplied functions, because they do additional processing.
+
+    Helper functions are available for things like skip on input stream,
+    append zero-bytes to output, printf, get_line, ...
+
+    Stream implementations are available for standard in/out, regular file I/O,
+    a dummy sink that discards data and counts written bytes, as well as nested
+    streams that internally wrap another stream and transparently feed the
+    data through an xfrm_stream_t.
+
+  - libtar.a contains a small tar parsing library built on top of libfstream.a
+
+    It has been ported over from squashfs-tools-ng where it is used
+    by tar2sqfs.
+
+    Since it is based on abstract streams, it can also read compressed archives
+    if given a stream that internally decompresses the data it reads.
+
+  - libimage.a basically implements a block layer. Its core is the volume_t
+    abstract datatype which offers an interface for block based I/O.
+
+    Currently, the following volume_t implementations are available:
+      - A volume_t that internally wraps a Unix file descriptor
+      - A block size adapter that wraps another volume_t and can set a
+        different block size and byte offset from the start.
+
+    Convenience functions are available for byte based I/O, data transfer, ...
+
+    An ostream_t implementation is available that writes to a specified area
+    on a volume_t.
+
+  - libfilesystem.a implements filesystem formatting and file management on
+    top of libimage.a.
+
+    Its core is the fstree_t object which manages an underlying volume_t. It
+    manages a directory hierarchy to which entries can be added with a simple
+    API. For file entries, it also provides an API to read/write/truncate data
+    and takes care of managing the data as a continuous range on the underlying
+    volume, as well as accounting for sparse regions (if configured to do so).
+
+    A volume_t implementation is provided that internally writes to a file
+    managed by an fstree_t, which allows arbitrarily deep nesting.
+
+    For managing filesystem meta data, a filesystem_t abstract data type is
+    provided. It does 2 things:
+     - Given a volume, create a properly configured fstree_t instance that
+       can be used to populate the filesystem.
+     - Once populating the tree is done, add the FINAL meta data structures,
+       which is allowed to be a destructive in regard to the fstree_t.
+
+    Currently the following filesystem implementations are available:
+     - TAR
+     - CPIO
+     - FAT
+
+ - libimgtool.a implements higher level functionality on top of the before
+   mentioned libraries.
+
+   It implements the following objects:
+     - fs_dep_tracker_t takes care of tracking dependency relation ships
+       between filesystems and the volumes on which they where constructed,
+       as well as the upper layer filesystem or volume that a volume may be
+       based on.
+
+       It has a single function to build up all filesystem formats and sync
+       all volumes in the proper, reverse dependency order.
+
+     - file_source_t is an abstract data type which basically provides an
+       interface for reading archive contents in a linear fashion.
+
+     - file_sink_t is an object that allows binding filesystem_t objects
+       to various path prefixes, kind of like mount points.
+
+       Given a file_source_t it reads all of its contents and assigns them
+       to the fstree_t object of the filesystem_t with the longest matching
+       prefix (which it of course cuts away from the paths and hard link
+       targets).
+
+
+   Currently the following file_source_t implementations are available:
+     - A directory based one which simply recursively scans the contents
+       of a given input directory.
+     - A libtar.a based tarball reader, that can also auto detect an underlying
+       compression format and transparently decompress the tarball.
+     - One that supports parsing a Linux `gen_init_ramfs` style listing.
+     - An aggregate source that allows binding several sources together and
+       returns the results from all of them.
+     - A filter source that wraps another source and can accept or reject
+       entries based on shell glob patterns on their path.
+
+
+ - libgcfg.a is a kinda-sorta-independently maintained config parsing library.
+   In the long run it will probably have to be made aware of object_t objects
+   and possible integrated better.
+
+
+
+On the top-most level, the imgtool binary tries to bind all of those libraries
+together, parse a config file using libgcfg.a and then create an image from
+that. The program itself is currently the messiest, proof-of-concept part of
+the whole stack.
+
+
+Throughout development, every component that was required to build something on
+top was thoroughly tested before moving on (but in some cases, only the
+functionality that was required nad not necessarily what was documented).
+
+Basically the spirit for adding functionality is "test or it didn't happen".
