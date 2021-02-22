@@ -315,7 +315,7 @@ static const struct {
 	size_t len;
 } compress_magic[] = {
 	{ MAGIC_COMPRESSOR_GZIP, (const uint8_t *)"\x1F\x8B\x08", 3 },
-	{ MAGIC_COMPRESSOR_XZ, (const uint8_t *)("\xFD" "7zXZ"), 6 },
+	{ MAGIC_COMPRESSOR_XZ, (const uint8_t *)("\xFD" "7zXZ"), 5 },
 	{ MAGIC_COMPRESSOR_ZSTD, (const uint8_t *)"\x28\xB5\x2F\xFD", 4 },
 	{ MAGIC_COMPRESSOR_BZIP2, (const uint8_t *)"BZh", 3 },
 };
@@ -335,7 +335,7 @@ static int find_the_magic(istream_t *strm)
 	size_t i;
 	int ret;
 
-	if (tar_probe(strm->buffer, strm->buffer_used))
+	if (tar_probe(strm->buffer, strm->buffer_used) == 0)
 		return 0;
 
 	for (i = 0; i < sizeof(compress_magic) / sizeof(compress_magic[0]); ++i) {
