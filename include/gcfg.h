@@ -11,6 +11,8 @@
 #include <stdint.h>
 #include <stddef.h>
 
+#include "predef.h"
+
 #define GCFG_PRINTF_FUN(fmtidx, elidx) \
 	__attribute__ ((format (printf, fmtidx, elidx)))
 
@@ -57,6 +59,8 @@ typedef struct {
 } gcfg_enum_t;
 
 typedef struct gcfg_file_t {
+	object_t obj;
+
 	void (*report_error)(struct gcfg_file_t *f, const char *msg, ...)
 		GCFG_PRINTF_FUN(2, 3);
 
@@ -193,12 +197,6 @@ double gcfg_number_to_double(const gcfg_number_t *num);
 
 int gcfg_parse_file(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 		    void *usr);
-
-gcfg_file_t *gcfg_file_open(const char *path);
-
-void gcfg_file_close(gcfg_file_t *file);
-
-
 
 
 

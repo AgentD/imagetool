@@ -54,6 +54,11 @@ test_filesource_tar6_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_tar6_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar6.tar.zst
 endif
 
+test_gcfg_file_SOURCES = tests/libimgtool/gcfg_file.c tests/test.h
+test_gcfg_file_LDADD = libimgtool.a libfstream.a libutil.a
+test_gcfg_file_CPPFLAGS = $(AM_CPPFLAGS)
+test_gcfg_file_CPPFLAGS += -DTESTFILE=$(top_srcdir)/tests/libimgtool/gcfg_file.txt
+
 test_filesink_SOURCES = tests/libimgtool/filesink.c tests/test.h
 test_filesink_LDADD = libimgtool.a libfilesystem.a libimage.a
 test_filesink_LDADD += libfstream.a libutil.a
@@ -81,10 +86,10 @@ test_stacking1_LDADD += libtar.a libfstream.a libutil.a
 
 check_PROGRAMS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
 check_PROGRAMS += test_source_listing test_source_filter test_filesink
-check_PROGRAMS += test_source_aggregate test_stacking1
+check_PROGRAMS += test_gcfg_file test_source_aggregate test_stacking1
 
 TESTS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
-TESTS += test_source_listing test_source_filter test_filesink
+TESTS += test_source_listing test_source_filter test_filesink test_gcfg_file
 TESTS += test_source_aggregate test_stacking1
 
 if WITH_GZIP
@@ -114,3 +119,4 @@ EXTRA_DIST += tests/libimgtool/filesource/tar5.tar.bz2
 EXTRA_DIST += tests/libimgtool/filesource/tar6.tar.zst
 EXTRA_DIST += tests/libimgtool/filesource/listing/hello.txt
 EXTRA_DIST += tests/libimgtool/stacking/stacking1.tar
+EXTRA_DIST += tests/libimgtool/gcfg_file.txt

@@ -486,7 +486,7 @@ int main(int argc, char **argv)
 	if (init_config())
 		return EXIT_FAILURE;
 
-	gcfg = gcfg_file_open(opt.config_path);
+	gcfg = open_gcfg_file(opt.config_path);
 	if (gcfg == NULL)
 		goto out_config;
 
@@ -526,7 +526,7 @@ out:
 out_tracker:
 	object_drop(dep_tracker);
 out_gcfg:
-	gcfg_file_close(gcfg);
+	object_drop(gcfg);
 
 	while (mg_list != NULL) {
 		mg = mg_list;

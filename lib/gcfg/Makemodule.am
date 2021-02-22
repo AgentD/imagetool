@@ -1,5 +1,5 @@
 libgcfg_a_SOURCES = include/gcfg.h lib/gcfg/dec_num.c lib/gcfg/parse_number.c
-libgcfg_a_SOURCES += lib/gcfg/file.c lib/gcfg/parse_boolean.c lib/gcfg/xdigit.c
+libgcfg_a_SOURCES += lib/gcfg/parse_boolean.c lib/gcfg/xdigit.c
 libgcfg_a_SOURCES += lib/gcfg/parse_string.c lib/gcfg/parse_file.c
 libgcfg_a_SOURCES += lib/gcfg/parse_enum.c lib/gcfg/parse_size.c
 libgcfg_a_SOURCES += lib/gcfg/is_valid_utf8.c lib/gcfg/parse_vector.c
