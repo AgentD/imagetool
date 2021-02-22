@@ -29,6 +29,18 @@ static file_source_t *create_listing(plugin_t *plugin, const char *arg)
 	return (file_source_t *)file_source_listing_create(arg);
 }
 
+static file_source_t *create_dir_source(plugin_t *plugin, const char *arg)
+{
+	(void)plugin;
+	return (file_source_t *)file_source_directory_create(arg);
+}
+
+static file_source_t *create_tar_source(plugin_t *plugin, const char *arg)
+{
+	(void)plugin;
+	return (file_source_t *)file_source_tar_create(arg);
+}
+
 static plugin_t plugin_listing = {
 	.type = PLUGIN_TYPE_FILE_SOURCE,
 	.name = "listing",
@@ -38,4 +50,22 @@ static plugin_t plugin_listing = {
 	},
 };
 
+static plugin_t plugin_dirscan = {
+	.type = PLUGIN_TYPE_FILE_SOURCE,
+	.name = "dirscan",
+	.create = {
+		.file_source = create_dir_source,
+	},
+};
+
+static plugin_t plugin_tarunpack = {
+	.type = PLUGIN_TYPE_FILE_SOURCE,
+	.name = "tarunpack",
+	.create = {
+		.file_source = create_tar_source,
+	},
+};
+
 EXPORT_PLUGIN(plugin_listing)
+EXPORT_PLUGIN(plugin_dirscan)
+EXPORT_PLUGIN(plugin_tarunpack)

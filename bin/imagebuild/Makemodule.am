@@ -4,6 +4,8 @@ imagebuild_SOURCES += bin/imagebuild/builtin_volume.c
 imagebuild_SOURCES += bin/imagebuild/builtin_source.c
 imagebuild_SOURCES += bin/imagebuild/builtin_fs.c
 imagebuild_LDADD = libimgtool.a libfilesystem.a libimage.a
-imagebuild_LDADD += libtar.a libgcfg.a libfstream.a libutil.a
+imagebuild_LDADD += libtar.a libgcfg.a libfstream.a libxfrm.a libutil.a
+imagebuild_LDADD += $(ZLIB_LIBS) $(XZ_LIBS) $(LZO_LIBS) $(LZ4_LIBS)
+imagebuild_LDADD += $(ZSTD_LIBS) $(BZIP2_LIBS)
 
 bin_PROGRAMS += imagebuild
