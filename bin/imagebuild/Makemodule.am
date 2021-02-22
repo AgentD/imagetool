@@ -1,8 +1,9 @@
 imagebuild_SOURCES = bin/imagebuild/imagebuild.c bin/imagebuild/imagebuild.h
 imagebuild_SOURCES += bin/imagebuild/options.c bin/imagebuild/version.c
-imagebuild_SOURCES += bin/imagebuild/builtin.c
+imagebuild_SOURCES += bin/imagebuild/builtin_volume.c
+imagebuild_SOURCES += bin/imagebuild/builtin_source.c
+imagebuild_SOURCES += bin/imagebuild/builtin_fs.c
 imagebuild_LDADD = libimgtool.a libfilesystem.a libimage.a
 imagebuild_LDADD += libtar.a libgcfg.a libfstream.a libutil.a
 
 bin_PROGRAMS += imagebuild
-
