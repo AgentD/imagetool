@@ -77,6 +77,75 @@ static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
 
 /*****************************************************************************/
 
+typedef struct config_vector_t {
+	struct config_vector_t *next;
+
+	size_t count;
+	gcfg_keyword_t entries[];
+} config_vector_t;
+
+static config_vector_t *dyn_config = NULL;
+
+static void dyn_config_cleanup(void)
+{
+	while (dyn_config != NULL) {
+		config_vector_t *ent = dyn_config;
+		dyn_config = dyn_config->next;
+		free(ent);
+	}
+}
+
+static config_vector_t *dyn_config_add(size_t count)
+{
+	config_vector_t *ent = calloc(1, sizeof(*ent) +
+				      (count + 1) * sizeof(ent->entries[0]));
+
+	if (ent == NULL) {
+		perror("initializing configuration parser");
+		return NULL;
+	}
+
+	ent->next = dyn_config;
+	dyn_config = ent;
+	ent->count = count;
+	return ent;
+}
+
+static config_vector_t *dyn_config_combine(plugin_t *plugin,
+					   const gcfg_keyword_t *base)
+{
+	size_t i, j, base_count = 0, sub_count = 0;
+	config_vector_t *vec;
+
+	if (base != NULL) {
+		while (base[base_count].name != NULL)
+			++base_count;
+	}
+
+	if (plugin->cfg_sub_nodes != NULL) {
+		while (plugin->cfg_sub_nodes[sub_count].name != NULL)
+			++sub_count;
+	}
+
+	vec = dyn_config_add(base_count + sub_count);
+	if (vec == NULL)
+		return NULL;
+
+	j = 0;
+
+	for (i = 0; i < base_count; ++i)
+		vec->entries[j++] = base[i];
+
+	for (i = 0; i < sub_count; ++i)
+		vec->entries[j++] = plugin->cfg_sub_nodes[i];
+
+	return vec;
+}
+
+/*****************************************************************************/
+
+static config_vector_t *cfg_filesystems = NULL;
+
 static object_t *cb_create_volumefile(const gcfg_keyword_t *kwd,
 				      gcfg_file_t *file, object_t *parent,
 				      const char *string)
@@ -111,11 +180,10 @@ static object_t *cb_create_volumefile(const gcfg_keyword_t *kwd,
 	return (object_t *)volume;
 }
 
-static gcfg_keyword_t *cfg_filesystems = NULL;
-static gcfg_keyword_t *cfg_filesystems_common = NULL;
-
 static int config_init_fs(void)
 {
+	config_vector_t *fs_common = NULL;
+	config_vector_t *vec;
 	size_t i, count = 0;
 	plugin_t *it;
 
@@ -124,25 +192,19 @@ static int config_init_fs(void)
 			++count;
 	}
 
-	cfg_filesystems = calloc(count + 1, sizeof(cfg_filesystems[0]));
-	if (cfg_filesystems == NULL) {
-		perror("initializing filesystem config parser");
+	cfg_filesystems = dyn_config_add(count);
+	if (cfg_filesystems == NULL)
 		return -1;
-	}
-
-	cfg_filesystems_common = calloc(2, sizeof(cfg_filesystems_common[0]));
-	if (cfg_filesystems_common == NULL) {
-		perror("initializing filesystem config parser");
-		free(cfg_filesystems);
-		return -1;
-	}
 
 	/* common options block */
-	cfg_filesystems_common[0].arg = GCFG_ARG_STRING;
-	cfg_filesystems_common[0].name = "volumefile";
-	cfg_filesystems_common[0].handle.cb_string = cb_create_volumefile;
-	cfg_filesystems_common[0].children = cfg_filesystems;
-	cfg_filesystems_common[1].name = NULL;
+	fs_common = dyn_config_add(1);
+	if (fs_common == NULL)
+		return -1;
+
+	fs_common->entries[0].arg = GCFG_ARG_STRING;
+	fs_common->entries[0].name = "volumefile";
+	fs_common->entries[0].handle.cb_string = cb_create_volumefile;
+	fs_common->entries[0].children = cfg_filesystems->entries;
 
 	/* filesystem options block */
 	i = 0;
@@ -151,21 +213,22 @@ static int config_init_fs(void)
 		if (it->type != PLUGIN_TYPE_FILESYSTEM)
 			continue;
 
-		cfg_filesystems[i].arg = GCFG_ARG_STRING;
-		cfg_filesystems[i].name = it->name;
-		cfg_filesystems[i].children = cfg_filesystems_common;
-		cfg_filesystems[i].handle.cb_string = cb_create_fs;
+		if (it->cfg_sub_nodes == NULL) {
+			vec = fs_common;
+		} else {
+			vec = dyn_config_combine(it, fs_common->entries);
+			if (vec == NULL)
+				return -1;
+		}
+
+		cfg_filesystems->entries[i].arg = GCFG_ARG_STRING;
+		cfg_filesystems->entries[i].name = it->name;
+		cfg_filesystems->entries[i].children = vec->entries;
+		cfg_filesystems->entries[i].handle.cb_string = cb_create_fs;
 		++i;
 	}
 
-	cfg_filesystems[i].name = NULL;
 	return 0;
-}
-
-static void config_cleanup_fs(void)
-{
-	free(cfg_filesystems_common);
-	free(cfg_filesystems);
 }
 
 /*****************************************************************************/
@@ -296,118 +359,77 @@ static const gcfg_keyword_t cfg_mount_group[] = {
 	}
 };
 
-static gcfg_keyword_t *cfg_raw_dyn_child = NULL;
-static gcfg_keyword_t *cfg_mg_dyn_child = NULL;
-static gcfg_keyword_t *cfg_global = NULL;
+static config_vector_t *cfg_global = NULL;
 
 static int init_config(void)
 {
-	size_t i, j, count, src_count, fs_count;
-	gcfg_keyword_t *list;
+	config_vector_t *raw_opt, *mount_opt;
+	size_t i, j, count, src_count;
 	plugin_t *it;
 
 	if (config_init_fs())
 		return -1;
 
-	cfg_global = calloc(3, sizeof(cfg_global[0]));
-	if (cfg_global == NULL) {
-		perror("initializing configuration parser");
-		config_cleanup_fs();
-		return -1;
-	}
-
 	/* raw children */
-	fs_count = 0;
+	count = sizeof(cfg_raw_volume) / sizeof(cfg_raw_volume[0]);
 
-	for (it = plugins; it != NULL; it = it->next) {
-		if (it->type == PLUGIN_TYPE_FILESYSTEM)
-			++fs_count;
-	}
-
-	count = sizeof(cfg_raw_volume) / sizeof(cfg_raw_volume[0]) + fs_count;
-
-	list = calloc(count + 1, sizeof(list[0]));
-	if (list == NULL) {
-		perror("initializing raw volume parser");
-		free(cfg_global);
-		config_cleanup_fs();
+	raw_opt = dyn_config_add(count + cfg_filesystems->count);
+	if (raw_opt == NULL)
 		return -1;
-	}
 
 	j = 0;
 
-	count = sizeof(cfg_raw_volume) / sizeof(cfg_raw_volume[0]);
 	for (i = 0; i < count; ++i)
-		list[j++] = cfg_raw_volume[i];
+		raw_opt->entries[j++] = cfg_raw_volume[i];
 
-	for (i = 0; i < fs_count; ++i)
-		list[j++] = cfg_filesystems[i];
-
-	list[j].name = NULL;
-	cfg_raw_dyn_child = list;
+	for (i = 0; i < cfg_filesystems->count; ++i)
+		raw_opt->entries[j++] = cfg_filesystems->entries[i];
 
 	/* mountgroup children */
 	src_count = 0;
+	count = sizeof(cfg_mount_group) / sizeof(cfg_mount_group[0]);
 
 	for (it = plugins; it != NULL; it = it->next) {
 		if (it->type == PLUGIN_TYPE_FILE_SOURCE)
 			++src_count;
 	}
 
-	count = sizeof(cfg_mount_group) / sizeof(cfg_mount_group[0]);
-
-	list = calloc(count + src_count + 1, sizeof(list[0]));
-	if (list == NULL) {
-		perror("initializing mountgroup parser");
-		goto fail;
-	}
+	mount_opt = dyn_config_add(count + src_count);
+	if (mount_opt == NULL)
+		return -1;
 
 	j = 0;
+
 	for (i = 0; i < count; ++i)
-		list[j++] = cfg_mount_group[i];
+		mount_opt->entries[j++] = cfg_mount_group[i];
 
 	for (it = plugins; it != NULL; it = it->next) {
 		if (it->type != PLUGIN_TYPE_FILE_SOURCE)
 			continue;
 
-		list[j].arg = GCFG_ARG_STRING;
-		list[j].name = it->name;
-		list[j].handle_listing = it->cfg_line_callback;
-		list[j].children = it->cfg_sub_nodes;
-		list[j].handle.cb_string = cb_create_data_source;
+		mount_opt->entries[j].arg = GCFG_ARG_STRING;
+		mount_opt->entries[j].name = it->name;
+		mount_opt->entries[j].handle_listing = it->cfg_line_callback;
+		mount_opt->entries[j].children = it->cfg_sub_nodes;
+		mount_opt->entries[j].handle.cb_string = cb_create_data_source;
 		++j;
 	}
 
-	list[j].name = NULL;
-	cfg_mg_dyn_child = list;
-
 	/* root level entries */
-	cfg_global[0].arg = GCFG_ARG_NONE;
-	cfg_global[0].name = "raw";
-	cfg_global[0].children = cfg_raw_dyn_child;
-	cfg_global[0].handle.cb_none = cb_create_raw_volume;
+	cfg_global = dyn_config_add(2);
+	if (cfg_global == NULL)
+		return -1;
 
-	cfg_global[1].arg = GCFG_ARG_NONE;
-	cfg_global[1].name = "mountgroup";
-	cfg_global[1].children = cfg_mg_dyn_child;
-	cfg_global[1].handle.cb_none = cb_create_mount_group;
+	cfg_global->entries[0].arg = GCFG_ARG_NONE;
+	cfg_global->entries[0].name = "raw";
+	cfg_global->entries[0].children = raw_opt->entries;
+	cfg_global->entries[0].handle.cb_none = cb_create_raw_volume;
 
-	cfg_global[2].name = NULL;
+	cfg_global->entries[1].arg = GCFG_ARG_NONE;
+	cfg_global->entries[1].name = "mountgroup";
+	cfg_global->entries[1].children = mount_opt->entries;
+	cfg_global->entries[1].handle.cb_none = cb_create_mount_group;
 	return 0;
-fail:
-	free(cfg_raw_dyn_child);
-	free(cfg_mg_dyn_child);
-	free(cfg_global);
-	config_cleanup_fs();
-	return -1;
-}
-
-static void cleanup_config(void)
-{
-	free(cfg_raw_dyn_child);
-	free(cfg_mg_dyn_child);
-	free(cfg_global);
-	config_cleanup_fs();
 }
 
 /*****************************************************************************/
@@ -421,7 +443,7 @@ int main(int argc, char **argv)
 	process_options(&opt, argc, argv);
 
 	if (init_config())
-		return EXIT_FAILURE;
+		goto out_config;
 
 	gcfg = open_gcfg_file(opt.config_path);
 	if (gcfg == NULL)
@@ -431,7 +453,7 @@ int main(int argc, char **argv)
 	if (state == NULL)
 		goto out_gcfg;
 
-	if (gcfg_parse_file(gcfg, cfg_global, (object_t *)state))
+	if (gcfg_parse_file(gcfg, cfg_global->entries, (object_t *)state))
 		goto out;
 
 	if (imgtool_state_process(state))
@@ -443,6 +465,6 @@ out:
 out_gcfg:
 	object_drop(gcfg);
 out_config:
-	cleanup_config();
+	dyn_config_cleanup();
 	return status;
 }
