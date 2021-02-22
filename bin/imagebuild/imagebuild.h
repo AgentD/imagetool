@@ -31,8 +31,19 @@ typedef struct {
 
 extern const char *__progname;
 
+extern plugin_t *plugins;
+
 void print_version(void);
 
 void process_options(options_t *opt, int argc, char **argv);
+
+#define EXPORT_PLUGIN(plugin)						\
+	static void __attribute__((constructor)) register_##plugin(void) \
+	{ \
+		plugin_t *p = (plugin_t *)& (plugin);	\
+		\
+		p->next = plugins; \
+		plugins = p; \
+	}
 
 #endif /* IMAGE_BUILD_H */
