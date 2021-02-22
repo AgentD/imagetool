@@ -10,6 +10,11 @@ partitions in a way that can be nested arbitrarily deep.
 On the other hand, the description provides a way to pack files into the
 filesystems (e.g. data from a tarball, a directory or a manual listing).
 
+Right now, this is a project is in a not really useful, experimental stage,
+but advanced far enough that I dare to publish it as "work in progress".
+
+Even the name itself is still work in progress.
+
 ## Motivation
 
 Let's say, you are playing around with an embedded board that boots of
