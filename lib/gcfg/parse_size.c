@@ -18,18 +18,22 @@ const char *gcfg_parse_size(gcfg_file_t *f, const char *in, uint64_t *ret)
 	switch (*in) {
 	case 'k':
 	case 'K':
+		++in;
 		shift = 10;
 		break;
 	case 'm':
 	case 'M':
+		++in;
 		shift = 20;
 		break;
 	case 'g':
 	case 'G':
+		++in;
 		shift = 30;
 		break;
 	case 't':
 	case 'T':
+		++in;
 		shift = 40;
 		break;
 	default:
