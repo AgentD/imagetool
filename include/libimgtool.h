@@ -36,6 +36,7 @@ typedef struct {
 typedef enum {
 	PLUGIN_TYPE_FILESYSTEM = 0,
 	PLUGIN_TYPE_FILE_SOURCE,
+	PLUGIN_TYPE_VOLUME,
 } PLUGIN_TYPE;
 
 typedef struct plugin_t {
@@ -56,6 +57,9 @@ typedef struct plugin_t {
 
 		file_source_t *(*file_source)(struct plugin_t *plugin,
 					      const char *arg);
+
+		volume_t *(*volume)(struct plugin_t *plugin,
+				    imgtool_state_t *state);
 	} create;
 } plugin_t;
 

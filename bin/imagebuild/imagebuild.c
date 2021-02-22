@@ -75,6 +75,25 @@ static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
 	return (object_t *)src;
 }
 
+static object_t *cb_create_volume(const gcfg_keyword_t *kwd,
+				  gcfg_file_t *file, object_t *parent)
+{
+	volume_t *volume;
+	plugin_t *plugin;
+
+	plugin = find_plugin(PLUGIN_TYPE_VOLUME, kwd->name);
+	assert(plugin != NULL);
+
+	volume = plugin->create.volume(plugin, (imgtool_state_t *)parent);
+	if (volume == NULL) {
+		file->report_error(file, "error creating %s volume",
+				   kwd->name);
+		return NULL;
+	}
+
+	return (object_t *)volume;
+}
+
 /*****************************************************************************/
 
 typedef struct config_vector_t {
@@ -144,8 +163,6 @@ static config_vector_t *dyn_config_combine(plugin_t *plugin,
 
 /*****************************************************************************/
 
-static config_vector_t *cfg_filesystems = NULL;
-
 static object_t *cb_create_volumefile(const gcfg_keyword_t *kwd,
 				      gcfg_file_t *file, object_t *parent,
 				      const char *string)
@@ -179,111 +196,6 @@ static object_t *cb_create_volumefile(const gcfg_keyword_t *kwd,
 
 	return (object_t *)volume;
 }
-
-static int config_init_fs(void)
-{
-	config_vector_t *fs_common = NULL;
-	config_vector_t *vec;
-	size_t i, count = 0;
-	plugin_t *it;
-
-	for (it = plugins; it != NULL; it = it->next) {
-		if (it->type == PLUGIN_TYPE_FILESYSTEM)
-			++count;
-	}
-
-	cfg_filesystems = dyn_config_add(count);
-	if (cfg_filesystems == NULL)
-		return -1;
-
-	/* common options block */
-	fs_common = dyn_config_add(1);
-	if (fs_common == NULL)
-		return -1;
-
-	fs_common->entries[0].arg = GCFG_ARG_STRING;
-	fs_common->entries[0].name = "volumefile";
-	fs_common->entries[0].handle.cb_string = cb_create_volumefile;
-	fs_common->entries[0].children = cfg_filesystems->entries;
-
-	/* filesystem options block */
-	i = 0;
-
-	for (it = plugins; it != NULL; it = it->next) {
-		if (it->type != PLUGIN_TYPE_FILESYSTEM)
-			continue;
-
-		if (it->cfg_sub_nodes == NULL) {
-			vec = fs_common;
-		} else {
-			vec = dyn_config_combine(it, fs_common->entries);
-			if (vec == NULL)
-				return -1;
-		}
-
-		cfg_filesystems->entries[i].arg = GCFG_ARG_STRING;
-		cfg_filesystems->entries[i].name = it->name;
-		cfg_filesystems->entries[i].children = vec->entries;
-		cfg_filesystems->entries[i].handle.cb_string = cb_create_fs;
-		++i;
-	}
-
-	return 0;
-}
-
-/*****************************************************************************/
-
-static object_t *cb_raw_set_minsize(const gcfg_keyword_t *kwd,
-				    gcfg_file_t *file, object_t *obj,
-				    uint64_t size)
-{
-	volume_t *vol = (volume_t *)obj;
-	(void)file;
-	(void)kwd;
-
-	vol->min_block_count = size / vol->blocksize;
-	if (size % vol->blocksize)
-		vol->min_block_count += 1;
-
-	return object_grab(vol);
-}
-
-static object_t *cb_raw_set_maxsize(const gcfg_keyword_t *kwd,
-				    gcfg_file_t *file, object_t *obj,
-				    uint64_t size)
-{
-	volume_t *vol = (volume_t *)obj;
-	(void)file;
-	(void)kwd;
-
-	vol->max_block_count = size / vol->blocksize;
-	return object_grab(vol);
-}
-
-static object_t *cb_create_raw_volume(const gcfg_keyword_t *kwd,
-				      gcfg_file_t *file, object_t *parent)
-{
-	(void)file; (void)kwd;
-	return object_grab(((imgtool_state_t *)parent)->out_file);
-}
-
-static const gcfg_keyword_t cfg_raw_volume[] = {
-	{
-		.arg = GCFG_ARG_SIZE,
-		.name = "minsize",
-		.handle = {
-			.cb_size = cb_raw_set_minsize,
-		},
-	}, {
-		.arg = GCFG_ARG_SIZE,
-		.name = "maxsize",
-		.handle = {
-			.cb_size = cb_raw_set_maxsize,
-		},
-	}
-};
-
-/*****************************************************************************/
 
 static object_t *cb_mp_add_bind(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 				object_t *object, const char *line)
@@ -363,36 +275,59 @@ static config_vector_t *cfg_global = NULL;
 
 static int init_config(void)
 {
-	config_vector_t *raw_opt, *mount_opt;
-	size_t i, j, count, src_count;
+	size_t i, j, count, fs_count = 0, src_count = 0, vol_count = 0;
+	config_vector_t *mount_opt, *fs_common, *vec;
+	config_vector_t *cfg_filesystems;
 	plugin_t *it;
-
-	if (config_init_fs())
-		return -1;
-
-	/* raw children */
-	count = sizeof(cfg_raw_volume) / sizeof(cfg_raw_volume[0]);
-
-	raw_opt = dyn_config_add(count + cfg_filesystems->count);
-	if (raw_opt == NULL)
-		return -1;
-
-	j = 0;
-
-	for (i = 0; i < count; ++i)
-		raw_opt->entries[j++] = cfg_raw_volume[i];
-
-	for (i = 0; i < cfg_filesystems->count; ++i)
-		raw_opt->entries[j++] = cfg_filesystems->entries[i];
-
-	/* mountgroup children */
-	src_count = 0;
-	count = sizeof(cfg_mount_group) / sizeof(cfg_mount_group[0]);
 
 	for (it = plugins; it != NULL; it = it->next) {
 		if (it->type == PLUGIN_TYPE_FILE_SOURCE)
 			++src_count;
+
+		if (it->type == PLUGIN_TYPE_VOLUME)
+			++vol_count;
+
+		if (it->type == PLUGIN_TYPE_FILESYSTEM)
+			++fs_count;
 	}
+
+	/* filesystems */
+	cfg_filesystems = dyn_config_add(fs_count);
+	if (cfg_filesystems == NULL)
+		return -1;
+
+	fs_common = dyn_config_add(1);
+	if (fs_common == NULL)
+		return -1;
+
+	fs_common->entries[0].arg = GCFG_ARG_STRING;
+	fs_common->entries[0].name = "volumefile";
+	fs_common->entries[0].handle.cb_string = cb_create_volumefile;
+	fs_common->entries[0].children = cfg_filesystems->entries;
+
+	i = 0;
+
+	for (it = plugins; it != NULL; it = it->next) {
+		if (it->type != PLUGIN_TYPE_FILESYSTEM)
+			continue;
+
+		if (it->cfg_sub_nodes == NULL) {
+			vec = fs_common;
+		} else {
+			vec = dyn_config_combine(it, fs_common->entries);
+			if (vec == NULL)
+				return -1;
+		}
+
+		cfg_filesystems->entries[i].arg = GCFG_ARG_STRING;
+		cfg_filesystems->entries[i].name = it->name;
+		cfg_filesystems->entries[i].children = vec->entries;
+		cfg_filesystems->entries[i].handle.cb_string = cb_create_fs;
+		++i;
+	}
+
+	/* mountgroup children */
+	count = sizeof(cfg_mount_group) / sizeof(cfg_mount_group[0]);
 
 	mount_opt = dyn_config_add(count + src_count);
 	if (mount_opt == NULL)
@@ -416,19 +351,35 @@ static int init_config(void)
 	}
 
 	/* root level entries */
-	cfg_global = dyn_config_add(2);
+	cfg_global = dyn_config_add(vol_count + 1);
 	if (cfg_global == NULL)
 		return -1;
 
-	cfg_global->entries[0].arg = GCFG_ARG_NONE;
-	cfg_global->entries[0].name = "raw";
-	cfg_global->entries[0].children = raw_opt->entries;
-	cfg_global->entries[0].handle.cb_none = cb_create_raw_volume;
+	j = 0;
 
-	cfg_global->entries[1].arg = GCFG_ARG_NONE;
-	cfg_global->entries[1].name = "mountgroup";
-	cfg_global->entries[1].children = mount_opt->entries;
-	cfg_global->entries[1].handle.cb_none = cb_create_mount_group;
+	for (it = plugins; it != NULL; it = it->next) {
+		if (it->type != PLUGIN_TYPE_VOLUME)
+			continue;
+
+		if (it->cfg_sub_nodes == NULL) {
+			vec = cfg_filesystems;
+		} else {
+			vec = dyn_config_combine(it, cfg_filesystems->entries);
+			if (vec == NULL)
+				return -1;
+		}
+
+		cfg_global->entries[j].arg = GCFG_ARG_NONE;
+		cfg_global->entries[j].name = it->name;
+		cfg_global->entries[j].children = vec->entries;
+		cfg_global->entries[j].handle.cb_none = cb_create_volume;
+		++j;
+	}
+
+	cfg_global->entries[j].arg = GCFG_ARG_NONE;
+	cfg_global->entries[j].name = "mountgroup";
+	cfg_global->entries[j].children = mount_opt->entries;
+	cfg_global->entries[j].handle.cb_none = cb_create_mount_group;
 	return 0;
 }
 
