@@ -68,57 +68,57 @@ static const char *apply_arg(gcfg_file_t *file, const gcfg_keyword_t *kwd,
 
 	switch (kwd->arg) {
 	case GCFG_ARG_NONE:
-		*child_out = kwd->handle.cb_none(file, parent);
+		*child_out = kwd->handle.cb_none(kwd, file, parent);
 		break;
 	case GCFG_ARG_BOOLEAN:
 		ptr = gcfg_parse_boolean(file, ptr, &iret);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_bool(file, parent, iret != 0);
+		*child_out = kwd->handle.cb_bool(kwd, file, parent, iret != 0);
 		break;
 	case GCFG_ARG_STRING:
 		strval = file->buffer;
 		ptr = gcfg_parse_string(file, ptr, strval);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_string(file, parent, strval);
+		*child_out = kwd->handle.cb_string(kwd, file, parent, strval);
 		break;
 	case GCFG_ARG_ENUM:
 		ptr = gcfg_parse_enum(file, ptr, kwd->option.enumtokens, &iret);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_enum(file, parent, iret);
+		*child_out = kwd->handle.cb_enum(kwd, file, parent, iret);
 		break;
 	case GCFG_ARG_NUMBER:
 		ptr = gcfg_parse_number(file, ptr, num);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_number(file, parent, num, 1);
+		*child_out = kwd->handle.cb_number(kwd, file, parent, num, 1);
 		break;
 	case GCFG_ARG_SIZE:
 		ptr = gcfg_parse_size(file, ptr, &lval);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_size(file, parent, lval);
+		*child_out = kwd->handle.cb_size(kwd, file, parent, lval);
 		break;
 #ifndef GCFG_DISABLE_VECTOR
 	case GCFG_ARG_VEC2:
 		ptr = gcfg_parse_vector(file, ptr, 2, num);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_number(file, parent, num, 2);
+		*child_out = kwd->handle.cb_number(kwd, file, parent, num, 2);
 		break;
 	case GCFG_ARG_VEC3:
 		ptr = gcfg_parse_vector(file, ptr, 3, num);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_number(file, parent, num, 3);
+		*child_out = kwd->handle.cb_number(kwd, file, parent, num, 3);
 		break;
 	case GCFG_ARG_VEC4:
 		ptr = gcfg_parse_vector(file, ptr, 4, num);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_number(file, parent, num, 4);
+		*child_out = kwd->handle.cb_number(kwd, file, parent, num, 4);
 		break;
 #endif
 #ifndef GCFG_DISABLE_NETWORK
@@ -126,25 +126,25 @@ static const char *apply_arg(gcfg_file_t *file, const gcfg_keyword_t *kwd,
 		ptr = gcfg_parse_ipv4(file, ptr, &ip);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_ip(file, parent, &ip);
+		*child_out = kwd->handle.cb_ip(kwd, file, parent, &ip);
 		break;
 	case GCFG_ARG_IPV6:
 		ptr = gcfg_parse_ipv6(file, ptr, &ip);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_ip(file, parent, &ip);
+		*child_out = kwd->handle.cb_ip(kwd, file, parent, &ip);
 		break;
 	case GCFG_ARG_MAC_ADDR:
 		ptr = gcfg_parse_mac_addr(file, ptr, &vnd, &dev);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_mac(file, parent, vnd, dev);
+		*child_out = kwd->handle.cb_mac(kwd, file, parent, vnd, dev);
 		break;
 	case GCFG_ARG_BANDWIDTH:
 		ptr = gcfg_parse_bandwidth(file, ptr, &lval);
 		if (ptr == NULL)
 			return NULL;
-		*child_out = kwd->handle.cb_bandwidth(file, parent, lval);
+		*child_out = kwd->handle.cb_bandwidth(kwd, file, parent, lval);
 		break;
 #endif
 	default:

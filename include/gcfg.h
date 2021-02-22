@@ -76,7 +76,9 @@ typedef struct gcfg_file_t {
 	char *buffer;
 } gcfg_file_t;
 
-typedef struct gcfg_keyword_t {
+typedef struct gcfg_keyword_t gcfg_keyword_t;
+
+struct gcfg_keyword_t {
 	uint32_t arg;
 	uint32_t pad0;
 
@@ -87,26 +89,32 @@ typedef struct gcfg_keyword_t {
 	} option;
 
 	union {
-		object_t *(*cb_none)(gcfg_file_t *file, object_t *parent);
-		object_t *(*cb_bool)(gcfg_file_t *file, object_t *parent,
+		object_t *(*cb_none)(const gcfg_keyword_t *kwd,
+				     gcfg_file_t *file, object_t *parent);
+		object_t *(*cb_bool)(const gcfg_keyword_t *kwd,
+				     gcfg_file_t *file, object_t *parent,
 				     bool boolean);
-		object_t *(*cb_string)(gcfg_file_t *file, object_t *parent,
+		object_t *(*cb_string)(const gcfg_keyword_t *kwd,
+				       gcfg_file_t *file, object_t *parent,
 				       const char *string);
-		object_t *(*cb_enum)(gcfg_file_t *file, object_t *parent,
+		object_t *(*cb_enum)(const gcfg_keyword_t *kwd,
+				     gcfg_file_t *file, object_t *parent,
 				     int value);
-		object_t *(*cb_number)(gcfg_file_t *file, object_t *parent,
+		object_t *(*cb_number)(const gcfg_keyword_t *kwd,
+				       gcfg_file_t *file, object_t *parent,
 				       const gcfg_number_t *num, int count);
-		object_t *(*cb_size)(gcfg_file_t *file, object_t *parent,
+		object_t *(*cb_size)(const gcfg_keyword_t *kwd,
+				     gcfg_file_t *file, object_t *parent,
 				     uint64_t size);
 	} handle;
 
-	const struct gcfg_keyword_t *children;
+	const gcfg_keyword_t *children;
 
 	int (*finalize_object)(gcfg_file_t *file, object_t *child);
 
 	int (*handle_listing)(gcfg_file_t *file, object_t *child,
 			      const char *line);
-} gcfg_keyword_t;
+};
 
 
 #define GCFG_BEGIN_ENUM(name) static const gcfg_enum_t name[] = {

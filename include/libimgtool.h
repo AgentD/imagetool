@@ -32,6 +32,33 @@ typedef struct {
 	volume_t *out_file;
 } imgtool_state_t;
 
+
+typedef enum {
+	PLUGIN_TYPE_FILESYSTEM = 0,
+	PLUGIN_TYPE_FILE_SOURCE,
+} PLUGIN_TYPE;
+
+typedef struct plugin_t {
+	PLUGIN_TYPE type;
+
+	const char *name;
+
+	struct plugin_t *next;
+
+	gcfg_keyword_t *cfg_sub_nodes;
+
+	int (*cfg_line_callback)(gcfg_file_t *file, object_t *object,
+				 const char *line);
+
+	union {
+		filesystem_t *(*filesystem)(struct plugin_t *plugin,
+					    volume_t *parent);
+
+		file_source_t *(*file_source)(struct plugin_t *plugin,
+					      const char *arg);
+	} create;
+} plugin_t;
+
 #ifdef __cplusplus
 extern "C" {
 #endif
