@@ -1,4 +1,4 @@
-/* SPDX-License-Identifier: ISC */
+/* SPDX-License-Identifier: GPL-3.0-or-later */
 /*
  * is_valid_utf8.c
  *

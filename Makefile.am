@@ -11,7 +11,7 @@ check_PROGRAMS =
 check_SCRIPTS =
 pkgconfig_DATA =
 
-EXTRA_DIST = autogen.sh README.md doc/architecture.txt
+EXTRA_DIST = autogen.sh README.md LICENSE doc/architecture.txt
 TESTS =
 
 include lib/fstream/Makemodule.am
