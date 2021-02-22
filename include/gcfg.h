@@ -87,28 +87,24 @@ typedef struct gcfg_keyword_t {
 	} option;
 
 	union {
-		void *(*cb_none)(gcfg_file_t *file, void *parent);
-		void *(*cb_bool)(gcfg_file_t *file, void *parent, bool boolean);
-		void *(*cb_string)(gcfg_file_t *file, void *parent,
-				   const char *string);
-		void *(*cb_enum)(gcfg_file_t *file, void *parent, int value);
-		void *(*cb_number)(gcfg_file_t *file, void *parent,
-				   const gcfg_number_t *num, int count);
-		void *(*cb_ip)(gcfg_file_t *file, void *parent,
-			       const gcfg_ip_addr_t *address);
-		void *(*cb_mac)(gcfg_file_t *file, void *parent,
-				uint32_t vendor, uint32_t device);
-		void *(*cb_bandwidth)(gcfg_file_t *file, void *parent,
-				      uint64_t bandwidth);
-		void *(*cb_size)(gcfg_file_t *file, void *parent,
-				 uint64_t size);
+		object_t *(*cb_none)(gcfg_file_t *file, object_t *parent);
+		object_t *(*cb_bool)(gcfg_file_t *file, object_t *parent,
+				     bool boolean);
+		object_t *(*cb_string)(gcfg_file_t *file, object_t *parent,
+				       const char *string);
+		object_t *(*cb_enum)(gcfg_file_t *file, object_t *parent,
+				     int value);
+		object_t *(*cb_number)(gcfg_file_t *file, object_t *parent,
+				       const gcfg_number_t *num, int count);
+		object_t *(*cb_size)(gcfg_file_t *file, object_t *parent,
+				     uint64_t size);
 	} handle;
 
 	const struct gcfg_keyword_t *children;
 
-	int (*finalize_object)(gcfg_file_t *file, void *child);
+	int (*finalize_object)(gcfg_file_t *file, object_t *child);
 
-	int (*handle_listing)(gcfg_file_t *file, void *child,
+	int (*handle_listing)(gcfg_file_t *file, object_t *child,
 			      const char *line);
 } gcfg_keyword_t;
 
@@ -196,7 +192,7 @@ extern "C" {
 double gcfg_number_to_double(const gcfg_number_t *num);
 
 int gcfg_parse_file(gcfg_file_t *file, const gcfg_keyword_t *keywords,
-		    void *usr);
+		    object_t *usr);
 
 
 

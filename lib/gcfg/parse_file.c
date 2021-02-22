@@ -54,7 +54,8 @@ static const char *find_keyword(gcfg_file_t *file,
 }
 
 static const char *apply_arg(gcfg_file_t *file, const gcfg_keyword_t *kwd,
-			     const char *ptr, void *parent, void **child_out)
+			     const char *ptr, object_t *parent,
+			     object_t **child_out)
 {
 	gcfg_number_t num[4];
 #ifndef GCFG_DISABLE_NETWORK
@@ -157,7 +158,7 @@ static const char *apply_arg(gcfg_file_t *file, const gcfg_keyword_t *kwd,
 }
 
 static int plain_listing(gcfg_file_t *file, const gcfg_keyword_t *keyword,
-			 void *object)
+			 object_t *object)
 {
 	const char *ptr;
 	int ret;
@@ -201,12 +202,12 @@ fail_brace_extra:
 }
 
 static int parse(gcfg_file_t *file, const gcfg_keyword_t *keywords,
-		 void *parent, unsigned int level)
+		 object_t *parent, unsigned int level)
 {
 	const gcfg_keyword_t *kwd;
 	const char *ptr;
+	object_t *child;
 	bool have_args;
-	void *child;
 	int ret;
 
 	for (;;) {
@@ -249,27 +250,39 @@ static int parse(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 
 			if (*ptr == '{') {
 				ptr = skip_space(ptr + 1);
-				if (!is_line_end(*ptr))
+				if (!is_line_end(*ptr)) {
+					object_drop(child);
 					goto fail_brace_extra;
+				}
 				if (kwd->handle_listing != NULL) {
-					if (plain_listing(file, kwd, child))
+					if (plain_listing(file, kwd, child)) {
+						object_drop(child);
 						return -1;
+					}
 				} else {
-					if (kwd->children == NULL)
+					if (kwd->children == NULL) {
+						object_drop(child);
 						goto fail_children;
+					}
 					if (parse(file, kwd->children,
 						  child, level + 1)) {
+						object_drop(child);
 						return -1;
 					}
 				}
 			} else if (!is_line_end(*ptr)) {
+				object_drop(child);
 				goto fail_kwd_extra;
 			}
 
 			if (kwd->finalize_object != NULL) {
-				if (kwd->finalize_object(file, child))
+				if (kwd->finalize_object(file, child)) {
+					object_drop(child);
 					return -1;
+				}
 			}
+
+			child = object_drop(child);
 		} else if (*ptr == '}') {
 			if (level == 0)
 				goto fail_level;
@@ -317,7 +330,7 @@ fail_have_arg:
 }
 
 int gcfg_parse_file(gcfg_file_t *file, const gcfg_keyword_t *keywords,
-		    void *usr)
+		    object_t *usr)
 {
 	return parse(file, keywords, usr, 0);
 }

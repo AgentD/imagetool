@@ -8,6 +8,8 @@
 
 
 typedef struct mount_group_t {
+	object_t base;
+
 	struct mount_group_t *next;
 	file_sink_t *sink;
 	file_source_t *source;
@@ -21,19 +23,26 @@ static mount_group_t *mg_list_last = NULL;
 static fs_dep_tracker_t *dep_tracker;
 static volume_t *out_file;
 
-static int finalize_object(gcfg_file_t *file, void *object)
+
+static void mountgroup_destroy(object_t *obj)
 {
-	(void)file;
-	object_drop(object);
-	return 0;
+	mount_group_t *mg = (mount_group_t *)obj;
+
+	if (mg->next != NULL)
+		mg->next = object_drop(mg->next);
+
+	object_drop(mg->sink);
+	object_drop(mg->source);
+	free(mg);
 }
 
 /*****************************************************************************/
 
-static void *cb_create_fatfs(gcfg_file_t *file, void *parent,
-			     const char *string)
+static object_t *cb_create_fatfs(gcfg_file_t *file, object_t *parent,
+				 const char *string)
 {
-	filesystem_t *fs = filesystem_fatfs_create(parent);
+	volume_t *vol = (volume_t *)parent;
+	filesystem_t *fs = filesystem_fatfs_create(vol);
 
 	if (fs == NULL) {
 		file->report_error(file, "error creating FAT filesystem '%s'",
@@ -41,20 +50,21 @@ static void *cb_create_fatfs(gcfg_file_t *file, void *parent,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_fs(dep_tracker, fs, parent, string)) {
+	if (fs_dep_tracker_add_fs(dep_tracker, fs, vol, string)) {
 		file->report_error(file, "error registering "
 				   "FAT filesystem '%s'", string);
 		object_drop(fs);
 		return NULL;
 	}
 
-	return fs;
+	return (object_t *)fs;
 }
 
-static void *cb_create_tarfs(gcfg_file_t *file, void *parent,
-			     const char *string)
+static object_t *cb_create_tarfs(gcfg_file_t *file, object_t *parent,
+				 const char *string)
 {
-	filesystem_t *fs = filesystem_tar_create(parent);
+	volume_t *vol = (volume_t *)parent;
+	filesystem_t *fs = filesystem_tar_create(vol);
 
 	if (fs == NULL) {
 		file->report_error(file, "error creating tar filesystem '%s'",
@@ -62,20 +72,21 @@ static void *cb_create_tarfs(gcfg_file_t *file, void *parent,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_fs(dep_tracker, fs, parent, string)) {
+	if (fs_dep_tracker_add_fs(dep_tracker, fs, vol, string)) {
 		file->report_error(file, "error registering "
 				   "tar filesystem '%s'", string);
 		object_drop(fs);
 		return NULL;
 	}
 
-	return fs;
+	return (object_t *)fs;
 }
 
-static void *cb_create_cpiofs(gcfg_file_t *file, void *parent,
-			      const char *string)
+static object_t *cb_create_cpiofs(gcfg_file_t *file, object_t *parent,
+				  const char *string)
 {
-	filesystem_t *fs = filesystem_cpio_create(parent);
+	volume_t *vol = (volume_t *)parent;
+	filesystem_t *fs = filesystem_cpio_create(vol);
 
 	if (fs == NULL) {
 		file->report_error(file, "error creating cpio filesystem '%s'",
@@ -83,20 +94,20 @@ static void *cb_create_cpiofs(gcfg_file_t *file, void *parent,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_fs(dep_tracker, fs, parent, string)) {
+	if (fs_dep_tracker_add_fs(dep_tracker, fs, vol, string)) {
 		file->report_error(file, "error reginstering "
 				   "cpio filesystem '%s'", string);
 		object_drop(fs);
 		return NULL;
 	}
 
-	return fs;
+	return (object_t *)fs;
 }
 
-static void *cb_create_volumefile(gcfg_file_t *file, void *parent,
-				  const char *string)
+static object_t *cb_create_volumefile(gcfg_file_t *file, object_t *parent,
+				      const char *string)
 {
-	filesystem_t *fs = parent;
+	filesystem_t *fs = (filesystem_t *)parent;
 	volume_t *volume;
 	tree_node_t *n;
 
@@ -122,7 +133,7 @@ static void *cb_create_volumefile(gcfg_file_t *file, void *parent,
 		return NULL;
 	}
 
-	return volume;
+	return (object_t *)volume;
 }
 
 static const gcfg_keyword_t cfg_filesystems[4];
@@ -135,7 +146,6 @@ static const gcfg_keyword_t cfg_filesystems_common[] = {
 			.cb_string = cb_create_volumefile,
 		},
 		.children = cfg_filesystems,
-		.finalize_object = finalize_object,
 	}, {
 		.name = NULL,
 	}
@@ -146,7 +156,6 @@ static const gcfg_keyword_t cfg_filesystems[4] = {
 		.arg = GCFG_ARG_STRING,
 		.name = "tar",
 		.children = cfg_filesystems_common,
-		.finalize_object = finalize_object,
 		.handle = {
 			.cb_string = cb_create_tarfs,
 		},
@@ -154,7 +163,6 @@ static const gcfg_keyword_t cfg_filesystems[4] = {
 		.arg = GCFG_ARG_STRING,
 		.name = "cpio",
 		.children = cfg_filesystems_common,
-		.finalize_object = finalize_object,
 		.handle = {
 			.cb_string = cb_create_cpiofs,
 		},
@@ -162,7 +170,6 @@ static const gcfg_keyword_t cfg_filesystems[4] = {
 		.arg = GCFG_ARG_STRING,
 		.name = "fat",
 		.children = cfg_filesystems_common,
-		.finalize_object = finalize_object,
 		.handle = {
 			.cb_string = cb_create_fatfs,
 		},
@@ -173,12 +180,12 @@ static const gcfg_keyword_t cfg_filesystems[4] = {
 
 /*****************************************************************************/
 
-static void *cb_create_listing(gcfg_file_t *file, void *object,
-			       const char *string)
+static object_t *cb_create_listing(gcfg_file_t *file, object_t *object,
+				   const char *string)
 {
+	mount_group_t *mg = (mount_group_t *)object;
 	file_source_aggregate_t *aggregate;
 	file_source_listing_t *list;
-	mount_group_t *mg = object;
 
 	list = file_source_listing_create(string);
 	if (list == NULL) {
@@ -187,8 +194,8 @@ static void *cb_create_listing(gcfg_file_t *file, void *object,
 	}
 
 	if (mg->source == NULL) {
-		mg->source = (file_source_t *)list;
-		return object_grab(list);
+		mg->source = object_grab(list);
+		return (object_t *)list;
 	}
 
 	if (mg->have_aggregate) {
@@ -220,12 +227,14 @@ static void *cb_create_listing(gcfg_file_t *file, void *object,
 		return NULL;
 	}
 
-	return list;
+	return (object_t *)list;
 }
 
-static int cb_add_listing_line(gcfg_file_t *file, void *object,
+static int cb_add_listing_line(gcfg_file_t *file, object_t *object,
 			       const char *line)
 {
+	file_source_listing_t *list = (file_source_listing_t *)object;
+
 	while (isspace(*line))
 		++line;
 
@@ -235,13 +244,13 @@ static int cb_add_listing_line(gcfg_file_t *file, void *object,
 	if (*line == '}')
 		return 1;
 
-	return file_source_listing_add_line(object, line, file);
+	return file_source_listing_add_line(list, line, file);
 }
 
-static void *cb_mp_add_bind(gcfg_file_t *file, void *object,
-			    const char *line)
+static object_t *cb_mp_add_bind(gcfg_file_t *file, object_t *object,
+				const char *line)
 {
-	mount_group_t *mg = object;
+	mount_group_t *mg = (mount_group_t *)object;
 	filesystem_t *fs;
 	const char *ptr;
 	size_t len;
@@ -283,7 +292,7 @@ static void *cb_mp_add_bind(gcfg_file_t *file, void *object,
 
 	object_drop(fs);
 	free(temp);
-	return object;
+	return object_grab(object);
 }
 
 static const gcfg_keyword_t cfg_data_source[] = {
@@ -291,7 +300,6 @@ static const gcfg_keyword_t cfg_data_source[] = {
 		.arg = GCFG_ARG_STRING,
 		.name = "listing",
 		.handle_listing = cb_add_listing_line,
-		.finalize_object = finalize_object,
 		.handle = {
 			.cb_string = cb_create_listing,
 		},
@@ -300,28 +308,30 @@ static const gcfg_keyword_t cfg_data_source[] = {
 
 /*****************************************************************************/
 
-static void *cb_raw_set_minsize(gcfg_file_t *file, void *parent, uint64_t size)
+static object_t *cb_raw_set_minsize(gcfg_file_t *file, object_t *obj,
+				    uint64_t size)
 {
-	volume_t *vol = parent;
+	volume_t *vol = (volume_t *)obj;
 	(void)file;
 
 	vol->min_block_count = size / vol->blocksize;
 	if (size % vol->blocksize)
 		vol->min_block_count += 1;
 
-	return parent;
+	return object_grab(vol);
 }
 
-static void *cb_raw_set_maxsize(gcfg_file_t *file, void *parent, uint64_t size)
+static object_t *cb_raw_set_maxsize(gcfg_file_t *file, object_t *obj,
+				    uint64_t size)
 {
-	volume_t *vol = parent;
+	volume_t *vol = (volume_t *)obj;
 	(void)file;
 
 	vol->max_block_count = size / vol->blocksize;
-	return parent;
+	return object_grab(vol);
 }
 
-static void *cb_create_mount_group(gcfg_file_t *file, void *object)
+static object_t *cb_create_mount_group(gcfg_file_t *file, object_t *object)
 {
 	mount_group_t *mg = calloc(1, sizeof(*mg));
 	(void)object;
@@ -339,18 +349,22 @@ static void *cb_create_mount_group(gcfg_file_t *file, void *object)
 		return NULL;
 	}
 
+	((object_t *)mg)->refcount = 1;
+	((object_t *)mg)->destroy = mountgroup_destroy;
+
 	if (mg_list == NULL) {
-		mg_list = mg;
-		mg_list_last = mg;
+		mg_list = object_grab(mg);
+		mg_list_last = object_grab(mg);
 	} else {
-		mg_list_last->next = mg;
-		mg_list_last = mg;
+		mg_list_last->next = object_grab(mg);
+		mg_list_last = object_drop(mg_list_last);
+		mg_list_last = object_grab(mg);
 	}
 
-	return mg;
+	return (object_t *)mg;
 }
 
-static void *cb_create_raw_volume(gcfg_file_t *file, void *parent)
+static object_t *cb_create_raw_volume(gcfg_file_t *file, object_t *parent)
 {
 	(void)parent; (void)file;
 	return object_grab(out_file);
@@ -448,7 +462,6 @@ static int init_config(void)
 	cfg_global[0].arg = GCFG_ARG_NONE;
 	cfg_global[0].name = "raw";
 	cfg_global[0].children = cfg_raw_dyn_child;
-	cfg_global[0].finalize_object = finalize_object;
 	cfg_global[0].handle.cb_none = cb_create_raw_volume;
 
 	cfg_global[1].arg = GCFG_ARG_NONE;
@@ -527,15 +540,10 @@ out_tracker:
 	object_drop(dep_tracker);
 out_gcfg:
 	object_drop(gcfg);
-
-	while (mg_list != NULL) {
-		mg = mg_list;
-		mg_list = mg->next;
-
-		object_drop(mg->sink);
-		object_drop(mg->source);
-		free(mg);
-	}
+	if (mg_list_last != NULL)
+		mg_list_last = object_drop(mg_list_last);
+	if (mg_list != NULL)
+		mg_list = object_drop(mg_list);
 out_config:
 	cleanup_config();
 	return status;
