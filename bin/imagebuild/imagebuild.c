@@ -30,6 +30,27 @@ static int finalize_object(gcfg_file_t *file, void *object)
 
 /*****************************************************************************/
 
+static void *cb_create_fatfs(gcfg_file_t *file, void *parent,
+			     const char *string)
+{
+	filesystem_t *fs = filesystem_fatfs_create(parent);
+
+	if (fs == NULL) {
+		file->report_error(file, "error creating FAT filesystem '%s'",
+				   string);
+		return NULL;
+	}
+
+	if (fs_dep_tracker_add_fs(dep_tracker, fs, parent, string)) {
+		file->report_error(file, "error registering "
+				   "FAT filesystem '%s'", string);
+		object_drop(fs);
+		return NULL;
+	}
+
+	return fs;
+}
+
 static void *cb_create_tarfs(gcfg_file_t *file, void *parent,
 			     const char *string)
 {
@@ -104,7 +125,7 @@ static void *cb_create_volumefile(gcfg_file_t *file, void *parent,
 	return volume;
 }
 
-static const gcfg_keyword_t cfg_filesystems[3];
+static const gcfg_keyword_t cfg_filesystems[4];
 
 static const gcfg_keyword_t cfg_filesystems_common[] = {
 	{
@@ -120,7 +141,7 @@ static const gcfg_keyword_t cfg_filesystems_common[] = {
 	}
 };
 
-static const gcfg_keyword_t cfg_filesystems[3] = {
+static const gcfg_keyword_t cfg_filesystems[4] = {
 	{
 		.arg = GCFG_ARG_STRING,
 		.name = "tar",
@@ -136,6 +157,14 @@ static const gcfg_keyword_t cfg_filesystems[3] = {
 		.finalize_object = finalize_object,
 		.handle = {
 			.cb_string = cb_create_cpiofs,
+		},
+	}, {
+		.arg = GCFG_ARG_STRING,
+		.name = "fat",
+		.children = cfg_filesystems_common,
+		.finalize_object = finalize_object,
+		.handle = {
+			.cb_string = cb_create_fatfs,
 		},
 	}, {
 		.name = NULL,
@@ -257,12 +286,6 @@ static void *cb_mp_add_bind(gcfg_file_t *file, void *object,
 	return object;
 }
 
-static void *cb_mp_create_source(gcfg_file_t *file, void *object)
-{
-	(void)file;
-	return object;
-}
-
 static const gcfg_keyword_t cfg_data_source[] = {
 	{
 		.arg = GCFG_ARG_STRING,
@@ -272,31 +295,31 @@ static const gcfg_keyword_t cfg_data_source[] = {
 		.handle = {
 			.cb_string = cb_create_listing,
 		},
-	}, {
-		.name = NULL,
-	}
-};
-
-static const gcfg_keyword_t cfg_mount_group[] = {
-	{
-		.arg = GCFG_ARG_STRING,
-		.name = "bind",
-		.handle = {
-			.cb_string = cb_mp_add_bind,
-		},
-	}, {
-		.arg = GCFG_ARG_NONE,
-		.name = "source",
-		.children = cfg_data_source,
-		.handle = {
-			.cb_none = cb_mp_create_source,
-		},
-	}, {
-		.name = NULL,
-	}
+	},
 };
 
 /*****************************************************************************/
+
+static void *cb_raw_set_minsize(gcfg_file_t *file, void *parent, uint64_t size)
+{
+	volume_t *vol = parent;
+	(void)file;
+
+	vol->min_block_count = size / vol->blocksize;
+	if (size % vol->blocksize)
+		vol->min_block_count += 1;
+
+	return parent;
+}
+
+static void *cb_raw_set_maxsize(gcfg_file_t *file, void *parent, uint64_t size)
+{
+	volume_t *vol = parent;
+	(void)file;
+
+	vol->max_block_count = size / vol->blocksize;
+	return parent;
+}
 
 static void *cb_create_mount_group(gcfg_file_t *file, void *object)
 {
@@ -333,26 +356,121 @@ static void *cb_create_raw_volume(gcfg_file_t *file, void *parent)
 	return object_grab(out_file);
 }
 
-static const gcfg_keyword_t cfg_global[] = {
+static const gcfg_keyword_t cfg_mount_group[] = {
 	{
-		.arg = GCFG_ARG_NONE,
-		.name = "raw",
-		.children = cfg_filesystems,
-		.finalize_object = finalize_object,
+		.arg = GCFG_ARG_STRING,
+		.name = "bind",
 		.handle = {
-			.cb_none = cb_create_raw_volume,
+			.cb_string = cb_mp_add_bind,
 		},
-	}, {
-		.arg = GCFG_ARG_NONE,
-		.name = "mountgroup",
-		.children = cfg_mount_group,
-		.handle = {
-			.cb_none = cb_create_mount_group,
-		},
-	}, {
-		.name = NULL,
 	}
 };
+
+static const gcfg_keyword_t cfg_raw_volume[] = {
+	{
+		.arg = GCFG_ARG_SIZE,
+		.name = "minsize",
+		.handle = {
+			.cb_size = cb_raw_set_minsize,
+		},
+	}, {
+		.arg = GCFG_ARG_SIZE,
+		.name = "maxsize",
+		.handle = {
+			.cb_size = cb_raw_set_maxsize,
+		},
+	}
+};
+
+static gcfg_keyword_t *cfg_raw_dyn_child = NULL;
+static gcfg_keyword_t *cfg_mg_dyn_child = NULL;
+static gcfg_keyword_t *cfg_global = NULL;
+
+static int init_config(void)
+{
+	gcfg_keyword_t *list;
+	size_t i, j, count;
+
+	cfg_global = calloc(3, sizeof(cfg_global[0]));
+	if (cfg_global == NULL) {
+		perror("initializing configuration parser");
+		return -1;
+	}
+
+	/* raw children */
+	count = sizeof(cfg_raw_volume) / sizeof(cfg_raw_volume[0]);
+	count += sizeof(cfg_filesystems) / sizeof(cfg_filesystems[0]);
+
+	list = calloc(count + 1, sizeof(list[0]));
+	if (list == NULL) {
+		perror("initializing raw volume parser");
+		free(cfg_global);
+		return -1;
+	}
+
+	j = 0;
+
+	count = sizeof(cfg_raw_volume) / sizeof(cfg_raw_volume[0]);
+	for (i = 0; i < count; ++i)
+		list[j++] = cfg_raw_volume[i];
+
+	count = sizeof(cfg_filesystems) / sizeof(cfg_filesystems[0]);
+	for (i = 0; i < count; ++i)
+		list[j++] = cfg_filesystems[i];
+
+	list[j].name = NULL;
+	cfg_raw_dyn_child = list;
+
+	/* mountgroup children */
+	count = sizeof(cfg_data_source) / sizeof(cfg_data_source[0]);
+	count += sizeof(cfg_mount_group) / sizeof(cfg_mount_group[0]);
+
+	list = calloc(count + 1, sizeof(list[0]));
+	if (list == NULL) {
+		perror("initializing mountgroup parser");
+		goto fail;
+	}
+
+	j = 0;
+
+	count = sizeof(cfg_mount_group) / sizeof(cfg_mount_group[0]);
+	for (i = 0; i < count; ++i)
+		list[j++] = cfg_mount_group[i];
+
+	count = sizeof(cfg_data_source) / sizeof(cfg_data_source[0]);
+	for (i = 0; i < count; ++i)
+		list[j++] = cfg_data_source[i];
+
+	list[j].name = NULL;
+	cfg_mg_dyn_child = list;
+
+	/* root level entries */
+	cfg_global[0].arg = GCFG_ARG_NONE;
+	cfg_global[0].name = "raw";
+	cfg_global[0].children = cfg_raw_dyn_child;
+	cfg_global[0].finalize_object = finalize_object;
+	cfg_global[0].handle.cb_none = cb_create_raw_volume;
+
+	cfg_global[1].arg = GCFG_ARG_NONE;
+	cfg_global[1].name = "mountgroup";
+	cfg_global[1].children = cfg_mg_dyn_child;
+	cfg_global[1].handle.cb_none = cb_create_mount_group;
+
+	cfg_global[2].name = NULL;
+	return 0;
+fail:
+	free(cfg_raw_dyn_child);
+	free(cfg_mg_dyn_child);
+	free(cfg_global);
+	return -1;
+}
+
+static void cleanup_config(void)
+{
+	free(cfg_raw_dyn_child);
+	free(cfg_mg_dyn_child);
+	free(cfg_global);
+}
 
 /*****************************************************************************/
 
@@ -365,9 +483,12 @@ int main(int argc, char **argv)
 
 	process_options(&opt, argc, argv);
 
+	if (init_config())
+		return EXIT_FAILURE;
+
 	gcfg = gcfg_file_open(opt.config_path);
 	if (gcfg == NULL)
-		return EXIT_FAILURE;
+		goto out_config;
 
 	dep_tracker = fs_dep_tracker_create();
 	if (dep_tracker == NULL)
@@ -415,5 +536,7 @@ out_gcfg:
 		object_drop(mg->source);
 		free(mg);
 	}
+out_config:
+	cleanup_config();
 	return status;
 }
