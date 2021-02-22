@@ -9,11 +9,8 @@
 
 #include "config.h"
 
-#include "fsdeptracker.h"
-#include "filesystem.h"
-#include "filesource.h"
 #include "libimgtool.h"
-#include "filesink.h"
+#include "filesystem.h"
 #include "volume.h"
 #include "gcfg.h"
 

@@ -6,35 +6,7 @@
  */
 #include "imagebuild.h"
 
-
-typedef struct mount_group_t {
-	object_t base;
-
-	struct mount_group_t *next;
-	file_sink_t *sink;
-	file_source_t *source;
-	bool have_aggregate;
-} mount_group_t;
-
-
-static mount_group_t *mg_list = NULL;
-static mount_group_t *mg_list_last = NULL;
-
-static fs_dep_tracker_t *dep_tracker;
-static volume_t *out_file;
-
-
-static void mountgroup_destroy(object_t *obj)
-{
-	mount_group_t *mg = (mount_group_t *)obj;
-
-	if (mg->next != NULL)
-		mg->next = object_drop(mg->next);
-
-	object_drop(mg->sink);
-	object_drop(mg->source);
-	free(mg);
-}
+static imgtool_state_t *state = NULL;
 
 /*****************************************************************************/
 
@@ -50,7 +22,7 @@ static object_t *cb_create_fatfs(gcfg_file_t *file, object_t *parent,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_fs(dep_tracker, fs, vol, string)) {
+	if (fs_dep_tracker_add_fs(state->dep_tracker, fs, vol, string)) {
 		file->report_error(file, "error registering "
 				   "FAT filesystem '%s'", string);
 		object_drop(fs);
@@ -72,7 +44,7 @@ static object_t *cb_create_tarfs(gcfg_file_t *file, object_t *parent,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_fs(dep_tracker, fs, vol, string)) {
+	if (fs_dep_tracker_add_fs(state->dep_tracker, fs, vol, string)) {
 		file->report_error(file, "error registering "
 				   "tar filesystem '%s'", string);
 		object_drop(fs);
@@ -94,7 +66,7 @@ static object_t *cb_create_cpiofs(gcfg_file_t *file, object_t *parent,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_fs(dep_tracker, fs, vol, string)) {
+	if (fs_dep_tracker_add_fs(state->dep_tracker, fs, vol, string)) {
 		file->report_error(file, "error reginstering "
 				   "cpio filesystem '%s'", string);
 		object_drop(fs);
@@ -126,7 +98,7 @@ static object_t *cb_create_volumefile(gcfg_file_t *file, object_t *parent,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_volume_file(dep_tracker, volume, fs)) {
+	if (fs_dep_tracker_add_volume_file(state->dep_tracker, volume, fs)) {
 		file->report_error(file, "%s: %s", string,
 				   "error reginstering volume wrapper");
 		object_drop(volume);
@@ -184,7 +156,6 @@ static object_t *cb_create_listing(gcfg_file_t *file, object_t *object,
 				   const char *string)
 {
 	mount_group_t *mg = (mount_group_t *)object;
-	file_source_aggregate_t *aggregate;
 	file_source_listing_t *list;
 
 	list = file_source_listing_create(string);
@@ -193,36 +164,8 @@ static object_t *cb_create_listing(gcfg_file_t *file, object_t *object,
 		return NULL;
 	}
 
-	if (mg->source == NULL) {
-		mg->source = object_grab(list);
-		return (object_t *)list;
-	}
-
-	if (mg->have_aggregate) {
-		aggregate = (file_source_aggregate_t *)mg->source;
-	} else {
-		aggregate = file_source_aggregate_create();
-		if (aggregate == NULL) {
-			file->report_error(file,
-					   "error creating aggregate source");
-			object_drop(list);
-			return NULL;
-		}
-
-		if (file_source_aggregate_add(aggregate, mg->source)) {
-			file->report_error(file, "error initializing "
-					   "aggregate source");
-			object_drop(aggregate);
-			object_drop(list);
-			return NULL;
-		}
-
-		mg->source = (file_source_t *)aggregate;
-		mg->have_aggregate = true;
-	}
-
-	if (file_source_aggregate_add(aggregate, (file_source_t *)list)) {
-		file->report_error(file, "error adding source listing");
+	if (mount_group_add_source(mg, (file_source_t *)list)) {
+		file->report_error(file, "error adding source to mount group");
 		object_drop(list);
 		return NULL;
 	}
@@ -262,7 +205,7 @@ static object_t *cb_mp_add_bind(gcfg_file_t *file, object_t *object,
 		return NULL;
 	}
 
-	fs = fs_dep_tracker_get_fs_by_name(dep_tracker, ptr + 1);
+	fs = fs_dep_tracker_get_fs_by_name(state->dep_tracker, ptr + 1);
 	if (fs == NULL) {
 		file->report_error(file, "cannot find filesystem '%s'",
 				   ptr + 1);
@@ -333,32 +276,12 @@ static object_t *cb_raw_set_maxsize(gcfg_file_t *file, object_t *obj,
 
 static object_t *cb_create_mount_group(gcfg_file_t *file, object_t *object)
 {
-	mount_group_t *mg = calloc(1, sizeof(*mg));
-	(void)object;
+	mount_group_t *mg;
 
+	mg = imgtool_state_add_mount_group((imgtool_state_t *)object);
 	if (mg == NULL) {
-		file->report_error(file, "creating mount group: %s",
-				   strerror(errno));
+		file->report_error(file, "error creating mount group");
 		return NULL;
-	}
-
-	mg->sink = file_sink_create();
-	if (mg->sink == NULL) {
-		file->report_error(file, "error creating file sink");
-		free(mg);
-		return NULL;
-	}
-
-	((object_t *)mg)->refcount = 1;
-	((object_t *)mg)->destroy = mountgroup_destroy;
-
-	if (mg_list == NULL) {
-		mg_list = object_grab(mg);
-		mg_list_last = object_grab(mg);
-	} else {
-		mg_list_last->next = object_grab(mg);
-		mg_list_last = object_drop(mg_list_last);
-		mg_list_last = object_grab(mg);
 	}
 
 	return (object_t *)mg;
@@ -366,8 +289,8 @@ static object_t *cb_create_mount_group(gcfg_file_t *file, object_t *object)
 
 static object_t *cb_create_raw_volume(gcfg_file_t *file, object_t *parent)
 {
-	(void)parent; (void)file;
-	return object_grab(out_file);
+	(void)file;
+	return object_grab(((imgtool_state_t *)parent)->out_file);
 }
 
 static const gcfg_keyword_t cfg_mount_group[] = {
@@ -489,8 +412,7 @@ static void cleanup_config(void)
 
 int main(int argc, char **argv)
 {
-	int fd, status = EXIT_FAILURE;
-	mount_group_t *mg;
+	int status = EXIT_FAILURE;
 	gcfg_file_t *gcfg;
 	options_t opt;
 
@@ -503,47 +425,21 @@ int main(int argc, char **argv)
 	if (gcfg == NULL)
 		goto out_config;
 
-	dep_tracker = fs_dep_tracker_create();
-	if (dep_tracker == NULL)
+	state = imgtool_state_create(opt.output_path);
+	if (state == NULL)
 		goto out_gcfg;
 
-	fd = open(opt.output_path, O_RDWR | O_CREAT | O_EXCL, 0644);
-	if (fd < 0) {
-		perror(opt.output_path);
-		goto out_tracker;
-	}
-
-	out_file = volume_from_fd(opt.output_path, fd, 0xFFFFFFFFFFFFFFFFUL);
-	if (out_file == NULL) {
-		close(fd);
-		goto out_tracker;
-	}
-
-	if (fs_dep_tracker_add_volume(dep_tracker, out_file, NULL))
+	if (gcfg_parse_file(gcfg, cfg_global, (object_t *)state))
 		goto out;
 
-	if (gcfg_parse_file(gcfg, cfg_global, NULL))
-		goto out;
-
-	for (mg = mg_list; mg != NULL; mg = mg->next) {
-		if (file_sink_add_data(mg->sink, mg->source))
-			goto out;
-	}
-
-	if (fs_dep_tracker_commit(dep_tracker))
+	if (imgtool_state_process(state))
 		goto out;
 
 	status = EXIT_SUCCESS;
 out:
-	object_drop(out_file);
-out_tracker:
-	object_drop(dep_tracker);
+	object_drop(state);
 out_gcfg:
 	object_drop(gcfg);
-	if (mg_list_last != NULL)
-		mg_list_last = object_drop(mg_list_last);
-	if (mg_list != NULL)
-		mg_list = object_drop(mg_list);
 out_config:
 	cleanup_config();
 	return status;
