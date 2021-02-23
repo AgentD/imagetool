@@ -200,7 +200,7 @@ int fatfs_build_fats(fatfs_filesystem_t *fs)
 		uint32_t index = it->data.dir.start / clustersize;
 		uint32_t count = it->data.dir.size / clustersize;
 
-		if (it->data.dir.size % clustersize)
+		if ((it->data.dir.size % clustersize) || it->data.dir.size == 0)
 			count += 1;
 
 		index += CLUSTER_OFFSET;

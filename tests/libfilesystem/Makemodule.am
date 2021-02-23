@@ -85,6 +85,12 @@ test_fat32_CPPFLAGS = $(AM_CPPFLAGS)
 test_fat32_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libfilesystem/fatfs
 test_fat32_CPPFLAGS += -DTESTFILE=fat32.bin
 
+test_fat32_empty_SOURCES = tests/libfilesystem/fatfs/fat32_empty.c tests/test.h
+test_fat32_empty_LDADD = libfilesystem.a libimage.a libfstream.a libutil.a
+test_fat32_empty_CPPFLAGS = $(AM_CPPFLAGS)
+test_fat32_empty_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libfilesystem/fatfs
+test_fat32_empty_CPPFLAGS += -DTESTFILE=fat32_empty.bin
+
 check_PROGRAMS += test_canonicalize_path test_node_from_path test_mknode
 check_PROGRAMS += test_get_path test_fstree test_resolve_hard_links
 check_PROGRAMS += test_fstree_sort test_fstree_sort_type test_gen_inode_table
@@ -93,7 +99,7 @@ check_PROGRAMS += test_file_accounting test_file_mark_sparse
 check_PROGRAMS += test_file_move_to_end test_fstree_add_gap
 check_PROGRAMS += test_file_append test_file_write test_file_truncate
 check_PROGRAMS += test_fstree_file_volume
-check_PROGRAMS += test_tarfs test_cpiofs test_fat32
+check_PROGRAMS += test_tarfs test_cpiofs test_fat32 test_fat32_empty
 
 TESTS += test_canonicalize_path test_node_from_path test_mknode test_get_path
 TESTS += test_fstree test_resolve_hard_links test_fstree_sort
@@ -102,8 +108,9 @@ TESTS += test_gen_inode_table test_file_read test_file_accounting
 TESTS += test_file_mark_sparse test_file_move_to_end test_fstree_add_gap
 TESTS += test_file_append test_file_write test_file_truncate
 TESTS += test_fstree_file_volume
-TESTS += test_tarfs test_cpiofs test_fat32
+TESTS += test_tarfs test_cpiofs test_fat32 test_fat32_empty
 
 EXTRA_DIST += tests/libfilesystem/tarfs/reference.tar
 EXTRA_DIST += tests/libfilesystem/cpiofs/reference.cpio
 EXTRA_DIST += tests/libfilesystem/fatfs/fat32.bin
+EXTRA_DIST += tests/libfilesystem/fatfs/fat32_empty.bin

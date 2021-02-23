@@ -76,11 +76,22 @@ static int compute_dir_sizes(fatfs_filesystem_t *fatfs, uint64_t *total)
 {
 	filesystem_t *fs = (filesystem_t *)fatfs;
 	tree_node_t *it = fs->fstree->nodes_by_type[TREE_NODE_DIR];
-	null_ostream_t *ostrm = null_ostream_create();
 	uint64_t cluster_size = SECTOR_SIZE * fatfs->secs_per_cluster;
+	null_ostream_t *ostrm;
 	uint64_t offset = 0;
 
+	/* XXX: empty root requires special treatment because it
+	   contains no . or .. entries */
+	if (fs->fstree->root->data.dir.children == NULL) {
+		fs->fstree->root->data.dir.start = 0;
+		fs->fstree->root->data.dir.size = 0;
+		*total = 1;
+		return 0;
+	}
+
 	/* compute size of each directory + total required size */
+	ostrm = null_ostream_create();
+
 	if (ostrm == NULL)
 		return -1;
 
