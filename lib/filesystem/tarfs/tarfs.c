@@ -80,7 +80,7 @@ static int insert_file_headers(filesystem_t *fs, unsigned int *counter)
 			return -1;
 
 		*counter += 1;
-		vstrm = object_drop(vstrm);
+		object_drop(vstrm);
 	}
 
 	object_drop(null_sink);

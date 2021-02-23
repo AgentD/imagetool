@@ -105,7 +105,7 @@ static int insert_file_headers(filesystem_t *fs)
 		if (cpio_write_header(vstrm, fit, false))
 			return -1;
 
-		vstrm = object_drop(vstrm);
+		object_drop(vstrm);
 	}
 
 	object_drop(null_sink);

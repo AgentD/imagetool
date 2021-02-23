@@ -248,7 +248,6 @@ int fatfs_serialize_directory(fatfs_filesystem_t *fatfs, tree_node_t *root,
 	struct short_list_t *list = NULL;
 	uint8_t shortname[11];
 	FAT_SHORTNAME conv;
-	size_t len, count;
 	unsigned int gen;
 	tree_node_t *it;
 	int ret;
@@ -277,12 +276,6 @@ int fatfs_serialize_directory(fatfs_filesystem_t *fatfs, tree_node_t *root,
 
 		if (conv == FAT_SHORTNAME_OK ||
 		    conv == FAT_SHORTNAME_SUFFIXED) {
-			len = strlen(it->name);
-
-			count = len / FAT_CHAR_PER_LONG_ENT;
-			if (len % FAT_CHAR_PER_LONG_ENT)
-				count += 1;
-
 			ret = write_long_entry(ostrm, (const uint8_t *)it->name,
 					       shortname);
 			if (ret)
