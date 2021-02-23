@@ -157,6 +157,8 @@ static int build_format(filesystem_t *fs)
 {
 	uint64_t dir_size;
 
+	fstree_sort(fs->fstree);
+
 	if (compute_dir_sizes((fatfs_filesystem_t *)fs, &dir_size))
 		goto fail_serialize;
 
