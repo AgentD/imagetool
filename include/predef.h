@@ -7,6 +7,14 @@
 #ifndef PREDEF_H
 #define PREDEF_H
 
+#include "config.h"
+
+#ifdef __FreeBSD__
+#include <sys/endian.h>
+#else
+#include <endian.h>
+#endif
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
