@@ -1,0 +1,5 @@
+libtest_a_SOURCES = include/test.h lib/test/compare_files.c
+libtest_a_CFLAGS = $(AM_CFLAGS)
+libtest_a_CPPFLAGS = $(AM_CPPFLAGS)
+
+noinst_LIBRARIES += libtest.a

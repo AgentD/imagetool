@@ -22,5 +22,6 @@ include lib/filesystem/Makemodule.am
 include lib/gcfg/Makemodule.am
 include lib/imgtool/Makemodule.am
 include lib/xfrm/Makemodule.am
+include lib/test/Makemodule.am
 include bin/imagebuild/Makemodule.am
 include tests/Makemodule.am

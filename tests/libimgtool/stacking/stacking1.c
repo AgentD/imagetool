@@ -16,8 +16,6 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-#define NUM_EXPECTED_BLOCKS (14)
-
 static const char *listing[] = {
 	"dir /etc 0755 0 0",
 	"slink /bin 0777 0 0 /usr/bin",
@@ -33,27 +31,6 @@ static const char *listing[] = {
 	"dir /usr/lib 0755 0 0",
 	"slink /usr/lib64 0755 0 0 lib",
 };
-
-static int compare_results(int afd, int bfd)
-{
-	char abuf[512], bbuf[512];
-	int i;
-
-	for (i = 0; i < NUM_EXPECTED_BLOCKS; ++i) {
-		if (read_retry("generated file", afd, i * 512, abuf, 512))
-			return -1;
-
-		if (read_retry("reference file", bfd, i * 512, bbuf, 512))
-			return -1;
-
-		if (memcmp(abuf, bbuf, 512) != 0) {
-			fputs("tar file not equal to reference!\n", stderr);
-			return -1;
-		}
-	}
-
-	return 0;
-}
 
 int main(void)
 {
@@ -197,7 +174,7 @@ int main(void)
 		abort();
 	}
 
-	ret = compare_results(fd, reffd);
+	ret = compare_files_equal(fd, reffd);
 	TEST_EQUAL_I(ret, 0);
 	close(reffd);
 

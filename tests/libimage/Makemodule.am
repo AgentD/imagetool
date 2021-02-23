@@ -1,40 +1,36 @@
-test_volume_read_SOURCES = tests/libimage/volume_read.c include/test.h
+test_volume_read_SOURCES = tests/libimage/volume_read.c
 test_volume_read_LDADD = libimage.a libutil.a
 test_volume_read_CPPFLAGS = $(AM_CPPFLAGS)
 
-test_volume_write_SOURCES = tests/libimage/volume_write.c include/test.h
+test_volume_write_SOURCES = tests/libimage/volume_write.c
 test_volume_write_LDADD = libimage.a libutil.a
 test_volume_write_CPPFLAGS = $(AM_CPPFLAGS)
 
-test_volume_memmove_SOURCES = tests/libimage/volume_memmove.c include/test.h
+test_volume_memmove_SOURCES = tests/libimage/volume_memmove.c
 test_volume_memmove_LDADD = libimage.a libutil.a
 test_volume_memmove_CPPFLAGS = $(AM_CPPFLAGS)
 
-test_file_volume_SOURCES = tests/libimage/file_volume.c include/test.h
+test_file_volume_SOURCES = tests/libimage/file_volume.c
 test_file_volume_LDADD = libimage.a libutil.a
 test_file_volume_CPPFLAGS = $(AM_CPPFLAGS)
 
 test_blocksize_adapter1_SOURCES = tests/libimage/blocksize_adapter1.c
-test_blocksize_adapter1_SOURCES += include/test.h
 test_blocksize_adapter1_LDADD = libimage.a libutil.a
 test_blocksize_adapter1_CPPFLAGS = $(AM_CPPFLAGS)
 
 test_blocksize_adapter2_SOURCES = tests/libimage/blocksize_adapter2.c
-test_blocksize_adapter2_SOURCES += include/test.h
 test_blocksize_adapter2_LDADD = libimage.a libutil.a
 test_blocksize_adapter2_CPPFLAGS = $(AM_CPPFLAGS)
 
 test_blocksize_adapter3_SOURCES = tests/libimage/blocksize_adapter3.c
-test_blocksize_adapter3_SOURCES += include/test.h
 test_blocksize_adapter3_LDADD = libimage.a libutil.a
 test_blocksize_adapter3_CPPFLAGS = $(AM_CPPFLAGS)
 
 test_blocksize_adapter4_SOURCES = tests/libimage/blocksize_adapter4.c
-test_blocksize_adapter4_SOURCES += include/test.h
 test_blocksize_adapter4_LDADD = libimage.a libutil.a
 test_blocksize_adapter4_CPPFLAGS = $(AM_CPPFLAGS)
 
-test_volume_ostream_SOURCES = tests/libimage/volume_ostream.c include/test.h
+test_volume_ostream_SOURCES = tests/libimage/volume_ostream.c
 test_volume_ostream_LDADD = libimage.a libutil.a
 test_volume_ostream_CPPFLAGS = $(AM_CPPFLAGS)
 

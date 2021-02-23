@@ -1,17 +1,16 @@
 test_filesource_dir_SOURCES = tests/libimgtool/filesource/directory.c
-test_filesource_dir_SOURCES += include/test.h
 test_filesource_dir_LDADD = libimgtool.a libfstream.a libutil.a
 test_filesource_dir_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_dir_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libtar/data
 
-test_filesource_tar1_SOURCES = tests/libimgtool/filesource/tar1.c include/test.h
+test_filesource_tar1_SOURCES = tests/libimgtool/filesource/tar1.c
 test_filesource_tar1_LDADD = libimgtool.a libtar.a libfilesystem.a
 test_filesource_tar1_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
 test_filesource_tar1_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
 test_filesource_tar1_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_tar1_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar1.tar
 
-test_filesource_tar2_SOURCES = tests/libimgtool/filesource/tar2.c include/test.h
+test_filesource_tar2_SOURCES = tests/libimgtool/filesource/tar2.c
 test_filesource_tar2_LDADD = libimgtool.a libtar.a libfilesystem.a
 test_filesource_tar2_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
 test_filesource_tar2_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
@@ -19,7 +18,7 @@ test_filesource_tar2_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_tar2_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libtar/data/sparse-files/gnu.tar
 
 if WITH_GZIP
-test_filesource_tar3_SOURCES = tests/libimgtool/filesource/tar1.c include/test.h
+test_filesource_tar3_SOURCES = tests/libimgtool/filesource/tar1.c
 test_filesource_tar3_LDADD = libimgtool.a libtar.a libfilesystem.a
 test_filesource_tar3_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
 test_filesource_tar3_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
@@ -28,7 +27,7 @@ test_filesource_tar3_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/files
 endif
 
 if WITH_XZ
-test_filesource_tar4_SOURCES = tests/libimgtool/filesource/tar1.c include/test.h
+test_filesource_tar4_SOURCES = tests/libimgtool/filesource/tar1.c
 test_filesource_tar4_LDADD = libimgtool.a libtar.a libfilesystem.a
 test_filesource_tar4_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
 test_filesource_tar4_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
@@ -37,7 +36,7 @@ test_filesource_tar4_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/files
 endif
 
 if WITH_BZIP2
-test_filesource_tar5_SOURCES = tests/libimgtool/filesource/tar1.c include/test.h
+test_filesource_tar5_SOURCES = tests/libimgtool/filesource/tar1.c
 test_filesource_tar5_LDADD = libimgtool.a libtar.a libfilesystem.a
 test_filesource_tar5_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
 test_filesource_tar5_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
@@ -46,7 +45,7 @@ test_filesource_tar5_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/files
 endif
 
 if WITH_ZSTD
-test_filesource_tar6_SOURCES = tests/libimgtool/filesource/tar1.c include/test.h
+test_filesource_tar6_SOURCES = tests/libimgtool/filesource/tar1.c
 test_filesource_tar6_LDADD = libimgtool.a libtar.a libfilesystem.a
 test_filesource_tar6_LDADD += libfstream.a libxfrm.a libutil.a $(XZ_LIBS)
 test_filesource_tar6_LDADD += $(ZSTD_LIBS) $(ZLIB_LIBS) $(BZIP2_LIBS)
@@ -54,35 +53,35 @@ test_filesource_tar6_CPPFLAGS = $(AM_CPPFLAGS)
 test_filesource_tar6_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/tar6.tar.zst
 endif
 
-test_gcfg_file_SOURCES = tests/libimgtool/gcfg_file.c include/test.h
+test_gcfg_file_SOURCES = tests/libimgtool/gcfg_file.c
 test_gcfg_file_LDADD = libimgtool.a libfstream.a libutil.a
 test_gcfg_file_CPPFLAGS = $(AM_CPPFLAGS)
 test_gcfg_file_CPPFLAGS += -DTESTFILE=$(top_srcdir)/tests/libimgtool/gcfg_file.txt
 
-test_filesink_SOURCES = tests/libimgtool/filesink.c include/test.h
+test_filesink_SOURCES = tests/libimgtool/filesink.c
 test_filesink_LDADD = libimgtool.a libfilesystem.a libimage.a
 test_filesink_LDADD += libfstream.a libutil.a
 test_filesink_CPPFLAGS = $(AM_CPPFLAGS)
 
-test_source_listing_SOURCES = tests/libimgtool/filesource/listing.c include/test.h
+test_source_listing_SOURCES = tests/libimgtool/filesource/listing.c
 test_source_listing_LDADD = libimgtool.a libfilesystem.a libimage.a
 test_source_listing_LDADD += libfstream.a libutil.a
 test_source_listing_CPPFLAGS = $(AM_CPPFLAGS)
 test_source_listing_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/filesource/listing
 
-test_source_filter_SOURCES = tests/libimgtool/filesource/filter.c include/test.h
+test_source_filter_SOURCES = tests/libimgtool/filesource/filter.c
 test_source_filter_CPPFLAGS = $(AM_CPPFLAGS)
 test_source_filter_LDADD = libimgtool.a libutil.a
 
-test_source_aggregate_SOURCES = tests/libimgtool/filesource/aggregate.c include/test.h
+test_source_aggregate_SOURCES = tests/libimgtool/filesource/aggregate.c
 test_source_aggregate_CPPFLAGS = $(AM_CPPFLAGS)
 test_source_aggregate_LDADD = libimgtool.a libutil.a
 
-test_stacking1_SOURCES = tests/libimgtool/stacking/stacking1.c include/test.h
+test_stacking1_SOURCES = tests/libimgtool/stacking/stacking1.c
 test_stacking1_CPPFLAGS = $(AM_CPPFLAGS)
 test_stacking1_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimgtool/stacking/stacking1.tar
 test_stacking1_LDADD = libimgtool.a libfilesystem.a libimage.a
-test_stacking1_LDADD += libtar.a libfstream.a libutil.a
+test_stacking1_LDADD += libtar.a libfstream.a libtest.a libutil.a
 
 check_PROGRAMS += test_filesource_dir test_filesource_tar1 test_filesource_tar2
 check_PROGRAMS += test_source_listing test_source_filter test_filesink

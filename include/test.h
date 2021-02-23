@@ -122,4 +122,14 @@ static ATTRIB_UNUSED void test_lt_ul(const char *lhs, const char *rhs,
 
 #define TEST_ASSERT(expr) test_assert(#expr, (expr), __LINE__)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+int compare_files_equal(int gen_fd, int ref_fd);
+
+#ifdef __cplusplus
+}
+#endif
+
 #endif /* TEST_H */

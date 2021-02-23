@@ -18,24 +18,6 @@
 
 #define REF_FILE STRVALUE(TESTFILE)
 
-static char abuf[5244], bbuf[5244];
-
-static int compare_results(int afd, int bfd)
-{
-	if (read_retry("generated file", afd, 0, abuf, sizeof(abuf)))
-		return -1;
-
-	if (read_retry("reference file", bfd, 0, bbuf, sizeof(bbuf)))
-		return -1;
-
-	if (memcmp(abuf, bbuf, sizeof(abuf)) != 0) {
-		fputs("tar file not equal to reference!\n", stderr);
-		return -1;
-	}
-
-	return 0;
-}
-
 int main(void)
 {
 	int fd, reffd, ret;
@@ -127,7 +109,7 @@ int main(void)
 		abort();
 	}
 
-	ret = compare_results(fd, reffd);
+	ret = compare_files_equal(fd, reffd);
 	TEST_EQUAL_I(ret, 0);
 	close(reffd);
 

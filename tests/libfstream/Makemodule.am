@@ -1,4 +1,4 @@
-test_get_line_SOURCES = tests/libfstream/get_line.c include/test.h
+test_get_line_SOURCES = tests/libfstream/get_line.c
 test_get_line_LDADD = libfstream.a
 test_get_line_CPPFLAGS = $(AM_CPPFLAGS)
 test_get_line_CPPFLAGS += -DTESTFILE=$(top_srcdir)/tests/libfstream/get_line.txt
