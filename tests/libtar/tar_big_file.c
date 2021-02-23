@@ -6,7 +6,7 @@
  */
 #include "config.h"
 
-#include "../test.h"
+#include "test.h"
 #include "tar.h"
 
 int main(void)

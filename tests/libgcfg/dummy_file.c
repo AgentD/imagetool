@@ -8,7 +8,7 @@
 #include <assert.h>
 #include <string.h>
 
-#include "test.h"
+#include "dummy_file.h"
 
 static void dummy_report_error(gcfg_file_t *f, const char *msg, ...)
 {

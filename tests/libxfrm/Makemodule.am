@@ -1,5 +1,5 @@
 if WITH_GZIP
-test_gzip_SOURCES = tests/libxfrm/gzip.c tests/test.h
+test_gzip_SOURCES = tests/libxfrm/gzip.c include/test.h
 test_gzip_LDADD = libxfrm.a $(ZLIB_LIBS)
 test_gzip_CPPFLAGS = $(AM_CPPFLAGS)
 
@@ -9,7 +9,7 @@ TESTS += test_gzip
 endif
 
 if WITH_XZ
-test_xz_SOURCES = tests/libxfrm/xz.c tests/test.h
+test_xz_SOURCES = tests/libxfrm/xz.c include/test.h
 test_xz_LDADD = libxfrm.a $(XZ_LIBS)
 test_xz_CPPFLAGS = $(AM_CPPFLAGS)
 
@@ -19,7 +19,7 @@ TESTS += test_xz
 endif
 
 if WITH_BZIP2
-test_bzip2_SOURCES = tests/libxfrm/bzip2.c tests/test.h
+test_bzip2_SOURCES = tests/libxfrm/bzip2.c include/test.h
 test_bzip2_LDADD = libxfrm.a $(BZIP2_LIBS)
 test_bzip2_CPPFLAGS = $(AM_CPPFLAGS)
 
@@ -29,7 +29,7 @@ TESTS += test_bzip2
 endif
 
 if WITH_XZ
-test_zstd_SOURCES = tests/libxfrm/zstd.c tests/test.h
+test_zstd_SOURCES = tests/libxfrm/zstd.c include/test.h
 test_zstd_LDADD = libxfrm.a $(ZSTD_LIBS)
 test_zstd_CPPFLAGS = $(AM_CPPFLAGS)
 

@@ -6,7 +6,7 @@
  */
 #include "config.h"
 
-#include "../test.h"
+#include "test.h"
 #include "bitmap.h"
 
 int main(void)

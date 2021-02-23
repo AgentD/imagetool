@@ -6,7 +6,7 @@
  */
 #include "config.h"
 
-#include "../test.h"
+#include "test.h"
 #include "volume.h"
 
 static char dummy_buffer[29] = "aaaaAAAbbbBBBbccCCCccdDDDddd";

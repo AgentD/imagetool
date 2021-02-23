@@ -6,7 +6,7 @@
  */
 #include "filesink.h"
 
-#include "../test.h"
+#include "test.h"
 
 static volume_t root_vol = {
 	.base = {

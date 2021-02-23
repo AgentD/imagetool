@@ -6,7 +6,7 @@
  */
 #include "config.h"
 #include "xfrm.h"
-#include "../test.h"
+#include "test.h"
 
 #ifdef HAVE_ZSTD_STREAM
 static const uint8_t zstd_in[] = {

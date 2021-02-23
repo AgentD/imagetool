@@ -5,7 +5,7 @@
  * Copyright (C) 2020 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "gcfg.h"
-#include "test.h"
+#include "dummy_file.h"
 
 static const char *must_work[] = {
 	"Hello, world!",

@@ -5,7 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "xfrm.h"
-#include "../test.h"
+#include "test.h"
 
 static const uint8_t bzip2_in[] = {
 	0x42, 0x5a, 0x68, 0x39, 0x31, 0x41, 0x59, 0x26,

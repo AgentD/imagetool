@@ -5,7 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "xfrm.h"
-#include "../test.h"
+#include "test.h"
 
 static const char orig[] = "The quick brown fox jumps over the lazy dog\n";
 

@@ -1,8 +1,8 @@
-test_bitmap_SOURCES = tests/libutil/bitmap.c tests/test.h
+test_bitmap_SOURCES = tests/libutil/bitmap.c include/test.h
 test_bitmap_LDADD = libutil.a
 test_bitmap_CPPFLAGS = $(AM_CPPFLAGS)
 
-test_is_memory_zero_SOURCES = tests/libutil/is_memory_zero.c tests/test.h
+test_is_memory_zero_SOURCES = tests/libutil/is_memory_zero.c include/test.h
 test_is_memory_zero_LDADD = libutil.a
 test_is_memory_zero_CPPFLAGS = $(AM_CPPFLAGS)
 

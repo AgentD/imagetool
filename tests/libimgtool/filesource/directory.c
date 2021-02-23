@@ -4,7 +4,7 @@
  *
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
-#include "../../test.h"
+#include "test.h"
 
 #include "filesource.h"
 

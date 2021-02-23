@@ -5,7 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "filesource.h"
-#include "../../test.h"
+#include "test.h"
 
 static int get_next_record(file_source_t *fs, file_source_record_t **out,
 			   istream_t **stream_out);

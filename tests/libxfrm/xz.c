@@ -5,7 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "xfrm.h"
-#include "../test.h"
+#include "test.h"
 
 static const uint8_t xz_in[] = {
 	0xfd, 0x37, 0x7a, 0x58, 0x5a, 0x00, 0x00, 0x00,

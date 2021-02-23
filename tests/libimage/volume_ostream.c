@@ -5,7 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "volume.h"
-#include "../test.h"
+#include "test.h"
 
 static char dummy_buffer[31] = "______________________________";
 

@@ -6,7 +6,7 @@
  */
 #include "config.h"
 
-#include "../../test.h"
+#include "test.h"
 #include "filesystem.h"
 #include "util.h"
 

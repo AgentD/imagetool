@@ -1,91 +1,91 @@
-test_fstree_SOURCES = tests/libfilesystem/fstree/fstree.c tests/test.h
+test_fstree_SOURCES = tests/libfilesystem/fstree/fstree.c include/test.h
 test_fstree_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_canonicalize_path_SOURCES = tests/libfilesystem/fstree/canonicalize_path.c
-test_canonicalize_path_SOURCES += tests/test.h
+test_canonicalize_path_SOURCES += include/test.h
 test_canonicalize_path_LDADD = libfilesystem.a
 
-test_mknode_SOURCES = tests/libfilesystem/fstree/mknode.c tests/test.h
+test_mknode_SOURCES = tests/libfilesystem/fstree/mknode.c include/test.h
 test_mknode_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_node_from_path_SOURCES = tests/libfilesystem/fstree/node_from_path.c
-test_node_from_path_SOURCES += tests/test.h
+test_node_from_path_SOURCES += include/test.h
 test_node_from_path_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_get_path_SOURCES = tests/libfilesystem/fstree/get_path.c tests/test.h
+test_get_path_SOURCES = tests/libfilesystem/fstree/get_path.c include/test.h
 test_get_path_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_resolve_hard_links_SOURCES = \
 	tests/libfilesystem/fstree/resolve_hard_links.c
-test_resolve_hard_links_SOURCES += tests/test.h
+test_resolve_hard_links_SOURCES += include/test.h
 test_resolve_hard_links_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_fstree_sort_SOURCES = tests/libfilesystem/fstree/fstree_sort.c tests/test.h
+test_fstree_sort_SOURCES = tests/libfilesystem/fstree/fstree_sort.c include/test.h
 test_fstree_sort_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_fstree_sort_type_SOURCES = tests/libfilesystem/fstree/fstree_sort_type.c
-test_fstree_sort_type_SOURCES += tests/test.h
+test_fstree_sort_type_SOURCES += include/test.h
 test_fstree_sort_type_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_gen_inode_table_SOURCES = tests/libfilesystem/fstree/gen_inode_table.c
-test_gen_inode_table_SOURCES += tests/test.h
+test_gen_inode_table_SOURCES += include/test.h
 test_gen_inode_table_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_file_read_SOURCES = tests/libfilesystem/fstree/file_read.c
-test_file_read_SOURCES += tests/test.h
+test_file_read_SOURCES += include/test.h
 test_file_read_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_file_accounting_SOURCES = tests/libfilesystem/fstree/file_accounting.c
-test_file_accounting_SOURCES += tests/test.h
+test_file_accounting_SOURCES += include/test.h
 test_file_accounting_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_file_mark_sparse_SOURCES = tests/libfilesystem/fstree/file_mark_sparse.c
-test_file_mark_sparse_SOURCES += tests/test.h
+test_file_mark_sparse_SOURCES += include/test.h
 test_file_mark_sparse_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_file_move_to_end_SOURCES = tests/libfilesystem/fstree/file_move_to_end.c
-test_file_move_to_end_SOURCES += tests/test.h
+test_file_move_to_end_SOURCES += include/test.h
 test_file_move_to_end_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_fstree_add_gap_SOURCES = tests/libfilesystem/fstree/add_gap.c
-test_fstree_add_gap_SOURCES += tests/test.h
+test_fstree_add_gap_SOURCES += include/test.h
 test_fstree_add_gap_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_file_append_SOURCES = tests/libfilesystem/fstree/file_append.c
-test_file_append_SOURCES += tests/test.h
+test_file_append_SOURCES += include/test.h
 test_file_append_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_file_write_SOURCES = tests/libfilesystem/fstree/file_write.c
-test_file_write_SOURCES += tests/test.h
+test_file_write_SOURCES += include/test.h
 test_file_write_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_file_truncate_SOURCES = tests/libfilesystem/fstree/file_truncate.c
-test_file_truncate_SOURCES += tests/test.h
+test_file_truncate_SOURCES += include/test.h
 test_file_truncate_LDADD = libfilesystem.a libimage.a libutil.a
 
 test_fstree_file_volume_SOURCES = tests/libfilesystem/fstree/file_volume.c
-test_fstree_file_volume_SOURCES += tests/test.h
+test_fstree_file_volume_SOURCES += include/test.h
 test_fstree_file_volume_LDADD = libfilesystem.a libimage.a libutil.a
 
-test_tarfs_SOURCES = tests/libfilesystem/tarfs/tarfs.c tests/test.h
+test_tarfs_SOURCES = tests/libfilesystem/tarfs/tarfs.c include/test.h
 test_tarfs_LDADD = libfilesystem.a libimage.a libtar.a libfstream.a libutil.a
 test_tarfs_CPPFLAGS = $(AM_CPPFLAGS)
 test_tarfs_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libfilesystem/tarfs
 test_tarfs_CPPFLAGS += -DTESTFILE=reference.tar
 
-test_cpiofs_SOURCES = tests/libfilesystem/cpiofs/cpiofs.c tests/test.h
+test_cpiofs_SOURCES = tests/libfilesystem/cpiofs/cpiofs.c include/test.h
 test_cpiofs_LDADD = libfilesystem.a libimage.a libfstream.a libutil.a
 test_cpiofs_CPPFLAGS = $(AM_CPPFLAGS)
 test_cpiofs_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libfilesystem/cpiofs
 test_cpiofs_CPPFLAGS += -DTESTFILE=reference.cpio
 
-test_fat32_SOURCES = tests/libfilesystem/fatfs/fat32.c tests/test.h
+test_fat32_SOURCES = tests/libfilesystem/fatfs/fat32.c include/test.h
 test_fat32_LDADD = libfilesystem.a libimage.a libfstream.a libutil.a
 test_fat32_CPPFLAGS = $(AM_CPPFLAGS)
 test_fat32_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libfilesystem/fatfs
 test_fat32_CPPFLAGS += -DTESTFILE=fat32.bin
 
-test_fat32_empty_SOURCES = tests/libfilesystem/fatfs/fat32_empty.c tests/test.h
+test_fat32_empty_SOURCES = tests/libfilesystem/fatfs/fat32_empty.c include/test.h
 test_fat32_empty_LDADD = libfilesystem.a libimage.a libfstream.a libutil.a
 test_fat32_empty_CPPFLAGS = $(AM_CPPFLAGS)
 test_fat32_empty_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libfilesystem/fatfs
