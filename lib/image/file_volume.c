@@ -370,22 +370,29 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 	if (fstat(fd, &sb) != 0)
 		goto fail;
 
-	blocksize = sb.st_blksize;
-	if (blocksize == 0)
-		blocksize = 512;
+	if (S_ISBLK(sb.st_mode)) {
+		blocksize = sb.st_blksize;
+		if (blocksize == 0)
+			blocksize = 512;
 
-	used = sb.st_size / blocksize;
+		used = sb.st_size / blocksize;
+		max_count = sb.st_size / blocksize;
+	} else {
+		blocksize = 4096;
 
-	if (sb.st_size % blocksize) {
-		used += 1;
+		used = sb.st_size / blocksize;
 
-		if (ftruncate(fd, used * blocksize) != 0)
-			goto fail;
+		if (sb.st_size % blocksize) {
+			used += 1;
+
+			if (ftruncate(fd, used * blocksize) != 0)
+				goto fail;
+		}
+
+		max_count = max_size / blocksize;
+		if (max_size % blocksize)
+			max_count += 1;
 	}
-
-	max_count = max_size / blocksize;
-	if (max_size % blocksize)
-		max_count += 1;
 
 	/* create wrapper */
 	fvol = calloc(1, sizeof(*fvol) + 2 * blocksize);
