@@ -257,8 +257,8 @@ static int get_next_record(file_source_t *fs, file_source_record_t **out,
 		}
 	}
 
-	if (namelen > 31)
-		namelen += 32 + p->buffer[offset++];
+	if (namelen == 0)
+		namelen = 32 + p->buffer[offset++];
 
 	(*out)->full_path = strndup((const char *)(p->buffer + offset),
 				    namelen);
