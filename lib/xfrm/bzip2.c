@@ -49,6 +49,9 @@ static int process_data(xfrm_stream_t *stream, const void *in, uint32_t in_size,
 			ret = BZ2_bzDecompress(&bzip2->strm);
 		}
 
+		if (ret == BZ_OUTBUFF_FULL)
+			return XFRM_STREAM_BUFFER_FULL;
+
 		if (ret < 0)
 			return XFRM_STREAM_ERROR;
 
@@ -61,9 +64,6 @@ static int process_data(xfrm_stream_t *stream, const void *in, uint32_t in_size,
 		out = (char *)out + diff;
 		out_size -= diff;
 		*out_written += diff;
-
-		if (ret == BZ_OUTBUFF_FULL)
-			return XFRM_STREAM_BUFFER_FULL;
 
 		if (ret == BZ_STREAM_END)
 			return XFRM_STREAM_END;
