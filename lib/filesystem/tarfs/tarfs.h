@@ -12,7 +12,10 @@
 #include "tar.h"
 #include "filesystem.h"
 
+#include <sys/types.h>
+#ifdef __linux__
 #include <sys/sysmacros.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>

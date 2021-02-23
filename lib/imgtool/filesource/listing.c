@@ -7,7 +7,10 @@
 #include "filesource.h"
 #include "fstree.h"
 
+#include <sys/types.h>
+#ifdef __linux__
 #include <sys/sysmacros.h>
+#endif
 #include <sys/stat.h>
 #include <string.h>
 #include <stdlib.h>

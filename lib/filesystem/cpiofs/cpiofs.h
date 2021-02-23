@@ -10,7 +10,10 @@
 #include "config.h"
 #include "filesystem.h"
 
+#include <sys/types.h>
+#ifdef __linux__
 #include <sys/sysmacros.h>
+#endif
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdlib.h>
