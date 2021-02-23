@@ -237,7 +237,8 @@ static int get_next_record(file_source_t *fs, file_source_record_t **out,
 	struct stat sb;
 	int ret, fd;
 
-	*out = NULL;
+	if (out != NULL)
+		*out = NULL;
 
 	if (stream_out != NULL)
 		*stream_out = NULL;
