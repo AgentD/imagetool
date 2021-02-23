@@ -658,7 +658,7 @@ fail_quote:
 	file->report_error(file, "missing '\"'");
 	goto fail;
 fail_errno:
-	file->report_error(file, strerror(errno));
+	file->report_error(file, "%s", strerror(errno));
 	goto fail;
 fail:
 	free(name_str);
