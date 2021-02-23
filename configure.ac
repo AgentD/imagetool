@@ -165,6 +165,8 @@ AM_CONDITIONAL([WITH_LZO], [test "x$with_lzo" = "xyes"])
 
 ##### additional checks #####
 
+AC_CHECK_FUNCS([copy_file_range fallocate])
+
 AX_COMPILE_CHECK_SIZEOF(size_t)
 AX_COMPILE_CHECK_SIZEOF(int)
 AX_COMPILE_CHECK_SIZEOF(long)

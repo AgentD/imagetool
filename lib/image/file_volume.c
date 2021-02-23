@@ -36,15 +36,20 @@ static int transfer_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst,
 			   size_t count)
 {
 	size_t size, diff, processed;
+#ifdef HAVE_COPY_FILE_RANGE
 	loff_t off_in, off_out;
 	ssize_t ret;
+#else
+	off_t off_in, off_out;
+#endif
 
-	/* fast-path: ask the kernel to copy-on-write remap the region */
 	processed = 0;
 	size = ((volume_t *)fvol)->blocksize * count;
 	off_in = src * size;
 	off_out = dst * size;
 
+#ifdef HAVE_COPY_FILE_RANGE
+	/* fast-path: ask the kernel to copy-on-write remap the region */
 	while (processed < size) {
 		ret = copy_file_range(fvol->fd, &off_in,
 				      fvol->fd, &off_out,
@@ -58,7 +63,7 @@ static int transfer_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst,
 
 		processed += ret;
 	}
-
+#endif
 	/* fallback: manually copy over the remaining data */
 	while (processed < size) {
 		diff = size - processed;
@@ -113,6 +118,7 @@ static int truncate_file(int fd, uint64_t size)
 
 static int punch_hole(int fd, uint64_t offset, uint64_t size)
 {
+#ifdef HAVE_FALLOCATE
 	int ret;
 
 	do {
@@ -122,6 +128,10 @@ static int punch_hole(int fd, uint64_t offset, uint64_t size)
 	} while (ret < 0 && errno == EINTR);
 
 	return ret;
+#else
+	(void)fd; (void)offset; (void)size;
+	return -1;
+#endif
 }
 
 /*****************************************************************************/
