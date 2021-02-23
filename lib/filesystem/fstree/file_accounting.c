@@ -15,8 +15,8 @@ uint64_t fstree_file_sparse_bytes(const fstree_t *fs, const tree_node_t *n)
 	uint64_t count = 0;
 
 	for (it = n->data.file.sparse; it != NULL; it = it->next) {
-		uint64_t start = it->index * fs->volume->blocksize;
-		uint64_t length = it->count * fs->volume->blocksize;
+		uint64_t start = it->index * (uint64_t)fs->volume->blocksize;
+		uint64_t length = it->count * (uint64_t)fs->volume->blocksize;
 
 		if (start >= n->data.file.size)
 			continue;

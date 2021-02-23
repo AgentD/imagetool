@@ -76,7 +76,7 @@ static int compute_dir_sizes(fatfs_filesystem_t *fatfs, uint64_t *total)
 {
 	filesystem_t *fs = (filesystem_t *)fatfs;
 	tree_node_t *it = fs->fstree->nodes_by_type[TREE_NODE_DIR];
-	uint64_t cluster_size = SECTOR_SIZE * fatfs->secs_per_cluster;
+	uint32_t cluster_size = SECTOR_SIZE * fatfs->secs_per_cluster;
 	null_ostream_t *ostrm;
 	uint64_t offset = 0;
 
@@ -224,7 +224,7 @@ filesystem_t *filesystem_fatfs_create(volume_t *volume)
 	compute_fs_parameters(size, fatfs);
 
 	rsvp = fatfs->fatstart + 2 * fatfs->fatsize;
-	size = fatfs->secs_per_cluster * SECTOR_SIZE;
+	size = fatfs->secs_per_cluster * (uint64_t)SECTOR_SIZE;
 
 	adapter = volume_blocksize_adapter_create(volume, size, rsvp);
 	if (adapter == NULL)
