@@ -285,7 +285,7 @@ static int move_block(volume_t *vol, uint64_t src, uint64_t dst)
 		return 0;
 
 	if (!src_set)
-		return dst_set ? discard_blocks(vol, dst, 1) : 0;
+		return discard_blocks(vol, dst, 1);
 
 	if (transfer_blocks(fvol, src, dst, 1))
 		return -1;
