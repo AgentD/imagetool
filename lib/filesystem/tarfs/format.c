@@ -102,8 +102,11 @@ static int write_header(ostream_t *fp, const tree_node_t *n, const char *name,
 	write_number(hdr.size, size, sizeof(hdr.size));
 	write_number_signed(hdr.mtime, n->mtime, sizeof(hdr.mtime));
 	hdr.typeflag = type;
-	if (slink_target != NULL)
-		memcpy(hdr.linkname, slink_target, strlen(slink_target));
+
+	if (slink_target != NULL) {
+		strncpy(hdr.linkname, slink_target, sizeof(hdr.linkname) - 1);
+	}
+
 	memcpy(hdr.magic, TAR_MAGIC_OLD, sizeof(hdr.magic));
 	memcpy(hdr.version, TAR_VERSION_OLD, sizeof(hdr.version));
 	sprintf(hdr.uname, "%u", n->uid);
