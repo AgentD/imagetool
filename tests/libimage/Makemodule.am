@@ -11,7 +11,7 @@ test_volume_memmove_LDADD = libimage.a libutil.a
 test_volume_memmove_CPPFLAGS = $(AM_CPPFLAGS)
 
 test_file_volume_SOURCES = tests/libimage/file_volume.c
-test_file_volume_LDADD = libimage.a libutil.a
+test_file_volume_LDADD = libimage.a libtest.a libutil.a
 test_file_volume_CPPFLAGS = $(AM_CPPFLAGS)
 
 test_blocksize_adapter1_SOURCES = tests/libimage/blocksize_adapter1.c

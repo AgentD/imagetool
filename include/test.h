@@ -128,6 +128,10 @@ extern "C" {
 
 int compare_files_equal(int gen_fd, int ref_fd);
 
+int open_temp_file(const char *name);
+
+void cleanup_temp_files(void);
+
 #ifdef __cplusplus
 }
 #endif

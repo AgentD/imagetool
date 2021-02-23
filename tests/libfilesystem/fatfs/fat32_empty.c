@@ -25,7 +25,7 @@ int main(void)
 	volume_t *vol;
 
 	/* create a memory mapped, temporary file */
-	fd = memfd_create("fat32_empty.bin", 0);
+	fd = open_temp_file("fat32_empty.bin");
 	TEST_ASSERT(fd > 0);
 
 	vol = volume_from_fd("fat32_empty.bin", fd,
@@ -64,5 +64,6 @@ int main(void)
 
 	/* complete cleanup */
 	object_drop(vol);
+	cleanup_temp_files();
 	return EXIT_SUCCESS;
 }

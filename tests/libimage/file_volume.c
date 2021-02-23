@@ -27,7 +27,7 @@ int main(void)
 	blocksz = sysconf(_SC_PAGESIZE);
 	printf("Block size is %zu.\n", blocksz);
 
-	fd = memfd_create("testfile", 0);
+	fd = open_temp_file("testfile");
 	TEST_ASSERT(fd > 0);
 
 	TEST_EQUAL_I(ftruncate(fd, blocksz * 16), 0);
@@ -271,5 +271,6 @@ int main(void)
 	munmap(buffer, blocksz * 17);
 	object_drop(vol);
 	free(block_buffer);
+	cleanup_temp_files();
 	return EXIT_SUCCESS;
 }

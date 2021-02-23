@@ -26,10 +26,10 @@ int main(void)
 	volume_t *vol;
 
 	/* create a memory mapped, temporary file */
-	fd = memfd_create("test.tar", 0);
+	fd = open_temp_file("test_tarfs.tar");
 	TEST_ASSERT(fd > 0);
 
-	vol = volume_from_fd("test.tar", fd, 131072);
+	vol = volume_from_fd("test_tarfs.tar", fd, 131072);
 	TEST_NOT_NULL(vol);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 1);
 
@@ -111,5 +111,6 @@ int main(void)
 
 	/* complete cleanup */
 	object_drop(vol);
+	cleanup_temp_files();
 	return EXIT_SUCCESS;
 }
