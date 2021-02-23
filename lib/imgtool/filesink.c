@@ -182,7 +182,7 @@ static tree_node_t *create_node(fstree_t *fs, const file_source_record_t *rec,
 	n->uid = rec->uid;
 	n->gid = rec->gid;
 	n->mtime = rec->mtime;
-	n->mtime = rec->ctime;
+	n->ctime = rec->ctime;
 
 	if (rec->type == FILE_SOURCE_SYMLINK ||
 	    rec->type == FILE_SOURCE_HARD_LINK) {
