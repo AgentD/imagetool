@@ -1,5 +1,7 @@
 # About
 
+[![Coverity Status](https://scan.coverity.com/projects/22661/badge.svg)](https://scan.coverity.com/projects/agentd-imagetool)
+
 The main idea is to have a tool for generating disk images from a textual
 description.
 
