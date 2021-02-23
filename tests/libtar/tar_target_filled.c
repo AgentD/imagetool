@@ -17,9 +17,7 @@ int main(void)
 	char buffer[16];
 	istream_t *fp;
 
-	TEST_ASSERT(chdir(TEST_PATH) == 0);
-
-	fp = istream_open_file("format-acceptance/link_filled.tar");
+	fp = istream_open_file(TEST_PATH "/format-acceptance/link_filled.tar");
 	TEST_NOT_NULL(fp);
 
 	/* "deep" directory hierarchy containg 2 files */

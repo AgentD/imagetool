@@ -17,9 +17,7 @@ int main(void)
 	sparse_map_t *sparse;
 	istream_t *fp;
 
-	TEST_ASSERT(chdir(TEST_PATH) == 0);
-
-	fp = istream_open_file("sparse-files/gnu-small.tar");
+	fp = istream_open_file(TEST_PATH "/sparse-files/gnu-small.tar");
 	TEST_NOT_NULL(fp);
 	TEST_ASSERT(read_header(fp, &hdr) == 0);
 	TEST_EQUAL_UI(hdr.sb.st_mode, S_IFREG | 0644);
