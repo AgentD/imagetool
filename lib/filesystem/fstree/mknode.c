@@ -20,6 +20,13 @@ static tree_node_t *mknode_at(fstree_t *fs, const char *path, int type,
 	const char *suffix;
 	char *target;
 
+	if (type == TREE_NODE_SYMLINK || type == TREE_NODE_HARD_LINK) {
+		if (extra == NULL) {
+			errno = EINVAL;
+			return NULL;
+		}
+	}
+
 	suffix = strrchr(path, '/');
 
 	if (suffix == NULL) {
@@ -77,14 +84,13 @@ static tree_node_t *mknode_at(fstree_t *fs, const char *path, int type,
 
 		memcpy((char *)n->payload, suffix, suffix_len);
 
-		if (n->type == TREE_NODE_SYMLINK ||
-		    n->type == TREE_NODE_HARD_LINK) {
+		if (type == TREE_NODE_SYMLINK || type == TREE_NODE_HARD_LINK) {
 			target = (char *)n->payload + suffix_len + 1;
 
 			n->data.link.target = (const char *)target;
 			strcpy(target, extra);
 
-			if (n->type == TREE_NODE_HARD_LINK)
+			if (type == TREE_NODE_HARD_LINK)
 				fstree_canonicalize_path(target);
 		}
 
