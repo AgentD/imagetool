@@ -26,14 +26,14 @@ typedef struct pool_t {
 	uint8_t buffer[1024];
 } pool_t;
 
-struct file_source_listing_t {
-	file_source_t base;
+typedef struct {
+	file_source_listing_t base;
 
 	size_t offset;
 	pool_t *pool_list;
 
 	int dirfd;
-};
+} listing_private_t;
 
 static int get_file_size(int fd, const char *path, uint64_t *out)
 {
@@ -48,7 +48,7 @@ static int get_file_size(int fd, const char *path, uint64_t *out)
 	return 0;
 }
 
-static pool_t *get_pool(file_source_listing_t *lst, size_t size)
+static pool_t *get_pool(listing_private_t *lst, size_t size)
 {
 	pool_t *p, *new;
 
@@ -204,7 +204,7 @@ static void encode_entry(uint8_t *out, int type, uint32_t uid, uint32_t gid,
 static int get_next_record(file_source_t *fs, file_source_record_t **out,
 			   istream_t **stream_out)
 {
-	file_source_listing_t *listing = (file_source_listing_t *)fs;
+	listing_private_t *listing = (listing_private_t *)fs;
 	size_t namelen, targetlen, offset_old, offset = listing->offset;
 	uint32_t uid = 0, gid = 0, devno = 0;
 	int ul, gl, fd = -1;
@@ -356,7 +356,7 @@ fail_quiet:
 
 static void destroy(object_t *obj)
 {
-	file_source_listing_t *listing = (file_source_listing_t *)obj;
+	listing_private_t *listing = (listing_private_t *)obj;
 
 	while (listing->pool_list != NULL) {
 		pool_t *pool = listing->pool_list;
@@ -366,30 +366,6 @@ static void destroy(object_t *obj)
 
 	close(listing->dirfd);
 	free(listing);
-}
-
-file_source_listing_t *file_source_listing_create(const char *sourcedir)
-{
-	file_source_listing_t *listing = calloc(1, sizeof(*listing));
-	file_source_t *fs = (file_source_t *)listing;
-	object_t *obj = (object_t *)fs;
-
-	if (listing == NULL) {
-		perror(sourcedir);
-		return NULL;
-	}
-
-	listing->dirfd = open(sourcedir, O_RDONLY | O_DIRECTORY);
-	if (listing->dirfd < 0) {
-		perror(sourcedir);
-		free(listing);
-		return NULL;
-	}
-
-	fs->get_next_record = get_next_record;
-	obj->destroy = destroy;
-	obj->refcount = 1;
-	return listing;
 }
 
 /*****************************************************************************/
@@ -460,10 +436,11 @@ static void unescape(char *str)
 	*dst = '\0';
 }
 
-int file_source_listing_add_line(file_source_listing_t *listing,
-				 const char *line, gcfg_file_t *file)
+static int add_line(file_source_listing_t *public, const char *line,
+		    gcfg_file_t *file)
 {
 	uint32_t mode = 0, uid = 0, gid = 0, dev_major = 0, dev_minor = 0;
+	listing_private_t *listing = (listing_private_t *)public;
 	size_t i, len, name_len = 0, target_len = 0;
 	const char *name = NULL, *target = NULL;
 	char *name_str = NULL, *target_str = NULL;
@@ -664,4 +641,32 @@ fail:
 	free(name_str);
 	free(target_str);
 	return -1;
+}
+
+/*****************************************************************************/
+
+file_source_listing_t *file_source_listing_create(const char *sourcedir)
+{
+	listing_private_t *listing = calloc(1, sizeof(*listing));
+	file_source_listing_t *public = (file_source_listing_t *)listing;
+	file_source_t *fs = (file_source_t *)public;
+	object_t *obj = (object_t *)fs;
+
+	if (listing == NULL) {
+		perror(sourcedir);
+		return NULL;
+	}
+
+	listing->dirfd = open(sourcedir, O_RDONLY | O_DIRECTORY);
+	if (listing->dirfd < 0) {
+		perror(sourcedir);
+		free(listing);
+		return NULL;
+	}
+
+	public->add_line = add_line;
+	fs->get_next_record = get_next_record;
+	obj->destroy = destroy;
+	obj->refcount = 1;
+	return public;
 }

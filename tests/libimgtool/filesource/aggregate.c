@@ -162,7 +162,7 @@ static int compare_records(const void *a, const void *b)
 
 int main(void)
 {
-	file_source_aggregate_t *aggregate;
+	file_source_stackable_t *aggregate;
 	file_source_record_t *rec;
 	size_t i;
 	int ret;
@@ -177,7 +177,7 @@ int main(void)
 	TEST_ASSERT(ret > 0);
 
 	/* setup one source */
-	ret = file_source_aggregate_add(aggregate, &filesource1);
+	ret = aggregate->add_nested(aggregate, &filesource1);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)&filesource1)->refcount, 2);
 
@@ -221,11 +221,21 @@ int main(void)
 	}
 
 	/* two sources */
-	ret = file_source_aggregate_add(aggregate, &filesource2);
+	object_drop(aggregate);
+	TEST_EQUAL_UI(((object_t *)&filesource1)->refcount, 1);
+
+	aggregate = file_source_aggregate_create();
+	TEST_NOT_NULL(aggregate);
+	TEST_EQUAL_UI(((object_t *)aggregate)->refcount, 1);
+
+	ret = aggregate->add_nested(aggregate, &filesource1);
+	TEST_EQUAL_I(ret, 0);
+	TEST_EQUAL_UI(((object_t *)&filesource1)->refcount, 2);
+
+	ret = aggregate->add_nested(aggregate, &filesource2);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)&filesource2)->refcount, 2);
 
-	file_source_aggregate_reset(aggregate);
 	rec_idx1 = 0;
 	rec_idx2 = 0;
 

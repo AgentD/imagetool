@@ -225,16 +225,14 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)filter)->refcount, 1);
 	TEST_EQUAL_UI(((object_t *)&filesource)->refcount, 1);
 
-	ret = file_source_filter_add_nested(filter, &filesource);
+	ret = ((file_source_stackable_t *)filter)->
+		add_nested((file_source_stackable_t *)filter, &filesource);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)filter)->refcount, 1);
 	TEST_EQUAL_UI(((object_t *)&filesource)->refcount, 2);
 
-	file_source_filter_add_glob_rule(filter, "usr/*",
-					 FILE_SOURCE_FILTER_ALLOW);
-
-	file_source_filter_add_glob_rule(filter, "bo*",
-					 FILE_SOURCE_FILTER_ALLOW);
+	filter->add_glob_rule(filter, "usr/*", FILE_SOURCE_FILTER_ALLOW);
+	filter->add_glob_rule(filter, "bo*", FILE_SOURCE_FILTER_ALLOW);
 
 	/* run */
 	i = 0;
@@ -298,16 +296,14 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)filter)->refcount, 1);
 	TEST_EQUAL_UI(((object_t *)&filesource)->refcount, 1);
 
-	ret = file_source_filter_add_nested(filter, &filesource);
+	ret = ((file_source_stackable_t *)filter)->
+		add_nested((file_source_stackable_t *)filter, &filesource);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)filter)->refcount, 1);
 	TEST_EQUAL_UI(((object_t *)&filesource)->refcount, 2);
 
-	file_source_filter_add_glob_rule(filter, "usr/*",
-					 FILE_SOURCE_FILTER_DISCARD);
-
-	file_source_filter_add_glob_rule(filter, "*",
-					 FILE_SOURCE_FILTER_ALLOW);
+	filter->add_glob_rule(filter, "usr/*", FILE_SOURCE_FILTER_DISCARD);
+	filter->add_glob_rule(filter, "*", FILE_SOURCE_FILTER_ALLOW);
 
 	/* run */
 	i = 0;

@@ -155,7 +155,7 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)lst)->refcount, 1);
 
 	for (i = 0; i < sizeof(listing) / sizeof(listing[0]); ++i) {
-		ret = file_source_listing_add_line(lst, listing[i], NULL);
+		ret = lst->add_line(lst, listing[i], NULL);
 		TEST_EQUAL_I(ret, 0);
 	}
 

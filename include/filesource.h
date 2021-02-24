@@ -45,17 +45,31 @@ typedef struct file_source_t {
 			       istream_t **stream_out);
 } file_source_t;
 
+typedef struct file_source_stackable_t {
+	file_source_t base;
 
-typedef struct file_source_listing_t file_source_listing_t;
-typedef struct file_source_filter_t file_source_filter_t;
-typedef struct file_source_aggregate_t file_source_aggregate_t;
-
+	int (*add_nested)(struct file_source_stackable_t *source,
+			  file_source_t *nested);
+} file_source_stackable_t;
 
 typedef enum {
 	FILE_SOURCE_FILTER_ALLOW = 0,
 	FILE_SOURCE_FILTER_DISCARD,
 } FILE_SOURCE_FILTER;
 
+typedef struct file_source_filter_t {
+	file_source_stackable_t base;
+
+	int (*add_glob_rule)(struct file_source_filter_t *filter,
+			     const char *pattern, int target);
+} file_source_filter_t;
+
+typedef struct file_source_listing_t {
+	file_source_t base;
+
+	int (*add_line)(struct file_source_listing_t *listing,
+			const char *line, gcfg_file_t *file);
+} file_source_listing_t;
 
 #ifdef __cplusplus
 extern "C" {
@@ -67,27 +81,9 @@ file_source_t *file_source_tar_create(const char *path);
 
 file_source_listing_t *file_source_listing_create(const char *sourcedir);
 
-int file_source_listing_add_line(file_source_listing_t *listing,
-				 const char *line,
-				 gcfg_file_t *file);
-
-
-file_source_aggregate_t *file_source_aggregate_create(void);
-
-void file_source_aggregate_reset(file_source_aggregate_t *source);
-
-int file_source_aggregate_add(file_source_aggregate_t *source,
-			      file_source_t *sub);
-
+file_source_stackable_t *file_source_aggregate_create(void);
 
 file_source_filter_t *file_source_filter_create(void);
-
-int file_source_filter_add_glob_rule(file_source_filter_t *filter,
-				     const char *pattern,
-				     int target);
-
-int file_source_filter_add_nested(file_source_filter_t *filter,
-				  file_source_t *nested);
 
 #ifdef __cplusplus
 }

@@ -20,20 +20,20 @@ typedef struct rule_t {
 	char pattern[];
 } rule_t;
 
-struct file_source_filter_t {
-	file_source_t base;
+typedef struct {
+	file_source_filter_t base;
 
 	bool wrapped_is_aggregate;
 	file_source_t *wrapped;
 
 	rule_t *rules;
 	rule_t *rules_last;
-};
+} filter_source_private_t;
 
 static int get_next_record(file_source_t *fs, file_source_record_t **out,
 			   istream_t **stream_out)
 {
-	file_source_filter_t *filter = (file_source_filter_t *)fs;
+	filter_source_private_t *filter = (filter_source_private_t *)fs;
 	rule_t *r;
 	int ret;
 
@@ -78,7 +78,7 @@ static int get_next_record(file_source_t *fs, file_source_record_t **out,
 
 static void destroy(object_t *obj)
 {
-	file_source_filter_t *filter = (file_source_filter_t *)obj;
+	filter_source_private_t *filter = (filter_source_private_t *)obj;
 
 	while (filter->rules != NULL) {
 		rule_t *r = filter->rules;
@@ -90,26 +90,40 @@ static void destroy(object_t *obj)
 	free(filter);
 }
 
-file_source_filter_t *file_source_filter_create(void)
+static int add_nested(file_source_stackable_t *base, file_source_t *nested)
 {
-	file_source_filter_t *filter = calloc(1, sizeof(*filter));
-	file_source_t *source = (file_source_t *)filter;
-	object_t *obj = (object_t *)filter;
+	filter_source_private_t *filter = (filter_source_private_t *)base;
+	file_source_stackable_t *aggregate;
 
-	if (filter == NULL) {
-		perror("creating file listing filter");
-		return NULL;
+	if (filter->wrapped == NULL) {
+		filter->wrapped = object_grab(nested);
+		return 0;
 	}
 
-	source->get_next_record = get_next_record;
-	obj->refcount = 1;
-	obj->destroy = destroy;
-	return filter;
+	if (filter->wrapped_is_aggregate) {
+		aggregate = (file_source_stackable_t *)filter->wrapped;
+	} else {
+		aggregate = file_source_aggregate_create();
+		if (aggregate == NULL)
+			return -1;
+
+		if (aggregate->add_nested(aggregate, filter->wrapped)) {
+			object_drop(aggregate);
+			return -1;
+		}
+
+		object_drop(filter->wrapped);
+		filter->wrapped = (file_source_t *)aggregate;
+		filter->wrapped_is_aggregate = true;
+	}
+
+	return aggregate->add_nested(aggregate, nested);
 }
 
-int file_source_filter_add_glob_rule(file_source_filter_t *filter,
-				     const char *pattern, int target)
+static int add_glob_rule(file_source_filter_t *public,
+			 const char *pattern, int target)
 {
+	filter_source_private_t *filter = (filter_source_private_t *)public;
 	rule_t *r = calloc(1, sizeof(*r) + strlen(pattern) + 1);
 
 	if (r == NULL) {
@@ -131,32 +145,23 @@ int file_source_filter_add_glob_rule(file_source_filter_t *filter,
 	return 0;
 }
 
-int file_source_filter_add_nested(file_source_filter_t *filter,
-				  file_source_t *nested)
+file_source_filter_t *file_source_filter_create(void)
 {
-	file_source_aggregate_t *aggregate;
+	filter_source_private_t *filter = calloc(1, sizeof(*filter));
+	file_source_filter_t *public = (file_source_filter_t *)filter;
+	file_source_stackable_t *stack = (file_source_stackable_t *)filter;
+	file_source_t *source = (file_source_t *)filter;
+	object_t *obj = (object_t *)filter;
 
-	if (filter->wrapped == NULL) {
-		filter->wrapped = object_grab(nested);
-		return 0;
+	if (filter == NULL) {
+		perror("creating file listing filter");
+		return NULL;
 	}
 
-	if (filter->wrapped_is_aggregate) {
-		aggregate = (file_source_aggregate_t *)filter->wrapped;
-	} else {
-		aggregate = file_source_aggregate_create();
-		if (aggregate == NULL)
-			return -1;
-
-		if (file_source_aggregate_add(aggregate, filter->wrapped)) {
-			object_drop(aggregate);
-			return -1;
-		}
-
-		object_drop(filter->wrapped);
-		filter->wrapped = (file_source_t *)aggregate;
-		filter->wrapped_is_aggregate = true;
-	}
-
-	return file_source_aggregate_add(aggregate, nested);
+	public->add_glob_rule = add_glob_rule;
+	stack->add_nested = add_nested;
+	source->get_next_record = get_next_record;
+	obj->refcount = 1;
+	obj->destroy = destroy;
+	return public;
 }

@@ -114,7 +114,7 @@ mount_group_t *imgtool_state_add_mount_group(imgtool_state_t *state)
 
 int mount_group_add_source(mount_group_t *mg, file_source_t *source)
 {
-	file_source_aggregate_t *aggregate;
+	file_source_stackable_t *aggregate;
 
 	if (mg->source == NULL) {
 		mg->source = object_grab(source);
@@ -122,13 +122,14 @@ int mount_group_add_source(mount_group_t *mg, file_source_t *source)
 	}
 
 	if (mg->have_aggregate) {
-		aggregate = (file_source_aggregate_t *)mg->source;
+		aggregate = (file_source_stackable_t *)mg->source;
 	} else {
-		aggregate = file_source_aggregate_create();
+		aggregate = (file_source_stackable_t *)
+			file_source_aggregate_create();
 		if (aggregate == NULL)
 			return -1;
 
-		if (file_source_aggregate_add(aggregate, mg->source)) {
+		if (aggregate->add_nested(aggregate, mg->source)) {
 			object_drop(aggregate);
 			return -1;
 		}
@@ -137,7 +138,7 @@ int mount_group_add_source(mount_group_t *mg, file_source_t *source)
 		mg->have_aggregate = true;
 	}
 
-	return file_source_aggregate_add(aggregate, source);
+	return aggregate->add_nested(aggregate, source);
 }
 
 int imgtool_state_process(imgtool_state_t *state)

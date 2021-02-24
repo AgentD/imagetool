@@ -15,14 +15,14 @@ typedef struct sub_source_entry_t {
 	file_source_t *src;
 } sub_source_entry_t;
 
-struct file_source_aggregate_t {
-	file_source_t base;
+typedef struct {
+	file_source_stackable_t base;
 
 	sub_source_entry_t *list;
 	sub_source_entry_t *list_end;
 
 	sub_source_entry_t *it;
-};
+} file_source_aggregate_t;
 
 static int get_next_record(file_source_t *fs, file_source_record_t **out,
 			   istream_t **stream_out)
@@ -59,31 +59,9 @@ static void destroy(object_t *obj)
 	free(fs);
 }
 
-file_source_aggregate_t *file_source_aggregate_create(void)
+static int add_nested(file_source_stackable_t *base, file_source_t *sub)
 {
-	file_source_aggregate_t *aggregate = calloc(1, sizeof(*aggregate));
-	file_source_t *src = (file_source_t *)aggregate;
-	object_t *obj = (object_t *)src;
-
-	if (aggregate == NULL) {
-		perror("creating aggregate file source");
-		return NULL;
-	}
-
-	src->get_next_record = get_next_record;
-	obj->destroy = destroy;
-	obj->refcount = 1;
-	return aggregate;
-}
-
-void file_source_aggregate_reset(file_source_aggregate_t *source)
-{
-	source->it = source->list;
-}
-
-int file_source_aggregate_add(file_source_aggregate_t *source,
-			      file_source_t *sub)
-{
+	file_source_aggregate_t *source = (file_source_aggregate_t *)base;
 	sub_source_entry_t *ent = calloc(1, sizeof(*ent));
 
 	if (ent == NULL) {
@@ -103,4 +81,23 @@ int file_source_aggregate_add(file_source_aggregate_t *source,
 
 	source->it = source->list;
 	return 0;
+}
+
+file_source_stackable_t *file_source_aggregate_create(void)
+{
+	file_source_aggregate_t *aggregate = calloc(1, sizeof(*aggregate));
+	file_source_stackable_t *stack = (file_source_stackable_t *)aggregate;
+	file_source_t *src = (file_source_t *)stack;
+	object_t *obj = (object_t *)src;
+
+	if (aggregate == NULL) {
+		perror("creating aggregate file source");
+		return NULL;
+	}
+
+	stack->add_nested = add_nested;
+	src->get_next_record = get_next_record;
+	obj->destroy = destroy;
+	obj->refcount = 1;
+	return stack;
 }

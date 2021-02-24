@@ -20,7 +20,7 @@ static int listing_add_line(gcfg_file_t *file, object_t *object,
 	if (*line == '}')
 		return 1;
 
-	return file_source_listing_add_line(list, line, file);
+	return list->add_line(list, line, file);
 }
 
 static file_source_t *create_listing(plugin_t *plugin, const char *arg)
