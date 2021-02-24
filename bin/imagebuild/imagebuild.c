@@ -49,6 +49,31 @@ static object_t *cb_create_fs(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 	return (object_t *)fs;
 }
 
+static object_t *cb_create_stackable_source(const gcfg_keyword_t *kwd,
+					    gcfg_file_t *file, object_t *object)
+{
+	mount_group_t *mg = (mount_group_t *)object;
+	file_source_stackable_t *src;
+	plugin_t *plugin;
+
+	plugin = find_plugin(PLUGIN_TYPE_FILE_SOURCE_STACKABLE, kwd->name);
+	assert(plugin != NULL);
+
+	src = plugin->create.stackable_source(plugin);
+	if (src == NULL) {
+		file->report_error(file, "error creating file source");
+		return NULL;
+	}
+
+	if (mount_group_add_source(mg, (file_source_t *)src)) {
+		file->report_error(file, "error adding source to mount group");
+		object_drop(src);
+		return NULL;
+	}
+
+	return (object_t *)src;
+}
+
 static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
 				       gcfg_file_t *file, object_t *object,
 				       const char *string)
@@ -68,6 +93,57 @@ static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
 
 	if (mount_group_add_source(mg, src)) {
 		file->report_error(file, "error adding source to mount group");
+		object_drop(src);
+		return NULL;
+	}
+
+	return (object_t *)src;
+}
+
+static object_t *cb_create_stackable_sub_source(const gcfg_keyword_t *kwd,
+						gcfg_file_t *file, object_t *object)
+{
+	file_source_stackable_t *parent = (file_source_stackable_t *)object;
+	file_source_stackable_t *src;
+	plugin_t *plugin;
+
+	plugin = find_plugin(PLUGIN_TYPE_FILE_SOURCE_STACKABLE, kwd->name);
+	assert(plugin != NULL);
+
+	src = plugin->create.stackable_source(plugin);
+	if (src == NULL) {
+		file->report_error(file, "error creating file source");
+		return NULL;
+	}
+
+	if (parent->add_nested(parent, (file_source_t *)src)) {
+		file->report_error(file, "error adding source to parent");
+		object_drop(src);
+		return NULL;
+	}
+
+	return (object_t *)src;
+}
+
+static object_t *cb_create_data_sub_source(const gcfg_keyword_t *kwd,
+					   gcfg_file_t *file, object_t *object,
+					   const char *string)
+{
+	file_source_stackable_t *parent = (file_source_stackable_t *)object;
+	file_source_t *src;
+	plugin_t *plugin;
+
+	plugin = find_plugin(PLUGIN_TYPE_FILE_SOURCE, kwd->name);
+	assert(plugin != NULL);
+
+	src = plugin->create.file_source(plugin, string);
+	if (src == NULL) {
+		file->report_error(file, "error creating file source");
+		return NULL;
+	}
+
+	if (parent->add_nested(parent, src)) {
+		file->report_error(file, "error adding source to parent");
 		object_drop(src);
 		return NULL;
 	}
@@ -207,10 +283,11 @@ static gcfg_keyword_t *cfg_global = NULL;
 static gcfg_keyword_t *cfg_filesystems = NULL;
 static gcfg_keyword_t *cfg_fs_common = NULL;
 static gcfg_keyword_t *cfg_sources = NULL;
+static gcfg_keyword_t *cfg_sources_rec = NULL;
 
 static int init_config(void)
 {
-	gcfg_keyword_t *kwd_it;
+	gcfg_keyword_t *kwd_it, *copy, *last;
 	plugin_t *it;
 
 	/* filesystems */
@@ -253,21 +330,68 @@ static int init_config(void)
 	cfg_fs_common[0].children = cfg_filesystems;
 
 	/* file sources */
+	cfg_sources_rec = NULL;
+	last = cfg_sources_rec;
+
 	for (it = plugins; it != NULL; it = it->next) {
-		if (it->type != PLUGIN_TYPE_FILE_SOURCE)
+		if (it->type != PLUGIN_TYPE_FILE_SOURCE &&
+		    it->type != PLUGIN_TYPE_FILE_SOURCE_STACKABLE) {
 			continue;
+		}
 
 		kwd_it = calloc(1, sizeof(*kwd_it));
 		if (kwd_it == NULL)
 			goto fail;
 
-		kwd_it->arg = GCFG_ARG_STRING;
+		if (it->type == PLUGIN_TYPE_FILE_SOURCE_STACKABLE) {
+			kwd_it->arg = GCFG_ARG_NONE;
+			kwd_it->handle.cb_none = cb_create_stackable_source;
+		} else {
+			kwd_it->arg = GCFG_ARG_STRING;
+			kwd_it->handle.cb_string = cb_create_data_source;
+		}
+
 		kwd_it->name = it->name;
 		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
-		kwd_it->handle.cb_string = cb_create_data_source;
 		kwd_it->next = cfg_sources;
 		cfg_sources = kwd_it;
+
+		/* copy in the nested sources list */
+		copy = calloc(1, sizeof(*copy));
+		if (copy == NULL)
+			goto fail;
+
+		memcpy(copy, kwd_it, sizeof(*copy));
+		copy->next = NULL;
+
+		if (last == NULL) {
+			cfg_sources_rec = copy;
+			last = copy;
+		} else {
+			last->next = copy;
+			last = copy;
+		}
+
+		if (it->type == PLUGIN_TYPE_FILE_SOURCE_STACKABLE) {
+			copy->handle.cb_none = cb_create_stackable_sub_source;
+		} else {
+			copy->handle.cb_string = cb_create_data_sub_source;
+		}
+
+		/* rewire the list of children */
+		if (it->type == PLUGIN_TYPE_FILE_SOURCE_STACKABLE) {
+			if (kwd_it->children == NULL) {
+				kwd_it->children = cfg_sources_rec;
+				copy->children = cfg_sources_rec;
+			} else {
+				kwd_it = kwd_it->children;
+				while (kwd_it->next != NULL)
+					kwd_it = kwd_it->next;
+
+				kwd_it->next = cfg_sources_rec;
+			}
+		}
 	}
 
 	/* root level entries */
@@ -351,6 +475,12 @@ static void config_cleanup(void)
 	while (cfg_sources != NULL) {
 		it = cfg_sources;
 		cfg_sources = cfg_sources->next;
+		free(it);
+	}
+
+	while (cfg_sources_rec != NULL) {
+		it = cfg_sources_rec;
+		cfg_sources_rec = cfg_sources_rec->next;
 		free(it);
 	}
 }

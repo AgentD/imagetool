@@ -1,8 +1,11 @@
 check_SCRIPTS += tests/imgtool/test1.sh
 check_SCRIPTS += tests/imgtool/test2.sh
+check_SCRIPTS += tests/imgtool/test3.sh
 
 TESTS += tests/imgtool/test1.sh
 TESTS += tests/imgtool/test2.sh
+TESTS += tests/imgtool/test3.sh
 
 EXTRA_DIST += tests/imgtool/test1.cfg tests/imgtool/test1.tar
 EXTRA_DIST += tests/imgtool/test2.cfg tests/imgtool/test2.bin
+EXTRA_DIST += tests/imgtool/test3.cfg tests/imgtool/test3.tar
