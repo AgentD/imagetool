@@ -58,10 +58,6 @@ static const char *apply_arg(gcfg_file_t *file, const gcfg_keyword_t *kwd,
 			     object_t **child_out)
 {
 	gcfg_number_t num[4];
-#ifndef GCFG_DISABLE_NETWORK
-	uint32_t vnd, dev;
-	gcfg_ip_addr_t ip;
-#endif
 	uint64_t lval;
 	char *strval;
 	int iret;
@@ -101,7 +97,6 @@ static const char *apply_arg(gcfg_file_t *file, const gcfg_keyword_t *kwd,
 			return NULL;
 		*child_out = kwd->handle.cb_size(kwd, file, parent, lval);
 		break;
-#ifndef GCFG_DISABLE_VECTOR
 	case GCFG_ARG_VEC2:
 		ptr = gcfg_parse_vector(file, ptr, 2, num);
 		if (ptr == NULL)
@@ -120,33 +115,6 @@ static const char *apply_arg(gcfg_file_t *file, const gcfg_keyword_t *kwd,
 			return NULL;
 		*child_out = kwd->handle.cb_number(kwd, file, parent, num, 4);
 		break;
-#endif
-#ifndef GCFG_DISABLE_NETWORK
-	case GCFG_ARG_IPV4:
-		ptr = gcfg_parse_ipv4(file, ptr, &ip);
-		if (ptr == NULL)
-			return NULL;
-		*child_out = kwd->handle.cb_ip(kwd, file, parent, &ip);
-		break;
-	case GCFG_ARG_IPV6:
-		ptr = gcfg_parse_ipv6(file, ptr, &ip);
-		if (ptr == NULL)
-			return NULL;
-		*child_out = kwd->handle.cb_ip(kwd, file, parent, &ip);
-		break;
-	case GCFG_ARG_MAC_ADDR:
-		ptr = gcfg_parse_mac_addr(file, ptr, &vnd, &dev);
-		if (ptr == NULL)
-			return NULL;
-		*child_out = kwd->handle.cb_mac(kwd, file, parent, vnd, dev);
-		break;
-	case GCFG_ARG_BANDWIDTH:
-		ptr = gcfg_parse_bandwidth(file, ptr, &lval);
-		if (ptr == NULL)
-			return NULL;
-		*child_out = kwd->handle.cb_bandwidth(kwd, file, parent, lval);
-		break;
-#endif
 	default:
 		file->report_error(file,
 				   "[BUG] unknown argument type for '%s'",

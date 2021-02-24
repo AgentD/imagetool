@@ -3,7 +3,7 @@ libgcfg_a_SOURCES += lib/gcfg/parse_boolean.c lib/gcfg/xdigit.c
 libgcfg_a_SOURCES += lib/gcfg/parse_string.c lib/gcfg/parse_file.c
 libgcfg_a_SOURCES += lib/gcfg/parse_enum.c lib/gcfg/parse_size.c
 libgcfg_a_SOURCES += lib/gcfg/is_valid_utf8.c lib/gcfg/parse_vector.c
-libgcfg_a_CPPFLAGS = $(AM_CPPFLAGS) -DGCFG_DISABLE_NETWORK
+libgcfg_a_CPPFLAGS = $(AM_CPPFLAGS)
 libgcfg_a_CFLAGS = $(AM_CFLAGS)
 
 noinst_LIBRARIES += libgcfg.a

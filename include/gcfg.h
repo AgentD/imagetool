@@ -28,22 +28,8 @@ typedef enum {
 	GCFG_ARG_VEC3 = 0x07,
 	GCFG_ARG_VEC4 = 0x08,
 
-	GCFG_ARG_IPV4 = 0x09,
-	GCFG_ARG_IPV6 = 0x0A,
-	GCFG_ARG_MAC_ADDR = 0x0B,
-	GCFG_ARG_BANDWIDTH = 0x0C,
-
 	GCFG_ARG_SIZE = 0x0D,
 } GCFG_ARG_TYPE;
-
-typedef struct {
-	union {
-		uint32_t v4;
-		uint16_t v6[8];
-	} ip;
-
-	uint32_t cidr_mask;
-} gcfg_ip_addr_t;
 
 typedef struct {
 	int32_t sign;
@@ -116,83 +102,6 @@ struct gcfg_keyword_t {
 			      const char *line);
 };
 
-
-#define GCFG_BEGIN_ENUM(name) static const gcfg_enum_t name[] = {
-
-#define GCFG_ENUM(nam, val) { .name = nam, .value = val }
-
-#define GCFG_END_ENUM() { 0, 0 } }
-
-
-#define GCFG_KEYWORD_BASE(nam, karg, elist, clist, cbfield, cb, finalize) \
-	{ \
-		.name = nam, \
-		.arg = karg, \
-		.option = { .enumtokens = elist, }, \
-		.children = clist, \
-		.handle = { cbfield = cb }, \
-		.finalize_object = finalize, \
-	}
-
-#define GCFG_BEGIN_KEYWORDS(listname) \
-	static const gcfg_keyword_t listname[] = {
-
-#define GCFG_KEYWORD_NO_ARG(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_NONE, NULL, childlist, \
-			  .cb_none, callback, finalize)
-
-#define GCFG_KEYWORD_BOOL(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_BOOLEAN, NULL, childlist, \
-			  .cb_bool, callback, finalize)
-
-#define GCFG_KEYWORD_STRING(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_STRING, NULL, childlist, \
-			  .cb_string, callback, finalize)
-
-#define GCFG_KEYWORD_ENUM(kwdname, childlist, enumlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_ENUM, enumlist, childlist, \
-			  .cb_enum, callback, finalize)
-
-#define GCFG_KEYWORD_NUMBER(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_NUMBER, NULL, childlist, \
-			  .cb_number, callback, finalize)
-
-#define GCFG_KEYWORD_VEC2(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_VEC2, NULL, childlist, \
-			  .cb_number, callback, finalize)
-
-#define GCFG_KEYWORD_VEC3(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_VEC3, NULL, childlist, \
-			  .cb_number, callback, finalize)
-
-#define GCFG_KEYWORD_VEC4(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_VEC4, NULL, childlist, \
-			  .cb_number, callback, finalize)
-
-#define GCFG_KEYWORD_IPV4(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_IPV4, NULL, childlist, \
-			  .cb_ip, callback, finalize)
-
-#define GCFG_KEYWORD_IPV6(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_IPV6, NULL, childlist, \
-			  .cb_ip, callback, finalize)
-
-#define GCFG_KEYWORD_MAC(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_MAC_ADDR, NULL, childlist, \
-			  .cb_mac, callback, finalize)
-
-#define GCFG_KEYWORD_BANDWIDTH(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_BANDWIDTH, NULL, childlist, \
-			  .cb_bandwidth, callback, finalize)
-
-#define GCFG_KEYWORD_SIZE(kwdname, childlist, callback, finalize) \
-	GCFG_KEYWORD_BASE(kwdname, GCFG_ARG_SIZE, NULL, childlist, \
-			  .cb_size, callback, finalize)
-
-#define GCFG_END_KEYWORDS() \
-		{ .name = NULL }, \
-	}
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -206,19 +115,6 @@ int gcfg_parse_file(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 
 const char *gcfg_dec_num(gcfg_file_t *f, const char *str,
 			 uint64_t *out, uint64_t max);
-
-const char *gcfg_ipv4address(gcfg_file_t *f, const char *str, uint32_t *out);
-
-const char *gcfg_parse_ipv4(gcfg_file_t *f, const char *in,
-			    gcfg_ip_addr_t *ret);
-
-const char *gcfg_parse_ipv6(gcfg_file_t *f, const char *in,
-			    gcfg_ip_addr_t *ret);
-
-const char *gcfg_parse_mac_addr(gcfg_file_t *f, const char *in,
-				uint32_t *vendor, uint32_t *device);
-
-const char *gcfg_parse_bandwidth(gcfg_file_t *f, const char *in, uint64_t *ret);
 
 const char *gcfg_parse_number(gcfg_file_t *f, const char *in,
 			      gcfg_number_t *num);
