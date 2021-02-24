@@ -37,28 +37,28 @@ static volume_t *create_raw_volume(plugin_t *plugin, imgtool_state_t *state)
 	return object_grab(state->out_file);
 }
 
-static gcfg_keyword_t cfg_raw_volume[] = {
-	{
-		.arg = GCFG_ARG_SIZE,
-		.name = "minsize",
-		.handle = {
-			.cb_size = raw_set_minsize,
-		},
-	}, {
-		.arg = GCFG_ARG_SIZE,
-		.name = "maxsize",
-		.handle = {
-			.cb_size = raw_set_maxsize,
-		},
-	}, {
-		.name = NULL,
+static gcfg_keyword_t raw_volume_minsize = {
+	.arg = GCFG_ARG_SIZE,
+	.name = "minsize",
+	.next = NULL,
+	.handle = {
+		.cb_size = raw_set_minsize,
+	},
+};
+
+static gcfg_keyword_t raw_volume_maxsize = {
+	.arg = GCFG_ARG_SIZE,
+	.name = "maxsize",
+	.next = &raw_volume_minsize,
+	.handle = {
+		.cb_size = raw_set_maxsize,
 	},
 };
 
 static plugin_t plugin_raw_volume = {
 	.type = PLUGIN_TYPE_VOLUME,
 	.name = "raw",
-	.cfg_sub_nodes = cfg_raw_volume,
+	.cfg_sub_nodes = &raw_volume_maxsize,
 	.create = {
 		.volume = create_raw_volume,
 	},

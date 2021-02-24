@@ -94,7 +94,8 @@ struct gcfg_keyword_t {
 				     uint64_t size);
 	} handle;
 
-	const gcfg_keyword_t *children;
+	gcfg_keyword_t *children;
+	gcfg_keyword_t *next;
 
 	int (*finalize_object)(gcfg_file_t *file, object_t *child);
 

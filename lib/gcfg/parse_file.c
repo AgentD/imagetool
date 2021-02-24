@@ -36,7 +36,7 @@ static const char *find_keyword(gcfg_file_t *file,
 		return NULL;
 	}
 
-	for (kwd = keywords; kwd->name != NULL; ++kwd) {
+	for (kwd = keywords; kwd != NULL; kwd = kwd->next) {
 		len = strlen(kwd->name);
 
 		if (strncmp(ptr, kwd->name, len) != 0)
