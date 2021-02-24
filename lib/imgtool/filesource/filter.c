@@ -8,6 +8,7 @@
 #include "filesource.h"
 
 #include <fnmatch.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
@@ -22,6 +23,7 @@ typedef struct rule_t {
 struct file_source_filter_t {
 	file_source_t base;
 
+	bool wrapped_is_aggregate;
 	file_source_t *wrapped;
 
 	rule_t *rules;
@@ -34,6 +36,14 @@ static int get_next_record(file_source_t *fs, file_source_record_t **out,
 	file_source_filter_t *filter = (file_source_filter_t *)fs;
 	rule_t *r;
 	int ret;
+
+	if (filter->wrapped == NULL) {
+		if (out != NULL)
+			*out = NULL;
+		if (stream_out != NULL)
+			*stream_out = NULL;
+		return 1;
+	}
 
 	for (;;) {
 		ret = filter->wrapped->get_next_record(filter->wrapped, out,
@@ -80,7 +90,7 @@ static void destroy(object_t *obj)
 	free(filter);
 }
 
-file_source_filter_t *file_source_filter_create(file_source_t *wrapped)
+file_source_filter_t *file_source_filter_create(void)
 {
 	file_source_filter_t *filter = calloc(1, sizeof(*filter));
 	file_source_t *source = (file_source_t *)filter;
@@ -91,7 +101,6 @@ file_source_filter_t *file_source_filter_create(file_source_t *wrapped)
 		return NULL;
 	}
 
-	filter->wrapped = object_grab(wrapped);
 	source->get_next_record = get_next_record;
 	obj->refcount = 1;
 	obj->destroy = destroy;
@@ -120,4 +129,34 @@ int file_source_filter_add_glob_rule(file_source_filter_t *filter,
 	}
 
 	return 0;
+}
+
+int file_source_filter_add_nested(file_source_filter_t *filter,
+				  file_source_t *nested)
+{
+	file_source_aggregate_t *aggregate;
+
+	if (filter->wrapped == NULL) {
+		filter->wrapped = object_grab(nested);
+		return 0;
+	}
+
+	if (filter->wrapped_is_aggregate) {
+		aggregate = (file_source_aggregate_t *)filter->wrapped;
+	} else {
+		aggregate = file_source_aggregate_create();
+		if (aggregate == NULL)
+			return -1;
+
+		if (file_source_aggregate_add(aggregate, filter->wrapped)) {
+			object_drop(aggregate);
+			return -1;
+		}
+
+		object_drop(filter->wrapped);
+		filter->wrapped = (file_source_t *)aggregate;
+		filter->wrapped_is_aggregate = true;
+	}
+
+	return file_source_aggregate_add(aggregate, nested);
 }

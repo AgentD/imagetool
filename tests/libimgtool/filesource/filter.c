@@ -220,8 +220,13 @@ int main(void)
 	/********** filter with default drop behaviour **********/
 
 	/* setup */
-	filter = file_source_filter_create(&filesource);
+	filter = file_source_filter_create();
 	TEST_NOT_NULL(filter);
+	TEST_EQUAL_UI(((object_t *)filter)->refcount, 1);
+	TEST_EQUAL_UI(((object_t *)&filesource)->refcount, 1);
+
+	ret = file_source_filter_add_nested(filter, &filesource);
+	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)filter)->refcount, 1);
 	TEST_EQUAL_UI(((object_t *)&filesource)->refcount, 2);
 
@@ -288,8 +293,13 @@ int main(void)
 
 	/* setup */
 	rec_idx = 0;
-	filter = file_source_filter_create(&filesource);
+	filter = file_source_filter_create();
 	TEST_NOT_NULL(filter);
+	TEST_EQUAL_UI(((object_t *)filter)->refcount, 1);
+	TEST_EQUAL_UI(((object_t *)&filesource)->refcount, 1);
+
+	ret = file_source_filter_add_nested(filter, &filesource);
+	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)filter)->refcount, 1);
 	TEST_EQUAL_UI(((object_t *)&filesource)->refcount, 2);
 

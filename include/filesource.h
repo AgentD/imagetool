@@ -80,11 +80,14 @@ int file_source_aggregate_add(file_source_aggregate_t *source,
 			      file_source_t *sub);
 
 
-file_source_filter_t *file_source_filter_create(file_source_t *wrapped);
+file_source_filter_t *file_source_filter_create(void);
 
 int file_source_filter_add_glob_rule(file_source_filter_t *filter,
 				     const char *pattern,
 				     int target);
+
+int file_source_filter_add_nested(file_source_filter_t *filter,
+				  file_source_t *nested);
 
 #ifdef __cplusplus
 }
