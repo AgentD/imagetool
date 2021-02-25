@@ -6,12 +6,11 @@
  */
 #include "imagebuild.h"
 
-static imgtool_state_t *state = NULL;
-
 static object_t *cb_create_fs(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 			      object_t *parent, const char *string)
 {
 	volume_t *vol = (volume_t *)parent;
+	imgtool_state_t *state = kwd->user;
 	filesystem_t *fs;
 	plugin_t *plugin;
 
@@ -41,6 +40,7 @@ static object_t *cb_create_stackable_source(const gcfg_keyword_t *kwd,
 					    gcfg_file_t *file, object_t *object)
 {
 	mount_group_t *mg = (mount_group_t *)object;
+	imgtool_state_t *state = kwd->user;
 	file_source_stackable_t *src;
 	plugin_t *plugin;
 
@@ -69,6 +69,7 @@ static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
 				       const char *string)
 {
 	mount_group_t *mg = (mount_group_t *)object;
+	imgtool_state_t *state = kwd->user;
 	file_source_t *src;
 	plugin_t *plugin;
 
@@ -96,6 +97,7 @@ static object_t *cb_create_stackable_sub_source(const gcfg_keyword_t *kwd,
 						gcfg_file_t *file, object_t *object)
 {
 	file_source_stackable_t *parent = (file_source_stackable_t *)object;
+	imgtool_state_t *state = kwd->user;
 	file_source_stackable_t *src;
 	plugin_t *plugin;
 
@@ -124,6 +126,7 @@ static object_t *cb_create_data_sub_source(const gcfg_keyword_t *kwd,
 					   const char *string)
 {
 	file_source_stackable_t *parent = (file_source_stackable_t *)object;
+	imgtool_state_t *state = kwd->user;
 	file_source_t *src;
 	plugin_t *plugin;
 
@@ -150,6 +153,7 @@ static object_t *cb_create_data_sub_source(const gcfg_keyword_t *kwd,
 static object_t *cb_create_volume(const gcfg_keyword_t *kwd,
 				  gcfg_file_t *file, object_t *parent)
 {
+	imgtool_state_t *state = kwd->user;
 	volume_t *volume;
 	plugin_t *plugin;
 
@@ -175,6 +179,7 @@ static object_t *cb_create_volumefile(const gcfg_keyword_t *kwd,
 				      const char *string)
 {
 	filesystem_t *fs = (filesystem_t *)parent;
+	imgtool_state_t *state = kwd->user;
 	volume_t *volume;
 	tree_node_t *n;
 	(void)kwd;
@@ -209,6 +214,7 @@ static object_t *cb_mp_add_bind(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 				object_t *object, const char *line)
 {
 	mount_group_t *mg = (mount_group_t *)object;
+	imgtool_state_t *state = kwd->user;
 	filesystem_t *fs;
 	const char *ptr;
 	size_t len;
@@ -283,6 +289,7 @@ static gcfg_keyword_t *cfg_filesystems = NULL;
 static gcfg_keyword_t *cfg_fs_common = NULL;
 static gcfg_keyword_t *cfg_sources = NULL;
 static gcfg_keyword_t *cfg_sources_rec = NULL;
+static imgtool_state_t *state = NULL;
 
 static int init_config(void)
 {
@@ -307,6 +314,7 @@ static int init_config(void)
 		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
 		kwd_it->handle.cb_string = cb_create_fs;
+		kwd_it->user = state;
 
 		kwd_it->next = cfg_filesystems;
 		cfg_filesystems = kwd_it;
@@ -325,6 +333,7 @@ static int init_config(void)
 	cfg_fs_common[0].arg = GCFG_ARG_STRING;
 	cfg_fs_common[0].name = "volumefile";
 	cfg_fs_common[0].handle.cb_string = cb_create_volumefile;
+	cfg_fs_common[0].user = state;
 	cfg_fs_common[0].next = NULL;
 	cfg_fs_common[0].children = cfg_filesystems;
 
@@ -350,6 +359,7 @@ static int init_config(void)
 			kwd_it->handle.cb_string = cb_create_data_source;
 		}
 
+		kwd_it->user = state;
 		kwd_it->name = it->name;
 		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
@@ -404,6 +414,7 @@ static int init_config(void)
 
 		kwd_it->arg = GCFG_ARG_NONE;
 		kwd_it->name = it->name;
+		kwd_it->user = state;
 		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
 		kwd_it->handle.cb_none = cb_create_volume;
@@ -429,6 +440,7 @@ static int init_config(void)
 	kwd_it->name = "mountgroup";
 	kwd_it->children = &cfg_mount_group_bind;
 	kwd_it->handle.cb_none = cb_create_mount_group;
+	kwd_it->user = state;
 	kwd_it->next = cfg_global;
 	cfg_global = kwd_it;
 
@@ -437,9 +449,12 @@ static int init_config(void)
 	} else {
 		kwd_it = kwd_it->children;
 
-		while (kwd_it->next != NULL)
+		while (kwd_it->next != NULL) {
+			kwd_it->user = state;
 			kwd_it = kwd_it->next;
+		}
 
+		kwd_it->user = state;
 		kwd_it->next = cfg_sources;
 	}
 
