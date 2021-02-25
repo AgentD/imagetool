@@ -8,6 +8,7 @@
 #include "libimgtool.h"
 #include "filesource.h"
 #include "filesink.h"
+#include "plugin.h"
 #include "volume.h"
 
 #include <stdlib.h>
@@ -39,6 +40,7 @@ static void state_destroy(object_t *obj)
 
 	object_drop(state->out_file);
 	object_drop(state->dep_tracker);
+	object_drop(state->registry);
 	free(state);
 }
 
@@ -53,9 +55,13 @@ imgtool_state_t *imgtool_state_create(const char *out_path)
 		return NULL;
 	}
 
+	state->registry = plugin_registry_create();
+	if (state->registry == NULL)
+		goto fail_free;
+
 	state->dep_tracker = fs_dep_tracker_create();
 	if (state->dep_tracker == NULL)
-		goto fail_free;
+		goto fail_registry;
 
 	fd = open(out_path, O_RDWR | O_CREAT | O_EXCL, 0644);
 	if (fd < 0) {
@@ -81,6 +87,8 @@ fail_file:
 	object_drop(state->out_file);
 fail_tracker:
 	object_drop(state->dep_tracker);
+fail_registry:
+	object_drop(state->registry);
 fail_free:
 	free(state);
 	return NULL;

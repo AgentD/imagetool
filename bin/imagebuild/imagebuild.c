@@ -8,20 +8,6 @@
 
 static imgtool_state_t *state = NULL;
 
-plugin_t *plugins;
-
-static plugin_t *find_plugin(PLUGIN_TYPE type, const char *name)
-{
-	plugin_t *it;
-
-	for (it = plugins; it != NULL; it = it->next) {
-		if (it->type == type && strcmp(it->name, name) == 0)
-			break;
-	}
-
-	return it;
-}
-
 static object_t *cb_create_fs(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 			      object_t *parent, const char *string)
 {
@@ -29,7 +15,9 @@ static object_t *cb_create_fs(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 	filesystem_t *fs;
 	plugin_t *plugin;
 
-	plugin = find_plugin(PLUGIN_TYPE_FILESYSTEM, kwd->name);
+	plugin = plugin_registry_find_plugin(state->registry,
+					     PLUGIN_TYPE_FILESYSTEM,
+					     kwd->name);
 	assert(plugin != NULL);
 
 	fs = plugin->create.filesystem(plugin, vol);
@@ -56,7 +44,9 @@ static object_t *cb_create_stackable_source(const gcfg_keyword_t *kwd,
 	file_source_stackable_t *src;
 	plugin_t *plugin;
 
-	plugin = find_plugin(PLUGIN_TYPE_FILE_SOURCE_STACKABLE, kwd->name);
+	plugin = plugin_registry_find_plugin(state->registry,
+					     PLUGIN_TYPE_FILE_SOURCE_STACKABLE,
+					     kwd->name);
 	assert(plugin != NULL);
 
 	src = plugin->create.stackable_source(plugin);
@@ -82,7 +72,9 @@ static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
 	file_source_t *src;
 	plugin_t *plugin;
 
-	plugin = find_plugin(PLUGIN_TYPE_FILE_SOURCE, kwd->name);
+	plugin = plugin_registry_find_plugin(state->registry,
+					     PLUGIN_TYPE_FILE_SOURCE,
+					     kwd->name);
 	assert(plugin != NULL);
 
 	src = plugin->create.file_source(plugin, string);
@@ -107,7 +99,9 @@ static object_t *cb_create_stackable_sub_source(const gcfg_keyword_t *kwd,
 	file_source_stackable_t *src;
 	plugin_t *plugin;
 
-	plugin = find_plugin(PLUGIN_TYPE_FILE_SOURCE_STACKABLE, kwd->name);
+	plugin = plugin_registry_find_plugin(state->registry,
+					     PLUGIN_TYPE_FILE_SOURCE_STACKABLE,
+					     kwd->name);
 	assert(plugin != NULL);
 
 	src = plugin->create.stackable_source(plugin);
@@ -133,7 +127,9 @@ static object_t *cb_create_data_sub_source(const gcfg_keyword_t *kwd,
 	file_source_t *src;
 	plugin_t *plugin;
 
-	plugin = find_plugin(PLUGIN_TYPE_FILE_SOURCE, kwd->name);
+	plugin = plugin_registry_find_plugin(state->registry,
+					     PLUGIN_TYPE_FILE_SOURCE,
+					     kwd->name);
 	assert(plugin != NULL);
 
 	src = plugin->create.file_source(plugin, string);
@@ -157,7 +153,9 @@ static object_t *cb_create_volume(const gcfg_keyword_t *kwd,
 	volume_t *volume;
 	plugin_t *plugin;
 
-	plugin = find_plugin(PLUGIN_TYPE_VOLUME, kwd->name);
+	plugin = plugin_registry_find_plugin(state->registry,
+					     PLUGIN_TYPE_VOLUME,
+					     kwd->name);
 	assert(plugin != NULL);
 
 	volume = plugin->create.volume(plugin, (imgtool_state_t *)parent);
@@ -488,6 +486,8 @@ static void config_cleanup(void)
 
 /*****************************************************************************/
 
+plugin_t *plugins;
+
 int main(int argc, char **argv)
 {
 	int status = EXIT_FAILURE;
@@ -496,16 +496,24 @@ int main(int argc, char **argv)
 
 	process_options(&opt, argc, argv);
 
+	state = imgtool_state_create(opt.output_path);
+	if (state == NULL)
+		return EXIT_FAILURE;
+
 	if (init_config())
 		goto out_config;
+
+	while (plugins != NULL) {
+		plugin_t *it = plugins;
+		plugins = plugins->next;
+
+		if (plugin_registry_add_plugin(state->registry, it))
+			goto out_config;
+	}
 
 	gcfg = open_gcfg_file(opt.config_path);
 	if (gcfg == NULL)
 		goto out_config;
-
-	state = imgtool_state_create(opt.output_path);
-	if (state == NULL)
-		goto out_gcfg;
 
 	if (gcfg_parse_file(gcfg, cfg_global, (object_t *)state))
 		goto out;
@@ -515,10 +523,9 @@ int main(int argc, char **argv)
 
 	status = EXIT_SUCCESS;
 out:
-	object_drop(state);
-out_gcfg:
 	object_drop(gcfg);
 out_config:
 	config_cleanup();
+	object_drop(state);
 	return status;
 }

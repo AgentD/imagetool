@@ -27,6 +27,8 @@ struct imgtool_state_t {
 	fs_dep_tracker_t *dep_tracker;
 
 	volume_t *out_file;
+
+	plugin_registry_t *registry;
 };
 
 #ifdef __cplusplus

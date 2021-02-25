@@ -14,6 +14,8 @@ typedef enum {
 	PLUGIN_TYPE_FILE_SOURCE,
 	PLUGIN_TYPE_FILE_SOURCE_STACKABLE,
 	PLUGIN_TYPE_VOLUME,
+
+	PLUGIN_TYPE_COUNT,
 } PLUGIN_TYPE;
 
 struct plugin_t {
@@ -39,5 +41,26 @@ struct plugin_t {
 		volume_t *(*volume)(plugin_t *plugin, imgtool_state_t *state);
 	} create;
 };
+
+struct plugin_registry_t {
+	object_t base;
+
+	plugin_t *plugins[PLUGIN_TYPE_COUNT];
+};
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+plugin_registry_t *plugin_registry_create(void);
+
+int plugin_registry_add_plugin(plugin_registry_t *registry, plugin_t *plugin);
+
+plugin_t *plugin_registry_find_plugin(plugin_registry_t *registry, int type,
+				      const char *name);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /* PLUGIN_H */

@@ -105,5 +105,6 @@ typedef struct file_source_listing_t file_source_listing_t;
 typedef struct mount_group_t mount_group_t;
 typedef struct imgtool_state_t imgtool_state_t;
 typedef struct plugin_t plugin_t;
+typedef struct plugin_registry_t plugin_registry_t;
 
 #endif /* PREDEF_H */
