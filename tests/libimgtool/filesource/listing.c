@@ -7,6 +7,8 @@
 #include "test.h"
 
 #include "filesource.h"
+#include "fstream.h"
+#include "gcfg.h"
 
 #include <stdarg.h>
 #include <string.h>

@@ -8,6 +8,7 @@
 
 #include "test.h"
 #include "fstree.h"
+#include "volume.h"
 
 static volume_t dummy = {
 	.base = {

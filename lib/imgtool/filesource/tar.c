@@ -6,7 +6,9 @@
  */
 #include "config.h"
 #include "filesource.h"
+#include "fstream.h"
 #include "fstree.h"
+#include "xfrm.h"
 #include "tar.h"
 
 #include <stdlib.h>

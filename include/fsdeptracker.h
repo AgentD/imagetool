@@ -8,8 +8,6 @@
 #define FSDEPTRACKER_H
 
 #include "predef.h"
-#include "volume.h"
-#include "filesystem.h"
 
 typedef enum {
 	FS_DEPENDENCY_VOLUME = 1,
@@ -38,12 +36,12 @@ typedef struct fs_dependency_edge_t {
 	fs_dependency_node_t *depends_on;
 } fs_dependency_edge_t;
 
-typedef struct {
+struct fs_dep_tracker_t {
 	object_t base;
 
 	fs_dependency_edge_t *edges;
 	fs_dependency_node_t *nodes;
-} fs_dep_tracker_t;
+};
 
 #ifdef __cplusplus
 extern "C" {

@@ -8,9 +8,6 @@
 #define VOLUME_H
 
 #include "predef.h"
-#include "fstream.h"
-
-typedef struct volume_t volume_t;
 
 /*
   A "volume" represents what Unix might call a block device. It manages a chunk

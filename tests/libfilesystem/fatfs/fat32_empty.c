@@ -8,6 +8,8 @@
 
 #include "test.h"
 #include "filesystem.h"
+#include "volume.h"
+#include "fstree.h"
 #include "util.h"
 
 #include <sys/mman.h>

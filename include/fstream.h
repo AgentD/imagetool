@@ -8,7 +8,6 @@
 #define FSTREAM_H
 
 #include "predef.h"
-#include "xfrm.h"
 
 /**
  * @struct ostream_t
@@ -17,17 +16,17 @@
  *
  * @brief An append-only data stream.
  */
-typedef struct ostream_t {
+struct ostream_t {
 	object_t base;
 
-	int (*append)(struct ostream_t *strm, const void *data, size_t size);
+	int (*append)(ostream_t *strm, const void *data, size_t size);
 
-	int (*append_sparse)(struct ostream_t *strm, size_t size);
+	int (*append_sparse)(ostream_t *strm, size_t size);
 
-	int (*flush)(struct ostream_t *strm);
+	int (*flush)(ostream_t *strm);
 
-	const char *(*get_filename)(struct ostream_t *strm);
-} ostream_t;
+	const char *(*get_filename)(ostream_t *strm);
+};
 
 /**
  * @struct null_ostream_t
@@ -36,11 +35,11 @@ typedef struct ostream_t {
  *
  * @brief An ostream that discards all data and counts the bytes written.
  */
-typedef struct {
+struct null_ostream_t {
 	ostream_t base;
 
 	uint64_t bytes_written;
-} null_ostream_t;
+};
 
 /**
  * @struct istream_t
@@ -49,7 +48,7 @@ typedef struct {
  *
  * @brief A sequential, read-only data stream.
  */
-typedef struct istream_t {
+struct istream_t {
 	object_t base;
 
 	size_t buffer_used;
@@ -61,7 +60,7 @@ typedef struct istream_t {
 	int (*precache)(struct istream_t *strm);
 
 	const char *(*get_filename)(struct istream_t *strm);
-} istream_t;
+};
 
 
 enum {

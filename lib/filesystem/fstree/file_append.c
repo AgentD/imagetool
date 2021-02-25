@@ -6,6 +6,7 @@
  */
 #include "config.h"
 #include "fstree.h"
+#include "volume.h"
 #include "util.h"
 
 #include <stdlib.h>

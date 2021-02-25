@@ -8,10 +8,8 @@
 #define FILESYSTEM_H
 
 #include "predef.h"
-#include "fstree.h"
-#include "volume.h"
 
-typedef struct filesystem_t {
+struct filesystem_t {
 	object_t base;
 
 	/*
@@ -28,8 +26,8 @@ typedef struct filesystem_t {
 	  cannot express, so after calling this, the unerlying files may no
 	  longer be accessible (including read access).
 	 */
-	int (*build_format)(struct filesystem_t *fs);
-} filesystem_t;
+	int (*build_format)(filesystem_t *fs);
+};
 
 #ifdef __cplusplus
 extern "C" {

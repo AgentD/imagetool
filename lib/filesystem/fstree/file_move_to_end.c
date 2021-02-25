@@ -6,6 +6,7 @@
  */
 #include "config.h"
 #include "fstree.h"
+#include "volume.h"
 
 int fstree_file_move_to_end(fstree_t *fs, tree_node_t *n)
 {

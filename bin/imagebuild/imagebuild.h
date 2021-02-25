@@ -11,6 +11,7 @@
 
 #include "libimgtool.h"
 #include "filesystem.h"
+#include "fstree.h"
 #include "volume.h"
 #include "gcfg.h"
 

@@ -5,6 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "libimgtool.h"
+#include "volume.h"
 
 #include <stdlib.h>
 #include <unistd.h>

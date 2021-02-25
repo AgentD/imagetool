@@ -5,6 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "filesource.h"
+#include "fstream.h"
 #include "test.h"
 
 static char hello_str[] = "Hello, world!\n";

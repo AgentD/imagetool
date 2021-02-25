@@ -10,6 +10,8 @@
 #include "config.h"
 
 #include "tar.h"
+#include "fstree.h"
+#include "volume.h"
 #include "filesystem.h"
 
 #include <sys/types.h>

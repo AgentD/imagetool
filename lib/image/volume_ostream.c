@@ -6,6 +6,7 @@
  */
 #include "config.h"
 #include "volume.h"
+#include "fstream.h"
 
 #include <stdio.h>
 #include <errno.h>

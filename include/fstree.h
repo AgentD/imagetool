@@ -7,9 +7,7 @@
 #ifndef FSTREE_H
 #define FSTREE_H
 
-#include "config.h"
 #include "predef.h"
-#include "volume.h"
 
 enum {
 	TREE_NODE_DIR = 0,
@@ -35,7 +33,7 @@ typedef struct file_sparse_holes_t {
 	uint32_t count;
 } file_sparse_holes_t;
 
-typedef struct tree_node_t {
+struct tree_node_t {
 	uint64_t ctime;
 	uint64_t mtime;
 
@@ -44,11 +42,11 @@ typedef struct tree_node_t {
 	uint32_t inode_num;
 	uint32_t link_count;
 
-	struct tree_node_t *next;
-	struct tree_node_t *parent;
+	tree_node_t *next;
+	tree_node_t *parent;
 
 	/* used in nodes_by_type lists in fstree_t */
-	struct tree_node_t *next_by_type;
+	tree_node_t *next_by_type;
 
 	const char *name;
 
@@ -57,7 +55,7 @@ typedef struct tree_node_t {
 
 	union {
 		struct {
-			struct tree_node_t *children;
+			tree_node_t *children;
 
 			/* Used by the filesystem driver to store the on disk
 			   location of the FS specific data structure. */
@@ -84,16 +82,16 @@ typedef struct tree_node_t {
 		struct {
 			const char *target;
 
-			struct tree_node_t *resolved;
+			tree_node_t *resolved;
 		} link;
 
 		uint32_t device_number;
 	} data;
 
 	uint8_t payload[];
-} tree_node_t;
+};
 
-typedef struct {
+struct fstree_t {
 	object_t base;
 
 	tree_node_t *nodes_by_type[TREE_NODE_TYPE_COUNT];
@@ -114,7 +112,7 @@ typedef struct {
 	uint64_t data_offset;
 
 	uint64_t flags;
-} fstree_t;
+};
 
 typedef int (*node_compare_fun_t)(const tree_node_t *lhs,
 				  const tree_node_t *rhs);

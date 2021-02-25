@@ -5,6 +5,9 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "filesink.h"
+#include "filesource.h"
+#include "filesystem.h"
+#include "fstream.h"
 #include "fstree.h"
 
 #include <stdlib.h>

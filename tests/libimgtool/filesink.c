@@ -4,7 +4,12 @@
  *
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
+#include "filesource.h"
+#include "filesystem.h"
 #include "filesink.h"
+#include "fstream.h"
+#include "volume.h"
+#include "fstree.h"
 
 #include "test.h"
 

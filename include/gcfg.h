@@ -31,23 +31,23 @@ typedef enum {
 	GCFG_ARG_SIZE = 0x0D,
 } GCFG_ARG_TYPE;
 
-typedef struct {
+struct gcfg_number_t {
 	int32_t sign;
 	uint32_t integer;
 	uint32_t fraction;
 	uint16_t fraction_digits;
 	int16_t exponent;
-} gcfg_number_t;
+};
 
-typedef struct {
+struct gcfg_enum_t {
 	const char *name;
 	intptr_t value;
-} gcfg_enum_t;
+};
 
-typedef struct gcfg_file_t {
+struct gcfg_file_t {
 	object_t obj;
 
-	void (*report_error)(struct gcfg_file_t *f, const char *msg, ...)
+	void (*report_error)(gcfg_file_t *f, const char *msg, ...)
 		GCFG_PRINTF_FUN(2, 3);
 
 	/* Reads a line into the mutable buffer below. Returns > 0 on EOF, < 0
@@ -56,13 +56,11 @@ typedef struct gcfg_file_t {
 	   On success, line break at the end is removed from the line and a
 	   null-terminator is added.
 	*/
-	int (*fetch_line)(struct gcfg_file_t *f);
+	int (*fetch_line)(gcfg_file_t *f);
 
 	/* Mutable buffer holding the current line */
 	char *buffer;
-} gcfg_file_t;
-
-typedef struct gcfg_keyword_t gcfg_keyword_t;
+};
 
 struct gcfg_keyword_t {
 	uint32_t arg;

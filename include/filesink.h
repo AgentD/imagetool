@@ -8,8 +8,6 @@
 #define FILESINK_H
 
 #include "predef.h"
-#include "filesource.h"
-#include "filesystem.h"
 
 typedef struct file_sink_bind_t {
 	struct file_sink_bind_t *next;
@@ -17,11 +15,11 @@ typedef struct file_sink_bind_t {
 	char prefix[];
 } file_sink_bind_t;
 
-typedef struct {
+struct file_sink_t {
 	object_t base;
 
 	file_sink_bind_t *binds;
-} file_sink_t;
+};
 
 #ifdef __cplusplus
 extern "C" {

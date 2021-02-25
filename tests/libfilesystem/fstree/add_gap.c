@@ -5,6 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "fstree.h"
+#include "volume.h"
 #include "test.h"
 
 #define BLK_COUNT (20)

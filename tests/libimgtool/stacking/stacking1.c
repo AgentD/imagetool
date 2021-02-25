@@ -8,7 +8,9 @@
 
 #include "fsdeptracker.h"
 #include "filesystem.h"
+#include "filesource.h"
 #include "filesink.h"
+#include "fstree.h"
 #include "volume.h"
 #include "util.h"
 

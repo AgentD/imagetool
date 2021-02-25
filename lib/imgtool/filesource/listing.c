@@ -5,7 +5,9 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "filesource.h"
+#include "fstream.h"
 #include "fstree.h"
+#include "gcfg.h"
 
 #include <sys/types.h>
 #ifdef __linux__

@@ -8,6 +8,9 @@
 #define FATFS_H
 
 #include "filesystem.h"
+#include "fstream.h"
+#include "fstree.h"
+#include "volume.h"
 #include "util.h"
 
 #include <stdlib.h>

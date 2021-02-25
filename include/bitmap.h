@@ -9,8 +9,6 @@
 
 #include "predef.h"
 
-typedef struct bitmap_t bitmap_t;
-
 #ifdef __cplusplus
 extern "C" {
 #endif

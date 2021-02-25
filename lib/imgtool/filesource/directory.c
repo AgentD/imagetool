@@ -5,6 +5,7 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "config.h"
+#include "fstream.h"
 #include "filesource.h"
 
 #include <sys/types.h>

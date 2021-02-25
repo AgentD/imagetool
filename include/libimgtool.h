@@ -12,16 +12,16 @@
 #include "filesink.h"
 #include "gcfg.h"
 
-typedef struct mount_group_t {
+struct mount_group_t {
 	object_t base;
 
-	struct mount_group_t *next;
+	mount_group_t *next;
 	file_sink_t *sink;
 	file_source_t *source;
 	bool have_aggregate;
-} mount_group_t;
+};
 
-typedef struct {
+struct imgtool_state_t {
 	object_t base;
 
 	mount_group_t *mg_list;
@@ -30,7 +30,7 @@ typedef struct {
 	fs_dep_tracker_t *dep_tracker;
 
 	volume_t *out_file;
-} imgtool_state_t;
+};
 
 
 typedef enum {
@@ -40,12 +40,12 @@ typedef enum {
 	PLUGIN_TYPE_VOLUME,
 } PLUGIN_TYPE;
 
-typedef struct plugin_t {
+struct plugin_t {
 	PLUGIN_TYPE type;
 
 	const char *name;
 
-	struct plugin_t *next;
+	plugin_t *next;
 
 	gcfg_keyword_t *cfg_sub_nodes;
 
@@ -53,19 +53,16 @@ typedef struct plugin_t {
 				 const char *line);
 
 	union {
-		filesystem_t *(*filesystem)(struct plugin_t *plugin,
-					    volume_t *parent);
+		filesystem_t *(*filesystem)(plugin_t *plugin, volume_t *parent);
 
-		file_source_t *(*file_source)(struct plugin_t *plugin,
+		file_source_t *(*file_source)(plugin_t *plugin,
 					      const char *arg);
 
-		file_source_stackable_t *
-		(*stackable_source)(struct plugin_t *plugin);
+		file_source_stackable_t *(*stackable_source)(plugin_t *plugin);
 
-		volume_t *(*volume)(struct plugin_t *plugin,
-				    imgtool_state_t *state);
+		volume_t *(*volume)(plugin_t *plugin, imgtool_state_t *state);
 	} create;
-} plugin_t;
+};
 
 #ifdef __cplusplus
 extern "C" {

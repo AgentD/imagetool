@@ -4,6 +4,7 @@
  *
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
+#include "fstream.h"
 #include "volume.h"
 #include "test.h"
 

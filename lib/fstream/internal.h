@@ -9,6 +9,7 @@
 
 #include "config.h"
 #include "fstream.h"
+#include "xfrm.h"
 
 #include <string.h>
 #include <stdlib.h>

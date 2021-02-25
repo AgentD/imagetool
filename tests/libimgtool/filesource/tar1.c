@@ -7,6 +7,7 @@
 #include "test.h"
 
 #include "filesource.h"
+#include "fstream.h"
 
 static const struct {
 	const char *path;

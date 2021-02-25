@@ -5,6 +5,9 @@
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
 #include "fsdeptracker.h"
+#include "filesystem.h"
+#include "volume.h"
+#include "fstree.h"
 
 #include <stdlib.h>
 #include <string.h>

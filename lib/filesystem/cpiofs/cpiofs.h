@@ -8,6 +8,9 @@
 #define CPIOFS_H
 
 #include "config.h"
+#include "fstree.h"
+#include "volume.h"
+#include "fstream.h"
 #include "filesystem.h"
 
 #include <sys/types.h>
