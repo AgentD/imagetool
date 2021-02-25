@@ -7,6 +7,7 @@
 #include "config.h"
 
 #include "test.h"
+#include "gcfg.h"
 #include "libimgtool.h"
 
 static const char *lines[] = {

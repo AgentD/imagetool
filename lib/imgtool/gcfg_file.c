@@ -6,6 +6,7 @@
  */
 #include "libimgtool.h"
 #include "fstream.h"
+#include "gcfg.h"
 
 #include <stdarg.h>
 #include <stdlib.h>

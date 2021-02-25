@@ -4,7 +4,10 @@
  *
  * Copyright (C) 2021 David Oberhollenzer <goliath@infraroot.at>
  */
+#include "fsdeptracker.h"
 #include "libimgtool.h"
+#include "filesource.h"
+#include "filesink.h"
 #include "volume.h"
 
 #include <stdlib.h>

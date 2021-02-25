@@ -1,5 +1,6 @@
 libimgtool_a_SOURCES = include/fsdeptracker.h include/filesource.h
 libimgtool_a_SOURCES += include/filesink.h include/libimgtool.h
+libimgtool_a_SOURCES += include/plugin.h
 libimgtool_a_SOURCES += lib/imgtool/fsdeptracker.c lib/imgtool/filesink.c
 libimgtool_a_SOURCES += lib/imgtool/filesource/directory.c
 libimgtool_a_SOURCES += lib/imgtool/filesource/tar.c
