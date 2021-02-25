@@ -66,8 +66,8 @@ imgtool_state_t *imgtool_state_create(const char *out_path)
 		goto fail_tracker;
 	}
 
-	if (fs_dep_tracker_add_volume(state->dep_tracker,
-				      state->out_file, NULL)) {
+	if (state->dep_tracker->add_volume(state->dep_tracker,
+					   state->out_file, NULL)) {
 		goto fail_file;
 	}
 
@@ -151,7 +151,7 @@ int imgtool_state_process(imgtool_state_t *state)
 			return -1;
 	}
 
-	if (fs_dep_tracker_commit(state->dep_tracker))
+	if (state->dep_tracker->commit(state->dep_tracker))
 		return -1;
 
 	return 0;

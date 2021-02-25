@@ -13,9 +13,43 @@
 #include <string.h>
 #include <stdio.h>
 
+typedef enum {
+	FS_DEPENDENCY_VOLUME = 1,
+	FS_DEPENDENCY_FILESYSTEM,
+} FS_DEP_NODE_TYPE;
+
+typedef struct fs_dependency_node_t {
+	struct fs_dependency_node_t *next;
+	FS_DEP_NODE_TYPE type;
+
+	union {
+		volume_t *volume;
+		filesystem_t *filesystem;
+		object_t *obj;
+	} data;
+
+	/* how many other nodes depend on this one? */
+	size_t dep_count;
+
+	char name[];
+} fs_dependency_node_t;
+
+typedef struct fs_dependency_edge_t {
+	struct fs_dependency_edge_t *next;
+	fs_dependency_node_t *node;
+	fs_dependency_node_t *depends_on;
+} fs_dependency_edge_t;
+
+typedef struct {
+	fs_dep_tracker_t base;
+
+	fs_dependency_edge_t *edges;
+	fs_dependency_node_t *nodes;
+} dep_tracker_private_t;
+
 static void fs_dep_tracker_destroy(object_t *obj)
 {
-	fs_dep_tracker_t *dep = (fs_dep_tracker_t *)obj;
+	dep_tracker_private_t *dep = (dep_tracker_private_t *)obj;
 	fs_dependency_node_t *nit;
 	fs_dependency_edge_t *eit;
 
@@ -36,7 +70,7 @@ static void fs_dep_tracker_destroy(object_t *obj)
 	free(dep);
 }
 
-static fs_dependency_node_t *get_vol_by_ptr(fs_dep_tracker_t *dep,
+static fs_dependency_node_t *get_vol_by_ptr(dep_tracker_private_t *dep,
 					    volume_t *volume)
 {
 	fs_dependency_node_t *it;
@@ -65,7 +99,7 @@ static fs_dependency_node_t *get_vol_by_ptr(fs_dep_tracker_t *dep,
 	return it;
 }
 
-static fs_dependency_node_t *get_fs_by_ptr(fs_dep_tracker_t *dep,
+static fs_dependency_node_t *get_fs_by_ptr(dep_tracker_private_t *dep,
 					   filesystem_t *fs,
 					   const char *name)
 {
@@ -95,7 +129,7 @@ static fs_dependency_node_t *get_fs_by_ptr(fs_dep_tracker_t *dep,
 	return it;
 }
 
-static fs_dependency_edge_t *find_edge(fs_dep_tracker_t *dep,
+static fs_dependency_edge_t *find_edge(dep_tracker_private_t *dep,
 				       fs_dependency_node_t *node,
 				       fs_dependency_node_t *depends_on)
 {
@@ -119,23 +153,10 @@ static fs_dependency_edge_t *find_edge(fs_dep_tracker_t *dep,
 	return it;
 }
 
-fs_dep_tracker_t *fs_dep_tracker_create(void)
+static int dep_tracker_add_volume(fs_dep_tracker_t *interface,
+				  volume_t *volume, volume_t *parent)
 {
-	fs_dep_tracker_t *dep = calloc(1, sizeof(*dep));
-
-	if (dep == NULL) {
-		perror("Creating filesystem dependency tracker");
-		return NULL;
-	}
-
-	((object_t *)dep)->refcount = 1;
-	((object_t *)dep)->destroy = fs_dep_tracker_destroy;
-	return dep;
-}
-
-int fs_dep_tracker_add_volume(fs_dep_tracker_t *dep,
-			      volume_t *volume, volume_t *parent)
-{
+	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
 	fs_dependency_node_t *pit, *vit;
 	fs_dependency_edge_t *edge;
 
@@ -155,9 +176,10 @@ int fs_dep_tracker_add_volume(fs_dep_tracker_t *dep,
 	return 0;
 }
 
-int fs_dep_tracker_add_volume_file(fs_dep_tracker_t *dep,
-				   volume_t *volume, filesystem_t *parent)
+static int dep_tracker_add_volume_file(fs_dep_tracker_t *interface,
+				       volume_t *volume, filesystem_t *parent)
 {
+	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
 	fs_dependency_node_t *pit, *vit;
 	fs_dependency_edge_t *edge;
 
@@ -176,10 +198,11 @@ int fs_dep_tracker_add_volume_file(fs_dep_tracker_t *dep,
 	return 0;
 }
 
-int fs_dep_tracker_add_fs(fs_dep_tracker_t *dep,
-			  filesystem_t *fs, volume_t *parent,
-			  const char *name)
+static int dep_tracker_add_fs(fs_dep_tracker_t *interface,
+			      filesystem_t *fs, volume_t *parent,
+			      const char *name)
 {
+	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
 	fs_dependency_node_t *pit, *cit;
 	fs_dependency_edge_t *edge;
 
@@ -198,8 +221,9 @@ int fs_dep_tracker_add_fs(fs_dep_tracker_t *dep,
 	return 0;
 }
 
-int fs_dep_tracker_commit(fs_dep_tracker_t *tracker)
+static int dep_tracker_commit(fs_dep_tracker_t *interface)
 {
+	dep_tracker_private_t *tracker = (dep_tracker_private_t *)interface;
 	fs_dependency_node_t *nit, *nprev;
 	fs_dependency_edge_t *eit, *eprev;
 	int ret;
@@ -287,9 +311,10 @@ int fs_dep_tracker_commit(fs_dep_tracker_t *tracker)
 	return 0;
 }
 
-filesystem_t *fs_dep_tracker_get_fs_by_name(fs_dep_tracker_t *dep,
-					    const char *name)
+static filesystem_t *dep_tracker_get_fs_by_name(fs_dep_tracker_t *interface,
+						const char *name)
 {
+	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
 	fs_dependency_node_t *it;
 
 	for (it = dep->nodes; it != NULL; it = it->next) {
@@ -300,4 +325,24 @@ filesystem_t *fs_dep_tracker_get_fs_by_name(fs_dep_tracker_t *dep,
 	}
 
 	return it == NULL ? NULL : object_grab(it->data.filesystem);
+}
+
+fs_dep_tracker_t *fs_dep_tracker_create(void)
+{
+	dep_tracker_private_t *dep = calloc(1, sizeof(*dep));
+	fs_dep_tracker_t *public = (fs_dep_tracker_t *)dep;
+
+	if (dep == NULL) {
+		perror("Creating filesystem dependency tracker");
+		return NULL;
+	}
+
+	public->add_volume = dep_tracker_add_volume;
+	public->add_volume_file = dep_tracker_add_volume_file;
+	public->add_fs = dep_tracker_add_fs;
+	public->get_fs_by_name = dep_tracker_get_fs_by_name;
+	public->commit = dep_tracker_commit;
+	((object_t *)dep)->refcount = 1;
+	((object_t *)dep)->destroy = fs_dep_tracker_destroy;
+	return public;
 }

@@ -63,7 +63,7 @@ int main(void)
 	TEST_NOT_NULL(vol);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 1);
 
-	ret = fs_dep_tracker_add_volume(tracker, vol, NULL);
+	ret = tracker->add_volume(tracker, vol, NULL);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 2);
 
@@ -73,7 +73,7 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)fs)->refcount, 1);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 3);
 
-	ret = fs_dep_tracker_add_fs(tracker, fs, vol, "tarball");
+	ret = tracker->add_fs(tracker, fs, vol, "tarball");
 	TEST_EQUAL_UI(((object_t *)fs)->refcount, 2);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 3);
 
@@ -88,7 +88,7 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)fs->fstree)->refcount, 2);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 1);
 
-	ret = fs_dep_tracker_add_volume_file(tracker, vol, fs);
+	ret = tracker->add_volume_file(tracker, vol, fs);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)fs)->refcount, 2);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 2);
@@ -99,7 +99,7 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 3);
 	TEST_EQUAL_UI(((object_t *)fs1)->refcount, 1);
 
-	ret = fs_dep_tracker_add_fs(tracker, fs1, vol, "cpiofs");
+	ret = tracker->add_fs(tracker, fs1, vol, "cpiofs");
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)fs1)->refcount, 2);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 3);
@@ -121,7 +121,7 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)fs->fstree)->refcount, 3);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 1);
 
-	ret = fs_dep_tracker_add_volume_file(tracker, vol, fs);
+	ret = tracker->add_volume_file(tracker, vol, fs);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)fs)->refcount, 2);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 2);
@@ -132,7 +132,7 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 3);
 	TEST_EQUAL_UI(((object_t *)fs1)->refcount, 1);
 
-	ret = fs_dep_tracker_add_fs(tracker, fs1, vol, "tarfs");
+	ret = tracker->add_fs(tracker, fs1, vol, "tarfs");
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(((object_t *)fs1)->refcount, 2);
 	TEST_EQUAL_UI(((object_t *)vol)->refcount, 3);
@@ -166,7 +166,7 @@ int main(void)
 	lst = object_drop(lst);
 
 	/* build the filesystems and flush the underlying volumes */
-	ret = fs_dep_tracker_commit(tracker);
+	ret = tracker->commit(tracker);
 	TEST_EQUAL_I(ret, 0);
 
 	/* compare with the reference */

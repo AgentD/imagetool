@@ -39,7 +39,7 @@ static object_t *cb_create_fs(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_fs(state->dep_tracker, fs, vol, string)) {
+	if (state->dep_tracker->add_fs(state->dep_tracker, fs, vol, string)) {
 		file->report_error(file, "error registering "
 				   "%s filesystem '%s'", plugin->name, string);
 		object_drop(fs);
@@ -196,7 +196,8 @@ static object_t *cb_create_volumefile(const gcfg_keyword_t *kwd,
 		return NULL;
 	}
 
-	if (fs_dep_tracker_add_volume_file(state->dep_tracker, volume, fs)) {
+	if (state->dep_tracker->add_volume_file(state->dep_tracker,
+						volume, fs)) {
 		file->report_error(file, "%s: %s", string,
 				   "error reginstering volume wrapper");
 		object_drop(volume);
@@ -222,7 +223,7 @@ static object_t *cb_mp_add_bind(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 		return NULL;
 	}
 
-	fs = fs_dep_tracker_get_fs_by_name(state->dep_tracker, ptr + 1);
+	fs = state->dep_tracker->get_fs_by_name(state->dep_tracker, ptr + 1);
 	if (fs == NULL) {
 		file->report_error(file, "cannot find filesystem '%s'",
 				   ptr + 1);
