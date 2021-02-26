@@ -121,7 +121,8 @@ static gcfg_keyword_t filter_allow = {
 };
 
 static plugin_t plugin_filter = {
-	.type = PLUGIN_TYPE_FILE_SOURCE_STACKABLE,
+	.type = PLUGIN_TYPE_FILE_SOURCE,
+	.flags = PLUGIN_FLAG_RECURSIVE_SOURCE,
 	.name = "filter",
 	.cfg_sub_nodes = &filter_allow,
 	.create = {

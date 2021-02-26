@@ -454,12 +454,12 @@ int imgtool_state_init_config(imgtool_state_t *state)
 
 	it = state->registry->plugins[PLUGIN_TYPE_FILE_SOURCE];
 
-	while (it != NULL) {
+	for (; it != NULL; it = it->next) {
 		kwd_it = calloc(1, sizeof(*kwd_it));
 		if (kwd_it == NULL)
 			goto fail;
 
-		if (it->type == PLUGIN_TYPE_FILE_SOURCE_STACKABLE) {
+		if (it->flags & PLUGIN_FLAG_RECURSIVE_SOURCE) {
 			kwd_it->arg = GCFG_ARG_NONE;
 			kwd_it->handle.cb_none = cb_create_stackable_source;
 		} else {
@@ -483,7 +483,7 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		kwd_it->next = NULL;
 
 		/* rewire the list of children */
-		if (it->type == PLUGIN_TYPE_FILE_SOURCE_STACKABLE) {
+		if (it->flags & PLUGIN_FLAG_RECURSIVE_SOURCE) {
 			if (kwd_it->children == NULL) {
 				kwd_it->children = state->cfg_sources;
 			} else {
@@ -493,16 +493,6 @@ int imgtool_state_init_config(imgtool_state_t *state)
 
 				kwd_it->next = state->cfg_sources;
 			}
-		}
-
-		/* advance */
-		if (it->next == NULL) {
-			if (it->type == PLUGIN_TYPE_FILE_SOURCE_STACKABLE)
-				break;
-			it = state->registry->
-				plugins[PLUGIN_TYPE_FILE_SOURCE_STACKABLE];
-		} else {
-			it = it->next;
 		}
 	}
 

@@ -12,14 +12,18 @@
 typedef enum {
 	PLUGIN_TYPE_FILESYSTEM = 0,
 	PLUGIN_TYPE_FILE_SOURCE,
-	PLUGIN_TYPE_FILE_SOURCE_STACKABLE,
 	PLUGIN_TYPE_VOLUME,
 
 	PLUGIN_TYPE_COUNT,
 } PLUGIN_TYPE;
 
+typedef enum {
+	PLUGIN_FLAG_RECURSIVE_SOURCE = 0x00000001,
+} PLUGIN_FLAGS;
+
 struct plugin_t {
 	PLUGIN_TYPE type;
+	uint32_t flags;
 
 	const char *name;
 
