@@ -603,6 +603,21 @@ fail:
 	return -1;
 }
 
+int imgtool_process_config_file(imgtool_state_t *state, const char *path)
+{
+	gcfg_file_t *gcfg;
+
+	gcfg = open_gcfg_file(path);
+	if (gcfg == NULL)
+		return -1;
+
+	if (gcfg_parse_file(gcfg, state->cfg_global, (object_t *)state))
+		return -1;
+
+	object_drop(gcfg);
+	return 0;
+}
+
 int imgtool_state_process(imgtool_state_t *state)
 {
 	mount_group_t *mg;

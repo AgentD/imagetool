@@ -47,6 +47,8 @@ imgtool_state_t *imgtool_state_create(const char *out_path);
 
 int imgtool_state_init_config(imgtool_state_t *state);
 
+int imgtool_process_config_file(imgtool_state_t *state, const char *path);
+
 int imgtool_state_process(imgtool_state_t *state);
 
 #ifdef __cplusplus

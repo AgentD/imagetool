@@ -6,14 +6,12 @@
  */
 #include "imagebuild.h"
 
-static imgtool_state_t *state = NULL;
-
 plugin_t *plugins;
 
 int main(int argc, char **argv)
 {
+	imgtool_state_t *state = NULL;
 	int status = EXIT_FAILURE;
-	gcfg_file_t *gcfg;
 	options_t opt;
 
 	process_options(&opt, argc, argv);
@@ -27,17 +25,13 @@ int main(int argc, char **argv)
 		plugins = plugins->next;
 
 		if (plugin_registry_add_plugin(state->registry, it))
-			goto out_state;
+			goto out;
 	}
 
 	if (imgtool_state_init_config(state))
-		goto out_state;
+		goto out;
 
-	gcfg = open_gcfg_file(opt.config_path);
-	if (gcfg == NULL)
-		goto out_state;
-
-	if (gcfg_parse_file(gcfg, state->cfg_global, (object_t *)state))
+	if (imgtool_process_config_file(state, opt.config_path))
 		goto out;
 
 	if (imgtool_state_process(state))
@@ -45,8 +39,6 @@ int main(int argc, char **argv)
 
 	status = EXIT_SUCCESS;
 out:
-	object_drop(gcfg);
-out_state:
 	object_drop(state);
 	return status;
 }
