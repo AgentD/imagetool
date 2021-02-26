@@ -29,6 +29,12 @@ struct imgtool_state_t {
 	volume_t *out_file;
 
 	plugin_registry_t *registry;
+
+	gcfg_keyword_t *cfg_global;
+	gcfg_keyword_t *cfg_filesystems;
+	gcfg_keyword_t *cfg_fs_common;
+	gcfg_keyword_t *cfg_sources;
+	gcfg_keyword_t *cfg_sources_rec;
 };
 
 #ifdef __cplusplus
@@ -39,9 +45,7 @@ gcfg_file_t *open_gcfg_file(const char *path);
 
 imgtool_state_t *imgtool_state_create(const char *out_path);
 
-mount_group_t *imgtool_state_add_mount_group(imgtool_state_t *state);
-
-int mount_group_add_source(mount_group_t *mg, file_source_t *source);
+int imgtool_state_init_config(imgtool_state_t *state);
 
 int imgtool_state_process(imgtool_state_t *state);
 
