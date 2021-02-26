@@ -22,6 +22,76 @@
 #include <errno.h>
 #include <fcntl.h>
 
+struct mount_group_t {
+	file_source_stackable_t base;
+
+	mount_group_t *next;
+	file_sink_t *sink;
+	file_source_t *source;
+	bool have_aggregate;
+};
+
+static int mg_get_next_record(file_source_t *fs, file_source_record_t **out,
+			      istream_t **stream_out)
+{
+	mount_group_t *mg = (mount_group_t *)fs;
+
+	if (mg->source == NULL) {
+		if (out)
+			*out = NULL;
+		if (stream_out)
+			*stream_out = NULL;
+		return 1;
+	}
+
+	return mg->source->get_next_record(mg->source, out, stream_out);
+}
+
+static int mg_add_nested(file_source_stackable_t *source,
+			 file_source_t *nested)
+{
+	mount_group_t *mg = (mount_group_t *)source;
+	file_source_stackable_t *aggregate;
+
+	if (mg->source == NULL) {
+		mg->source = object_grab(nested);
+		return 0;
+	}
+
+	if (mg->have_aggregate) {
+		aggregate = (file_source_stackable_t *)mg->source;
+	} else {
+		aggregate = (file_source_stackable_t *)
+			file_source_aggregate_create();
+		if (aggregate == NULL)
+			return -1;
+
+		if (aggregate->add_nested(aggregate, nested)) {
+			object_drop(aggregate);
+			return -1;
+		}
+
+		mg->source = (file_source_t *)aggregate;
+		mg->have_aggregate = true;
+	}
+
+	return aggregate->add_nested(aggregate, nested);
+}
+
+static void mg_destroy(object_t *obj)
+{
+	mount_group_t *mg = (mount_group_t *)obj;
+
+	if (mg->next != NULL)
+		mg->next = object_drop(mg->next);
+
+	object_drop(mg->sink);
+	object_drop(mg->source);
+	free(mg);
+}
+
+/*****************************************************************************/
+
 static object_t *cb_create_fs(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 			      object_t *parent, const char *string)
 {
@@ -47,82 +117,8 @@ static object_t *cb_create_fs(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 	return (object_t *)fs;
 }
 
-static int mount_group_add_source(mount_group_t *mg, file_source_t *source)
-{
-	file_source_stackable_t *aggregate;
-
-	if (mg->source == NULL) {
-		mg->source = object_grab(source);
-		return 0;
-	}
-
-	if (mg->have_aggregate) {
-		aggregate = (file_source_stackable_t *)mg->source;
-	} else {
-		aggregate = (file_source_stackable_t *)
-			file_source_aggregate_create();
-		if (aggregate == NULL)
-			return -1;
-
-		if (aggregate->add_nested(aggregate, mg->source)) {
-			object_drop(aggregate);
-			return -1;
-		}
-
-		mg->source = (file_source_t *)aggregate;
-		mg->have_aggregate = true;
-	}
-
-	return aggregate->add_nested(aggregate, source);
-}
-
 static object_t *cb_create_stackable_source(const gcfg_keyword_t *kwd,
 					    gcfg_file_t *file, object_t *object)
-{
-	mount_group_t *mg = (mount_group_t *)object;
-	plugin_t *plugin = kwd->plugin;
-	file_source_stackable_t *src;
-
-	src = plugin->create.stackable_source(plugin);
-	if (src == NULL) {
-		file->report_error(file, "error creating file source");
-		return NULL;
-	}
-
-	if (mount_group_add_source(mg, (file_source_t *)src)) {
-		file->report_error(file, "error adding source to mount group");
-		object_drop(src);
-		return NULL;
-	}
-
-	return (object_t *)src;
-}
-
-static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
-				       gcfg_file_t *file, object_t *object,
-				       const char *string)
-{
-	mount_group_t *mg = (mount_group_t *)object;
-	plugin_t *plugin = kwd->plugin;
-	file_source_t *src;
-
-	src = plugin->create.file_source(plugin, string);
-	if (src == NULL) {
-		file->report_error(file, "error creating file source");
-		return NULL;
-	}
-
-	if (mount_group_add_source(mg, src)) {
-		file->report_error(file, "error adding source to mount group");
-		object_drop(src);
-		return NULL;
-	}
-
-	return (object_t *)src;
-}
-
-static object_t *cb_create_stackable_sub_source(const gcfg_keyword_t *kwd,
-						gcfg_file_t *file, object_t *object)
 {
 	file_source_stackable_t *parent = (file_source_stackable_t *)object;
 	plugin_t *plugin = kwd->plugin;
@@ -143,9 +139,9 @@ static object_t *cb_create_stackable_sub_source(const gcfg_keyword_t *kwd,
 	return (object_t *)src;
 }
 
-static object_t *cb_create_data_sub_source(const gcfg_keyword_t *kwd,
-					   gcfg_file_t *file, object_t *object,
-					   const char *string)
+static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
+				       gcfg_file_t *file, object_t *object,
+				       const char *string)
 {
 	file_source_stackable_t *parent = (file_source_stackable_t *)object;
 	plugin_t *plugin = kwd->plugin;
@@ -268,18 +264,6 @@ static object_t *cb_mp_add_bind(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 	return object_grab(object);
 }
 
-static void mountgroup_destroy(object_t *obj)
-{
-	mount_group_t *mg = (mount_group_t *)obj;
-
-	if (mg->next != NULL)
-		mg->next = object_drop(mg->next);
-
-	object_drop(mg->sink);
-	object_drop(mg->source);
-	free(mg);
-}
-
 static object_t *cb_create_mount_group(const gcfg_keyword_t *kwd,
 				       gcfg_file_t *file, object_t *object)
 {
@@ -299,8 +283,10 @@ static object_t *cb_create_mount_group(const gcfg_keyword_t *kwd,
 		return NULL;
 	}
 
+	((file_source_t *)mg)->get_next_record = mg_get_next_record;
+	((file_source_stackable_t *)mg)->add_nested = mg_add_nested;
 	((object_t *)mg)->refcount = 1;
-	((object_t *)mg)->destroy = mountgroup_destroy;
+	((object_t *)mg)->destroy = mg_destroy;
 
 	if (state->mg_list == NULL) {
 		state->mg_list = object_grab(mg);
@@ -357,12 +343,6 @@ static void state_destroy(object_t *obj)
 	while (state->cfg_sources != NULL) {
 		it = state->cfg_sources;
 		state->cfg_sources = it->next;
-		free(it);
-	}
-
-	while (state->cfg_sources_rec != NULL) {
-		it = state->cfg_sources_rec;
-		state->cfg_sources_rec = it->next;
 		free(it);
 	}
 
@@ -424,7 +404,7 @@ fail_free:
 
 int imgtool_state_init_config(imgtool_state_t *state)
 {
-	gcfg_keyword_t *kwd_it, *copy, *last;
+	gcfg_keyword_t *kwd_it, *last;
 	plugin_t *it;
 
 	/* filesystems */
@@ -469,8 +449,8 @@ int imgtool_state_init_config(imgtool_state_t *state)
 	state->cfg_fs_common[0].children = state->cfg_filesystems;
 
 	/* file sources */
-	state->cfg_sources_rec = NULL;
-	last = state->cfg_sources_rec;
+	state->cfg_sources = NULL;
+	last = NULL;
 
 	it = state->registry->plugins[PLUGIN_TYPE_FILE_SOURCE];
 
@@ -492,42 +472,26 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		kwd_it->name = it->name;
 		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
-		kwd_it->next = state->cfg_sources;
-		state->cfg_sources = kwd_it;
-
-		/* copy in the nested sources list */
-		copy = calloc(1, sizeof(*copy));
-		if (copy == NULL)
-			goto fail;
-
-		memcpy(copy, kwd_it, sizeof(*copy));
-		copy->next = NULL;
 
 		if (last == NULL) {
-			state->cfg_sources_rec = copy;
-			last = copy;
+			state->cfg_sources = kwd_it;
 		} else {
-			last->next = copy;
-			last = copy;
+			last->next = kwd_it;
 		}
 
-		if (it->type == PLUGIN_TYPE_FILE_SOURCE_STACKABLE) {
-			copy->handle.cb_none = cb_create_stackable_sub_source;
-		} else {
-			copy->handle.cb_string = cb_create_data_sub_source;
-		}
+		last = kwd_it;
+		kwd_it->next = NULL;
 
 		/* rewire the list of children */
 		if (it->type == PLUGIN_TYPE_FILE_SOURCE_STACKABLE) {
 			if (kwd_it->children == NULL) {
-				kwd_it->children = state->cfg_sources_rec;
-				copy->children = state->cfg_sources_rec;
+				kwd_it->children = state->cfg_sources;
 			} else {
 				kwd_it = kwd_it->children;
 				while (kwd_it->next != NULL)
 					kwd_it = kwd_it->next;
 
-				kwd_it->next = state->cfg_sources_rec;
+				kwd_it->next = state->cfg_sources;
 			}
 		}
 

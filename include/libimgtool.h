@@ -9,15 +9,6 @@
 
 #include "predef.h"
 
-struct mount_group_t {
-	object_t base;
-
-	mount_group_t *next;
-	file_sink_t *sink;
-	file_source_t *source;
-	bool have_aggregate;
-};
-
 struct imgtool_state_t {
 	object_t base;
 
@@ -34,7 +25,6 @@ struct imgtool_state_t {
 	gcfg_keyword_t *cfg_filesystems;
 	gcfg_keyword_t *cfg_fs_common;
 	gcfg_keyword_t *cfg_sources;
-	gcfg_keyword_t *cfg_sources_rec;
 };
 
 #ifdef __cplusplus
