@@ -26,14 +26,9 @@ static object_t *cb_create_fs(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 			      object_t *parent, const char *string)
 {
 	volume_t *vol = (volume_t *)parent;
-	imgtool_state_t *state = kwd->user;
+	imgtool_state_t *state = kwd->state;
+	plugin_t *plugin = kwd->plugin;
 	filesystem_t *fs;
-	plugin_t *plugin;
-
-	plugin = plugin_registry_find_plugin(state->registry,
-					     PLUGIN_TYPE_FILESYSTEM,
-					     kwd->name);
-	assert(plugin != NULL);
 
 	fs = plugin->create.filesystem(plugin, vol);
 	if (fs == NULL) {
@@ -85,14 +80,8 @@ static object_t *cb_create_stackable_source(const gcfg_keyword_t *kwd,
 					    gcfg_file_t *file, object_t *object)
 {
 	mount_group_t *mg = (mount_group_t *)object;
-	imgtool_state_t *state = kwd->user;
+	plugin_t *plugin = kwd->plugin;
 	file_source_stackable_t *src;
-	plugin_t *plugin;
-
-	plugin = plugin_registry_find_plugin(state->registry,
-					     PLUGIN_TYPE_FILE_SOURCE_STACKABLE,
-					     kwd->name);
-	assert(plugin != NULL);
 
 	src = plugin->create.stackable_source(plugin);
 	if (src == NULL) {
@@ -114,14 +103,8 @@ static object_t *cb_create_data_source(const gcfg_keyword_t *kwd,
 				       const char *string)
 {
 	mount_group_t *mg = (mount_group_t *)object;
-	imgtool_state_t *state = kwd->user;
+	plugin_t *plugin = kwd->plugin;
 	file_source_t *src;
-	plugin_t *plugin;
-
-	plugin = plugin_registry_find_plugin(state->registry,
-					     PLUGIN_TYPE_FILE_SOURCE,
-					     kwd->name);
-	assert(plugin != NULL);
 
 	src = plugin->create.file_source(plugin, string);
 	if (src == NULL) {
@@ -142,14 +125,8 @@ static object_t *cb_create_stackable_sub_source(const gcfg_keyword_t *kwd,
 						gcfg_file_t *file, object_t *object)
 {
 	file_source_stackable_t *parent = (file_source_stackable_t *)object;
-	imgtool_state_t *state = kwd->user;
+	plugin_t *plugin = kwd->plugin;
 	file_source_stackable_t *src;
-	plugin_t *plugin;
-
-	plugin = plugin_registry_find_plugin(state->registry,
-					     PLUGIN_TYPE_FILE_SOURCE_STACKABLE,
-					     kwd->name);
-	assert(plugin != NULL);
 
 	src = plugin->create.stackable_source(plugin);
 	if (src == NULL) {
@@ -171,14 +148,8 @@ static object_t *cb_create_data_sub_source(const gcfg_keyword_t *kwd,
 					   const char *string)
 {
 	file_source_stackable_t *parent = (file_source_stackable_t *)object;
-	imgtool_state_t *state = kwd->user;
+	plugin_t *plugin = kwd->plugin;
 	file_source_t *src;
-	plugin_t *plugin;
-
-	plugin = plugin_registry_find_plugin(state->registry,
-					     PLUGIN_TYPE_FILE_SOURCE,
-					     kwd->name);
-	assert(plugin != NULL);
 
 	src = plugin->create.file_source(plugin, string);
 	if (src == NULL) {
@@ -198,14 +169,8 @@ static object_t *cb_create_data_sub_source(const gcfg_keyword_t *kwd,
 static object_t *cb_create_volume(const gcfg_keyword_t *kwd,
 				  gcfg_file_t *file, object_t *parent)
 {
-	imgtool_state_t *state = kwd->user;
+	plugin_t *plugin = kwd->plugin;
 	volume_t *volume;
-	plugin_t *plugin;
-
-	plugin = plugin_registry_find_plugin(state->registry,
-					     PLUGIN_TYPE_VOLUME,
-					     kwd->name);
-	assert(plugin != NULL);
 
 	volume = plugin->create.volume(plugin, (imgtool_state_t *)parent);
 	if (volume == NULL) {
@@ -222,7 +187,7 @@ static object_t *cb_create_volumefile(const gcfg_keyword_t *kwd,
 				      const char *string)
 {
 	filesystem_t *fs = (filesystem_t *)parent;
-	imgtool_state_t *state = kwd->user;
+	imgtool_state_t *state = kwd->state;
 	volume_t *volume;
 	tree_node_t *n;
 	(void)kwd;
@@ -257,7 +222,7 @@ static object_t *cb_mp_add_bind(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 				object_t *object, const char *line)
 {
 	mount_group_t *mg = (mount_group_t *)object;
-	imgtool_state_t *state = kwd->user;
+	imgtool_state_t *state = kwd->state;
 	filesystem_t *fs;
 	const char *ptr;
 	size_t len;
@@ -479,7 +444,8 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
 		kwd_it->handle.cb_string = cb_create_fs;
-		kwd_it->user = state;
+		kwd_it->state = state;
+		kwd_it->plugin = it;
 
 		kwd_it->next = state->cfg_filesystems;
 		state->cfg_filesystems = kwd_it;
@@ -498,7 +464,7 @@ int imgtool_state_init_config(imgtool_state_t *state)
 	state->cfg_fs_common[0].arg = GCFG_ARG_STRING;
 	state->cfg_fs_common[0].name = "volumefile";
 	state->cfg_fs_common[0].handle.cb_string = cb_create_volumefile;
-	state->cfg_fs_common[0].user = state;
+	state->cfg_fs_common[0].state = state;
 	state->cfg_fs_common[0].next = NULL;
 	state->cfg_fs_common[0].children = state->cfg_filesystems;
 
@@ -521,7 +487,8 @@ int imgtool_state_init_config(imgtool_state_t *state)
 			kwd_it->handle.cb_string = cb_create_data_source;
 		}
 
-		kwd_it->user = state;
+		kwd_it->state = state;
+		kwd_it->plugin = it;
 		kwd_it->name = it->name;
 		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
@@ -585,7 +552,8 @@ int imgtool_state_init_config(imgtool_state_t *state)
 
 		kwd_it->arg = GCFG_ARG_NONE;
 		kwd_it->name = it->name;
-		kwd_it->user = state;
+		kwd_it->state = state;
+		kwd_it->plugin = it;
 		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
 		kwd_it->handle.cb_none = cb_create_volume;
@@ -611,7 +579,7 @@ int imgtool_state_init_config(imgtool_state_t *state)
 	kwd_it->name = "mountgroup";
 	kwd_it->children = &cfg_mount_group_bind;
 	kwd_it->handle.cb_none = cb_create_mount_group;
-	kwd_it->user = state;
+	kwd_it->state = state;
 	kwd_it->next = state->cfg_global;
 	state->cfg_global = kwd_it;
 
@@ -621,11 +589,11 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		kwd_it = kwd_it->children;
 
 		while (kwd_it->next != NULL) {
-			kwd_it->user = state;
+			kwd_it->state = state;
 			kwd_it = kwd_it->next;
 		}
 
-		kwd_it->user = state;
+		kwd_it->state = state;
 		kwd_it->next = state->cfg_sources;
 	}
 

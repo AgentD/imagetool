@@ -100,7 +100,8 @@ struct gcfg_keyword_t {
 	int (*handle_listing)(gcfg_file_t *file, object_t *child,
 			      const char *line);
 
-	void *user;
+	imgtool_state_t *state;
+	plugin_t *plugin;
 };
 
 #ifdef __cplusplus
