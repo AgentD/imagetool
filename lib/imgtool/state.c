@@ -168,7 +168,7 @@ static object_t *cb_create_volume(const gcfg_keyword_t *kwd,
 	plugin_t *plugin = kwd->plugin;
 	volume_t *volume;
 
-	volume = plugin->create.volume(plugin, (imgtool_state_t *)parent);
+	volume = plugin->create.volume(plugin, kwd->state, (volume_t *)parent);
 	if (volume == NULL) {
 		file->report_error(file, "error creating %s volume",
 				   kwd->name);
@@ -267,9 +267,9 @@ static object_t *cb_mp_add_bind(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 static object_t *cb_create_mount_group(const gcfg_keyword_t *kwd,
 				       gcfg_file_t *file, object_t *object)
 {
-	imgtool_state_t *state = (imgtool_state_t *)object;
 	mount_group_t *mg = calloc(1, sizeof(*mg));
-	(void)kwd;
+	imgtool_state_t *state = kwd->state;
+	(void)object;
 
 	if (mg == NULL) {
 		file->report_error(file, "creating mount group: %s",
@@ -325,12 +325,6 @@ static void state_destroy(object_t *obj)
 	while (state->cfg_global != NULL) {
 		it = state->cfg_global;
 		state->cfg_global = it->next;
-		free(it);
-	}
-
-	while (state->cfg_filesystems != NULL) {
-		it = state->cfg_filesystems;
-		state->cfg_filesystems = it->next;
 		free(it);
 	}
 
@@ -407,11 +401,14 @@ int imgtool_state_init_config(imgtool_state_t *state)
 	gcfg_keyword_t *kwd_it, *last;
 	plugin_t *it;
 
-	/* filesystems */
 	state->cfg_fs_common = calloc(1, sizeof(state->cfg_fs_common[0]));
 	if (state->cfg_fs_common == NULL)
 		goto fail;
 
+	state->cfg_fs_or_volume = NULL;
+	last = NULL;
+
+	/* filesystems */
 	it = state->registry->plugins[PLUGIN_TYPE_FILESYSTEM];
 
 	for (; it != NULL; it = it->next) {
@@ -427,8 +424,12 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		kwd_it->state = state;
 		kwd_it->plugin = it;
 
-		kwd_it->next = state->cfg_filesystems;
-		state->cfg_filesystems = kwd_it;
+		if (last == NULL) {
+			state->cfg_fs_or_volume = kwd_it;
+		} else {
+			last->next = kwd_it;
+		}
+		last = kwd_it;
 
 		if (kwd_it->children == NULL) {
 			kwd_it->children = state->cfg_fs_common;
@@ -441,12 +442,47 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		}
 	}
 
+	/* volumes */
+	it = state->registry->plugins[PLUGIN_TYPE_VOLUME];
+
+	for (; it != NULL; it = it->next) {
+		kwd_it = calloc(1, sizeof(*kwd_it));
+		if (kwd_it == NULL)
+			goto fail;
+
+		kwd_it->arg = GCFG_ARG_NONE;
+		kwd_it->name = it->name;
+		kwd_it->state = state;
+		kwd_it->plugin = it;
+		kwd_it->children = it->cfg_sub_nodes;
+		kwd_it->handle_listing = it->cfg_line_callback;
+		kwd_it->handle.cb_none = cb_create_volume;
+
+		if (last == NULL) {
+			state->cfg_fs_or_volume = kwd_it;
+		} else {
+			last->next = kwd_it;
+		}
+		last = kwd_it;
+
+		if (kwd_it->children == NULL) {
+			kwd_it->children = state->cfg_fs_or_volume;
+		} else {
+			kwd_it = kwd_it->children;
+			while (kwd_it->next != NULL)
+				kwd_it = kwd_it->next;
+
+			kwd_it->next = state->cfg_fs_or_volume;
+		}
+	}
+
+	/* file system common */
 	state->cfg_fs_common[0].arg = GCFG_ARG_STRING;
 	state->cfg_fs_common[0].name = "volumefile";
 	state->cfg_fs_common[0].handle.cb_string = cb_create_volumefile;
 	state->cfg_fs_common[0].state = state;
 	state->cfg_fs_common[0].next = NULL;
-	state->cfg_fs_common[0].children = state->cfg_filesystems;
+	state->cfg_fs_common[0].children = state->cfg_fs_or_volume;
 
 	/* file sources */
 	state->cfg_sources = NULL;
@@ -497,34 +533,6 @@ int imgtool_state_init_config(imgtool_state_t *state)
 	}
 
 	/* root level entries */
-	it = state->registry->plugins[PLUGIN_TYPE_VOLUME];
-
-	for (; it != NULL; it = it->next) {
-		kwd_it = calloc(1, sizeof(*kwd_it));
-		if (kwd_it == NULL)
-			goto fail;
-
-		kwd_it->arg = GCFG_ARG_NONE;
-		kwd_it->name = it->name;
-		kwd_it->state = state;
-		kwd_it->plugin = it;
-		kwd_it->children = it->cfg_sub_nodes;
-		kwd_it->handle_listing = it->cfg_line_callback;
-		kwd_it->handle.cb_none = cb_create_volume;
-		kwd_it->next = state->cfg_global;
-		state->cfg_global = kwd_it;
-
-		if (kwd_it->children == NULL) {
-			kwd_it->children = state->cfg_filesystems;
-		} else {
-			kwd_it = kwd_it->children;
-			while (kwd_it->next != NULL)
-				kwd_it = kwd_it->next;
-
-			kwd_it->next = state->cfg_filesystems;
-		}
-	}
-
 	kwd_it = calloc(1, sizeof(*kwd_it));
 	if (kwd_it == NULL)
 		goto fail;
@@ -551,6 +559,11 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		kwd_it->next = state->cfg_sources;
 	}
 
+	kwd_it = state->cfg_global;
+	while (kwd_it->next != NULL)
+		kwd_it = kwd_it->next;
+
+	kwd_it->next = state->cfg_fs_or_volume;
 	return 0;
 fail:
 	perror("initializing configuration parser");
@@ -565,8 +578,10 @@ int imgtool_process_config_file(imgtool_state_t *state, const char *path)
 	if (gcfg == NULL)
 		return -1;
 
-	if (gcfg_parse_file(gcfg, state->cfg_global, (object_t *)state))
+	if (gcfg_parse_file(gcfg, state->cfg_global,
+			    (object_t *)state->out_file)) {
 		return -1;
+	}
 
 	object_drop(gcfg);
 	return 0;

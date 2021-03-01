@@ -31,10 +31,11 @@ static object_t *raw_set_maxsize(const gcfg_keyword_t *kwd, gcfg_file_t *file,
 	return object_grab(vol);
 }
 
-static volume_t *create_raw_volume(plugin_t *plugin, imgtool_state_t *state)
+static volume_t *create_raw_volume(plugin_t *plugin, imgtool_state_t *state,
+				   volume_t *parent)
 {
-	(void)plugin;
-	return object_grab(state->out_file);
+	(void)plugin; (void)state;
+	return object_grab(parent);
 }
 
 static gcfg_keyword_t raw_volume_minsize = {

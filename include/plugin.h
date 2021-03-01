@@ -42,7 +42,8 @@ struct plugin_t {
 
 		file_source_stackable_t *(*stackable_source)(plugin_t *plugin);
 
-		volume_t *(*volume)(plugin_t *plugin, imgtool_state_t *state);
+		volume_t *(*volume)(plugin_t *plugin, imgtool_state_t *state,
+				    volume_t *parent);
 	} create;
 };
 
