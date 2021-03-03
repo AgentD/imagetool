@@ -102,6 +102,54 @@ struct volume_t {
 	int (*commit)(volume_t *vol);
 };
 
+typedef enum {
+	/*
+	  Interpret the size as a minimum and allow the partition to grow,
+	  displacing any partitions that comes afterwards if necessary.
+	 */
+	COMMON_PARTION_FLAG_GROW = 0x01,
+
+	/*
+	  If this is the last partition, expand it to fill the entire disk.
+	 */
+	COMMON_PARTION_FLAG_FILL = 0x02,
+} COMMON_PARTION_FLAGS;
+
+typedef enum {
+	MBR_PARTITION_FLAG_BOOTABLE = 0x00010000,
+
+	MBR_PARTITION_TYPE_LINUX_SWAP = 0x08200000,
+	MBR_PARTITION_TYPE_LINUX_DATA = 0x08300000,
+	MBR_PARTITION_TYPE_FREEBSD_DATA = 0x0A500000,
+	MBR_PARTITION_TYPE_OPENBSD_DATA = 0x0A600000,
+	MBR_PARTITION_TYPE_NETBSD_DATA = 0x0A900000,
+	MBR_PARTITION_TYPE_BSDI_DATA = 0x0B700000,
+	MBR_PARTITION_TYPE_MINIX_DATA = 0x08100000,
+	MBR_PARTITION_TYPE_UNIXWARE_DATA = 0x06300000,
+} MBR_PARTITION_FLAGS;
+
+/*
+  An object that divides an underlying volume into several partitions and
+  possibly adds meta data structures describing the partitions.
+ */
+struct partition_mgr_t {
+	object_t base;
+
+	/*
+	  Create a parition at the next available block index with the
+	  given size. The flags are a combination of COMMON_PARTION_FLAGS
+	  base flags and implementation specific additiona flags.
+	 */
+	volume_t *(*create_parition)(partition_mgr_t *parent,
+				     uint64_t blk_count, uint64_t flags);
+
+	/*
+	  Update the meta data structure and call commit on the
+	  underlying volume.
+	 */
+	int (*commit)(partition_mgr_t *mgr);
+};
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -121,6 +169,8 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size);
  */
 volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 					  uint32_t offset);
+
+partition_mgr_t *mbrdisk_create(volume_t *base);
 
 /*
   Helper function that allows reading arbitrary byte sized chunks of data at

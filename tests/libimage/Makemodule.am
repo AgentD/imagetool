@@ -34,13 +34,22 @@ test_volume_ostream_SOURCES = tests/libimage/volume_ostream.c
 test_volume_ostream_LDADD = libimage.a libutil.a
 test_volume_ostream_CPPFLAGS = $(AM_CPPFLAGS)
 
+test_mbrdisk_SOURCES = tests/libimage/mbrdisk.c
+test_mbrdisk_LDADD = libimage.a libtest.a libutil.a
+test_mbrdisk_CPPFLAGS = $(AM_CPPFLAGS)
+test_mbrdisk_CPPFLAGS += -DTESTPATH=$(top_srcdir)/tests/libimage/mbrdisk1.bin
+
 check_PROGRAMS += test_volume_read test_volume_write test_volume_memmove
 check_PROGRAMS += test_file_volume
 check_PROGRAMS += test_blocksize_adapter1 test_blocksize_adapter2
 check_PROGRAMS += test_blocksize_adapter3 test_blocksize_adapter4
 check_PROGRAMS += test_volume_ostream
+check_PROGRAMS += test_mbrdisk
 
 TESTS += test_volume_read test_volume_write test_volume_memmove
 TESTS += test_file_volume test_blocksize_adapter1 test_blocksize_adapter2
 TESTS += test_blocksize_adapter3 test_blocksize_adapter4
 TESTS += test_volume_ostream
+TESTS += test_mbrdisk
+
+EXTRA_DIST += tests/libimage/mbrdisk1.bin
