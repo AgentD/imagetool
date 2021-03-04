@@ -6,6 +6,10 @@ test_is_memory_zero_SOURCES = tests/libutil/is_memory_zero.c
 test_is_memory_zero_LDADD = libutil.a
 test_is_memory_zero_CPPFLAGS = $(AM_CPPFLAGS)
 
-check_PROGRAMS += test_bitmap test_is_memory_zero
+test_reflect_SOURCES = tests/libutil/reflect.c
+test_reflect_LDADD = libutil.a
+test_reflect_CPPFLAGS = $(AM_CPPFLAGS)
 
-TESTS += test_bitmap test_is_memory_zero
+check_PROGRAMS += test_bitmap test_is_memory_zero test_reflect
+
+TESTS += test_bitmap test_is_memory_zero test_reflect

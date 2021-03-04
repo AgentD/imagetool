@@ -1,5 +1,6 @@
 libutil_a_SOURCES = include/bitmap.h include/util.h
 libutil_a_SOURCES += lib/util/bitmap.c lib/util/is_memory_zero.c
 libutil_a_SOURCES += lib/util/read_retry.c lib/util/write_retry.c
+libutil_a_SOURCES += lib/util/reflect.c
 
 noinst_LIBRARIES += libutil.a
