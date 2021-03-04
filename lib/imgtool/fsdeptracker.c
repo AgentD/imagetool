@@ -124,117 +124,70 @@ static fs_dependency_edge_t *find_edge(dep_tracker_private_t *dep,
 	return it;
 }
 
-static int dep_tracker_add_volume(fs_dep_tracker_t *interface,
-				  volume_t *volume, volume_t *parent)
+static int add_dependency(fs_dep_tracker_t *interface, object_t *child,
+			  FS_DEP_NODE_TYPE child_type, const char *child_name,
+			  object_t *parent, FS_DEP_NODE_TYPE parent_type,
+			  const char *parent_name)
 {
 	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
-	fs_dependency_node_t *pit, *vit;
+	fs_dependency_node_t *pit, *cit;
 	fs_dependency_edge_t *edge;
 
-	vit = get_by_ptr(dep, (object_t *)volume, FS_DEPENDENCY_VOLUME, "");
-	if (vit == NULL)
+	cit = get_by_ptr(dep, child, child_type, child_name);
+	if (cit == NULL)
 		return -1;
 
 	if (parent != NULL) {
-		pit = get_by_ptr(dep, (object_t *)parent,
-				 FS_DEPENDENCY_VOLUME, "");
+		pit = get_by_ptr(dep, parent, parent_type, parent_name);
 		if (pit == NULL)
 			return -1;
 
-		edge = find_edge(dep, vit, pit);
+		edge = find_edge(dep, cit, pit);
 		if (edge == NULL)
 			return -1;
 	}
 	return 0;
 }
 
+static int dep_tracker_add_volume(fs_dep_tracker_t *interface,
+				  volume_t *volume, volume_t *parent)
+{
+	return add_dependency(interface,
+			      (object_t *)volume, FS_DEPENDENCY_VOLUME, "",
+			      (object_t *)parent, FS_DEPENDENCY_VOLUME, "");
+}
+
 static int add_partition(fs_dep_tracker_t *interface, volume_t *volume,
 			 partition_mgr_t *parent)
 {
-	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
-	fs_dependency_node_t *pit, *vit;
-	fs_dependency_edge_t *edge;
-
-	vit = get_by_ptr(dep, (object_t *)volume, FS_DEPENDENCY_VOLUME, "");
-	if (vit == NULL)
-		return -1;
-
-	pit = get_by_ptr(dep, (object_t *)parent, FS_DEPENDENCY_PART_MGR, "");
-	if (pit == NULL)
-		return -1;
-
-	edge = find_edge(dep, vit, pit);
-	if (edge == NULL)
-		return -1;
-
-	return 0;
+	return add_dependency(interface,
+			      (object_t *)volume, FS_DEPENDENCY_VOLUME, "",
+			      (object_t *)parent, FS_DEPENDENCY_PART_MGR, "");
 }
 
 static int add_partition_mgr(fs_dep_tracker_t *interface, partition_mgr_t *mgr,
 			     volume_t *parent)
 {
-	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
-	fs_dependency_node_t *pit, *cit;
-	fs_dependency_edge_t *edge;
-
-	cit = get_by_ptr(dep, (object_t *)mgr, FS_DEPENDENCY_PART_MGR, "");
-	if (cit == NULL)
-		return -1;
-
-	pit = get_by_ptr(dep, (object_t *)parent, FS_DEPENDENCY_VOLUME, "");
-	if (pit == NULL)
-		return -1;
-
-	edge = find_edge(dep, cit, pit);
-	if (edge == NULL)
-		return -1;
-
-	return 0;
+	return add_dependency(interface,
+			      (object_t *)mgr, FS_DEPENDENCY_PART_MGR, "",
+			      (object_t *)parent, FS_DEPENDENCY_VOLUME, "");
 }
 
 static int dep_tracker_add_volume_file(fs_dep_tracker_t *interface,
 				       volume_t *volume, filesystem_t *parent)
 {
-	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
-	fs_dependency_node_t *pit, *vit;
-	fs_dependency_edge_t *edge;
-
-	vit = get_by_ptr(dep, (object_t *)volume, FS_DEPENDENCY_VOLUME, "");
-	if (vit == NULL)
-		return -1;
-
-	pit = get_by_ptr(dep, (object_t *)parent, FS_DEPENDENCY_FILESYSTEM, "");
-	if (pit == NULL)
-		return -1;
-
-	edge = find_edge(dep, vit, pit);
-	if (edge == NULL)
-		return -1;
-
-	return 0;
+	return add_dependency(interface,
+			      (object_t *)volume, FS_DEPENDENCY_VOLUME, "",
+			      (object_t *)parent, FS_DEPENDENCY_FILESYSTEM, "");
 }
 
 static int dep_tracker_add_fs(fs_dep_tracker_t *interface,
 			      filesystem_t *fs, volume_t *parent,
 			      const char *name)
 {
-	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
-	fs_dependency_node_t *pit, *cit;
-	fs_dependency_edge_t *edge;
-
-	cit = get_by_ptr(dep, (object_t *)fs, FS_DEPENDENCY_FILESYSTEM, name);
-	if (cit == NULL)
-		return -1;
-
-	pit = get_by_ptr(dep, (object_t *)parent, FS_DEPENDENCY_VOLUME, "");
-	if (pit == NULL)
-		return -1;
-
-	edge = find_edge(dep, cit, pit);
-	if (edge == NULL)
-		return -1;
-
-	return 0;
+	return add_dependency(interface,
+			      (object_t *)fs, FS_DEPENDENCY_FILESYSTEM, name,
+			      (object_t *)parent, FS_DEPENDENCY_VOLUME, "");
 }
 
 static int dep_tracker_commit(fs_dep_tracker_t *interface)
