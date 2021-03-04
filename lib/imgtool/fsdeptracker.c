@@ -16,6 +16,7 @@
 typedef enum {
 	FS_DEPENDENCY_VOLUME = 1,
 	FS_DEPENDENCY_FILESYSTEM,
+	FS_DEPENDENCY_PART_MGR,
 } FS_DEP_NODE_TYPE;
 
 typedef struct fs_dependency_node_t {
@@ -25,6 +26,7 @@ typedef struct fs_dependency_node_t {
 	union {
 		volume_t *volume;
 		filesystem_t *filesystem;
+		partition_mgr_t *partmgr;
 		object_t *obj;
 	} data;
 
@@ -129,6 +131,34 @@ static fs_dependency_node_t *get_fs_by_ptr(dep_tracker_private_t *dep,
 	return it;
 }
 
+static fs_dependency_node_t *get_part_mgr_by_ptr(dep_tracker_private_t *dep,
+						 partition_mgr_t *mgr)
+{
+	fs_dependency_node_t *it;
+
+	for (it = dep->nodes; it != NULL; it = it->next) {
+		if (it->type == FS_DEPENDENCY_PART_MGR &&
+		    it->data.partmgr == mgr) {
+			break;
+		}
+	}
+
+	if (it == NULL) {
+		it = calloc(1, sizeof(*it) + 1);
+		if (it == NULL) {
+			perror("Creating partition manager dependency entry");
+			return NULL;
+		}
+
+		it->type = FS_DEPENDENCY_PART_MGR;
+		it->data.filesystem = object_grab(mgr);
+		it->next = dep->nodes;
+		dep->nodes = it;
+	}
+
+	return it;
+}
+
 static fs_dependency_edge_t *find_edge(dep_tracker_private_t *dep,
 				       fs_dependency_node_t *node,
 				       fs_dependency_node_t *depends_on)
@@ -173,6 +203,50 @@ static int dep_tracker_add_volume(fs_dep_tracker_t *interface,
 		if (edge == NULL)
 			return -1;
 	}
+	return 0;
+}
+
+static int add_partition(fs_dep_tracker_t *interface, volume_t *volume,
+			 partition_mgr_t *parent)
+{
+	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
+	fs_dependency_node_t *pit, *vit;
+	fs_dependency_edge_t *edge;
+
+	vit = get_vol_by_ptr(dep, volume);
+	if (vit == NULL)
+		return -1;
+
+	pit = get_part_mgr_by_ptr(dep, parent);
+	if (pit == NULL)
+		return -1;
+
+	edge = find_edge(dep, vit, pit);
+	if (edge == NULL)
+		return -1;
+
+	return 0;
+}
+
+static int add_partition_mgr(fs_dep_tracker_t *interface, partition_mgr_t *mgr,
+			     volume_t *parent)
+{
+	dep_tracker_private_t *dep = (dep_tracker_private_t *)interface;
+	fs_dependency_node_t *pit, *cit;
+	fs_dependency_edge_t *edge;
+
+	cit = get_part_mgr_by_ptr(dep, mgr);
+	if (cit == NULL)
+		return -1;
+
+	pit = get_vol_by_ptr(dep, parent);
+	if (pit == NULL)
+		return -1;
+
+	edge = find_edge(dep, cit, pit);
+	if (edge == NULL)
+		return -1;
+
 	return 0;
 }
 
@@ -270,6 +344,11 @@ static int dep_tracker_commit(fs_dep_tracker_t *interface)
 			if (ret)
 				return -1;
 			break;
+		case FS_DEPENDENCY_PART_MGR:
+			ret = nit->data.partmgr->commit(nit->data.partmgr);
+			if (ret)
+				return -1;
+			break;
 		default:
 			break;
 		}
@@ -338,6 +417,8 @@ fs_dep_tracker_t *fs_dep_tracker_create(void)
 	}
 
 	public->add_volume = dep_tracker_add_volume;
+	public->add_partition = add_partition;
+	public->add_partition_mgr = add_partition_mgr;
 	public->add_volume_file = dep_tracker_add_volume_file;
 	public->add_fs = dep_tracker_add_fs;
 	public->get_fs_by_name = dep_tracker_get_fs_by_name;
