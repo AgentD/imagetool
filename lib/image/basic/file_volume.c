@@ -32,6 +32,105 @@ typedef struct {
 
 /*****************************************************************************/
 
+enum {
+	PROP_MIN_SIZE = 0,
+	PROP_MAX_SIZE,
+	PROP_COUNT,
+};
+
+static size_t get_property_count(const meta_object_t *meta)
+{
+	(void)meta;
+	return PROP_COUNT;
+}
+
+static int get_property_desc(const meta_object_t *meta, size_t i,
+			     PROPERTY_TYPE *type, const char **name)
+{
+	(void)meta;
+	switch (i) {
+	case PROP_MIN_SIZE:
+		*type = PROPERTY_TYPE_U64_SIZE;
+		*name = "minsize";
+		break;
+	case PROP_MAX_SIZE:
+		*type = PROPERTY_TYPE_U64_SIZE;
+		*name = "maxsize";
+		break;
+	default:
+		return -1;
+	}
+	return 0;
+}
+
+static int set_property(const meta_object_t *meta, size_t i,
+			object_t *obj, const property_value_t *value)
+{
+	volume_t *vol = (volume_t *)obj;
+	(void)meta;
+
+	switch (i) {
+	case PROP_MIN_SIZE:
+		if (value->type != PROPERTY_TYPE_U64_SIZE)
+			return -1;
+
+		vol->min_block_count = value->value.u64 / vol->blocksize;
+
+		if (value->value.u64 % vol->blocksize)
+			vol->min_block_count += 1;
+
+		if (vol->min_block_count > vol->max_block_count)
+			vol->min_block_count = vol->min_block_count;
+		break;
+	case PROP_MAX_SIZE:
+		if (value->type != PROPERTY_TYPE_U64_SIZE)
+			return -1;
+
+		vol->max_block_count = value->value.u64 / vol->blocksize;
+		if (vol->min_block_count > vol->max_block_count)
+			vol->min_block_count = vol->min_block_count;
+		break;
+	default:
+		return -1;
+	}
+
+	return 0;
+}
+
+static int get_property(const meta_object_t *meta, size_t i,
+			const object_t *obj, property_value_t *value)
+{
+	const volume_t *vol = (const volume_t *)obj;
+	(void)meta;
+
+	switch (i) {
+	case PROP_MIN_SIZE:
+		value->type = PROPERTY_TYPE_U64_SIZE;
+		value->value.u64 = vol->blocksize * vol->min_block_count;
+		break;
+	case PROP_MAX_SIZE:
+		value->type = PROPERTY_TYPE_U64_SIZE;
+		value->value.u64 = vol->blocksize * vol->max_block_count;
+		break;
+	default:
+		return -1;
+	}
+
+	return 0;
+}
+
+static const meta_object_t file_volume_meta = {
+	.name = "file_volume_t",
+	.parent = NULL,
+
+	.get_property_count = get_property_count,
+	.get_property_desc = get_property_desc,
+	.set_property = set_property,
+	.get_property = get_property,
+};
+
+/*****************************************************************************/
+
 static int transfer_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst,
 			   size_t count)
 {
@@ -409,6 +508,7 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 
 	fvol->fd = fd;
 	fvol->bytes_used = used * blocksize;
+	((object_t *)fvol)->meta = &file_volume_meta;
 	((object_t *)fvol)->refcount = 1;
 	((object_t *)fvol)->destroy = destroy;
 	((volume_t *)fvol)->blocksize = blocksize;

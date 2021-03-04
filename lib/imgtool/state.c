@@ -418,7 +418,6 @@ int imgtool_state_init_config(imgtool_state_t *state)
 
 		kwd_it->arg = GCFG_ARG_STRING;
 		kwd_it->name = it->name;
-		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
 		kwd_it->handle.cb_string = cb_create_fs;
 		kwd_it->state = state;
@@ -431,15 +430,7 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		}
 		last = kwd_it;
 
-		if (kwd_it->children == NULL) {
-			kwd_it->children = state->cfg_fs_common;
-		} else {
-			kwd_it = kwd_it->children;
-			while (kwd_it->next != NULL)
-				kwd_it = kwd_it->next;
-
-			kwd_it->next = state->cfg_fs_common;
-		}
+		kwd_it->children = state->cfg_fs_common;
 	}
 
 	/* volumes */
@@ -454,7 +445,6 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		kwd_it->name = it->name;
 		kwd_it->state = state;
 		kwd_it->plugin = it;
-		kwd_it->children = it->cfg_sub_nodes;
 		kwd_it->handle_listing = it->cfg_line_callback;
 		kwd_it->handle.cb_none = cb_create_volume;
 
@@ -465,15 +455,7 @@ int imgtool_state_init_config(imgtool_state_t *state)
 		}
 		last = kwd_it;
 
-		if (kwd_it->children == NULL) {
-			kwd_it->children = state->cfg_fs_or_volume;
-		} else {
-			kwd_it = kwd_it->children;
-			while (kwd_it->next != NULL)
-				kwd_it = kwd_it->next;
-
-			kwd_it->next = state->cfg_fs_or_volume;
-		}
+		kwd_it->children = state->cfg_fs_or_volume;
 	}
 
 	/* file system common */
