@@ -169,10 +169,68 @@ fail_brace_extra:
 	return -1;
 }
 
+static const char *apply_reflection_arg(gcfg_file_t *file, const char *ptr,
+					object_t *obj, size_t idx,
+					PROPERTY_TYPE type, const char *name)
+{
+	property_value_t value;
+	char *strval;
+	int iret;
+
+	value.type = type;
+
+	switch (type) {
+	case PROPERTY_TYPE_STRING:
+		strval = file->buffer;
+		ptr = gcfg_parse_string(file, ptr, strval);
+		if (ptr == NULL)
+			return NULL;
+		value.value.string = strval;
+		break;
+	case PROPERTY_TYPE_BOOL:
+		ptr = gcfg_parse_boolean(file, ptr, &iret);
+		if (ptr == NULL)
+			return NULL;
+		value.value.boolean = iret;
+		break;
+	case PROPERTY_TYPE_U32_NUMBER:
+		ptr = gcfg_dec_num(file, ptr, &value.value.u64, 0x0FFFFFFFFUL);
+		if (ptr == NULL)
+			return NULL;
+		value.value.u32 = value.value.u64;
+		break;
+	case PROPERTY_TYPE_U64_NUMBER:
+		ptr = gcfg_dec_num(file, ptr, &value.value.u64, ~(0UL));
+		if (ptr == NULL)
+			return NULL;
+		break;
+	case PROPERTY_TYPE_U64_SIZE:
+		ptr = gcfg_parse_size(file, ptr, &value.value.u64);
+		if (ptr == NULL)
+			return NULL;
+		break;
+	case PROPERTY_TYPE_NONE:
+	default:
+		goto fail_type;
+	}
+
+	if (object_set_property(obj, idx, &value))
+		goto fail_set;
+
+	return skip_space(ptr);
+fail_set:
+	file->report_error(file, "error setting property '%s'", name);
+	return NULL;
+fail_type:
+	file->report_error(file, "[BUG] unknown data type for '%s'", name);
+	return NULL;
+}
+
 static int parse(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 		 object_t *parent, unsigned int level)
 {
 	const gcfg_keyword_t *kwd;
+	const char *name;
 	const char *ptr;
 	object_t *child;
 	bool have_args;
@@ -196,6 +254,46 @@ static int parse(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 		kwd = NULL;
 		child = NULL;
 		ptr = skip_space(file->buffer);
+
+		if (parent != NULL) {
+			size_t i, len, count;
+			PROPERTY_TYPE type;
+
+			count = object_get_property_count(parent);
+
+			for (i = 0; i < count; ++i) {
+				int ret = object_get_property_desc(parent, i,
+								   &type,
+								   &name);
+				if (ret)
+					continue;
+
+				len = strlen(name);
+				if (strncmp(ptr, name, len) != 0)
+					continue;
+
+				if (ptr[len] == ' ' || ptr[len] == '\t' ||
+				    is_line_end(ptr[len])) {
+					break;
+				}
+			}
+
+			if (i < count) {
+				ptr = skip_space(ptr + len);
+				ptr = apply_reflection_arg(file, ptr, parent,
+							   i, type, name);
+				if (ptr == NULL)
+					return -1;
+
+				if (*ptr == '{') {
+					goto fail_children;
+				} else if (!is_line_end(*ptr)) {
+					goto fail_kwd_extra;
+				} else {
+					continue;
+				}
+			}
+		}
 
 		if ((*ptr >= 'a' && *ptr <= 'z') ||
 		    (*ptr >= 'A' && *ptr <= 'Z')) {
@@ -230,6 +328,7 @@ static int parse(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 				} else {
 					if (kwd->children == NULL) {
 						object_drop(child);
+						name = kwd->name;
 						goto fail_children;
 					}
 					if (parse(file, kwd->children,
@@ -240,6 +339,7 @@ static int parse(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 				}
 			} else if (!is_line_end(*ptr)) {
 				object_drop(child);
+				name = kwd->name;
 				goto fail_kwd_extra;
 			}
 
@@ -272,12 +372,12 @@ fail_utf8:
 	file->report_error(file, "encoding error (expected UTF-8)");
 	return -1;
 fail_kwd_extra:
-	if (kwd->arg == GCFG_ARG_NONE) {
+	if (kwd != NULL && kwd->arg == GCFG_ARG_NONE) {
 		file->report_error(file, "'%s' must be folled "
-				   "by a line break", kwd->name);
+				   "by a line break", name);
 	} else {
 		file->report_error(file, "'%s <argument>' must be folled "
-				   "by a line break", kwd->name);
+				   "by a line break", name);
 	}
 	return -1;
 fail_brace_extra:
@@ -287,7 +387,7 @@ fail_level:
 	file->report_error(file, "Unexpected '}' outside block");
 	return -1;
 fail_children:
-	file->report_error(file, "Unexpected '{' after %s", kwd->name);
+	file->report_error(file, "Unexpected '{' after %s", name);
 	return -1;
 fail_missing_arg:
 	file->report_error(file, "Missing argument after %s", kwd->name);
