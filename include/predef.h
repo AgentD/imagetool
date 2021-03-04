@@ -134,6 +134,7 @@ typedef struct compressor_config_t compressor_config_t;
 typedef struct bitmap_t bitmap_t;
 
 typedef struct volume_t volume_t;
+typedef struct partition_t partition_t;
 typedef struct partition_mgr_t partition_mgr_t;
 
 typedef struct gcfg_number_t gcfg_number_t;

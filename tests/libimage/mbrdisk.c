@@ -32,22 +32,23 @@ int main(void)
 	TEST_EQUAL_UI(((object_t *)mbr)->refcount, 1);
 
 	/* create a few partitions */
-	p0 = mbr->create_parition(mbr, 5, COMMON_PARTION_FLAG_GROW);
+	p0 = (volume_t *)mbr->create_parition(mbr, 5,
+					      COMMON_PARTION_FLAG_GROW);
 	TEST_NOT_NULL(p0);
 	TEST_EQUAL_UI(((object_t *)mbr)->refcount, 2);
 	TEST_EQUAL_UI(((object_t *)p0)->refcount, 1);
 
-	p1 = mbr->create_parition(mbr, 10, 0);
+	p1 = (volume_t *)mbr->create_parition(mbr, 10, 0);
 	TEST_NOT_NULL(p1);
 	TEST_EQUAL_UI(((object_t *)mbr)->refcount, 3);
 	TEST_EQUAL_UI(((object_t *)p1)->refcount, 1);
 
-	p2 = mbr->create_parition(mbr, 42, 0);
+	p2 = (volume_t *)mbr->create_parition(mbr, 42, 0);
 	TEST_NOT_NULL(p2);
 	TEST_EQUAL_UI(((object_t *)mbr)->refcount, 4);
 	TEST_EQUAL_UI(((object_t *)p2)->refcount, 1);
 
-	p3 = mbr->create_parition(mbr, 3072, 0);
+	p3 = (volume_t *)mbr->create_parition(mbr, 3072, 0);
 	TEST_NOT_NULL(p3);
 	TEST_EQUAL_UI(((object_t *)mbr)->refcount, 5);
 	TEST_EQUAL_UI(((object_t *)p3)->refcount, 1);

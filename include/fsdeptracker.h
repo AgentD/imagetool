@@ -23,7 +23,7 @@ struct fs_dep_tracker_t {
 	  Add a volume that represents a partition and the partition manager
 	  that it is derived from.
 	*/
-	int (*add_partition)(fs_dep_tracker_t *dep, volume_t *volume,
+	int (*add_partition)(fs_dep_tracker_t *dep, partition_t *part,
 			     partition_mgr_t *parent);
 
 	/*

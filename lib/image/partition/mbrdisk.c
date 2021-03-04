@@ -30,7 +30,7 @@ typedef struct {
 } mbr_disk_t;
 
 typedef struct {
-	volume_t base;
+	partition_t base;
 
 	mbr_disk_t *parent;
 	size_t index;
@@ -279,8 +279,9 @@ static mbr_part_t *part_create(mbr_disk_t *parent, size_t index,
 
 /*****************************************************************************/
 
-static volume_t *mbr_disk_create_parition(partition_mgr_t *parent,
-					  uint64_t blk_count, uint64_t flags)
+static partition_t *mbr_disk_create_parition(partition_mgr_t *parent,
+					     uint64_t blk_count,
+					     uint64_t flags)
 {
 	mbr_disk_t *disk = (mbr_disk_t *)parent;
 	uint32_t min_count, max_count;
@@ -337,7 +338,7 @@ static volume_t *mbr_disk_create_parition(partition_mgr_t *parent,
 		return NULL;
 
 	disk->part_used += 1;
-	return (volume_t *)part;
+	return (partition_t *)part;
 }
 
 static int mbr_disk_commit(partition_mgr_t *mgr)

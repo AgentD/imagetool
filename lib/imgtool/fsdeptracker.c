@@ -16,6 +16,7 @@
 typedef enum {
 	FS_DEPENDENCY_VOLUME = 1,
 	FS_DEPENDENCY_FILESYSTEM,
+	FS_DEPENDENCY_PARTITION,
 	FS_DEPENDENCY_PART_MGR,
 } FS_DEP_NODE_TYPE;
 
@@ -25,6 +26,7 @@ typedef struct fs_dependency_node_t {
 
 	union {
 		volume_t *volume;
+		partition_t *partition;
 		filesystem_t *filesystem;
 		partition_mgr_t *partmgr;
 		object_t *obj;
@@ -157,11 +159,11 @@ static int dep_tracker_add_volume(fs_dep_tracker_t *interface,
 			      (object_t *)parent, FS_DEPENDENCY_VOLUME, "");
 }
 
-static int add_partition(fs_dep_tracker_t *interface, volume_t *volume,
+static int add_partition(fs_dep_tracker_t *interface, partition_t *volume,
 			 partition_mgr_t *parent)
 {
 	return add_dependency(interface,
-			      (object_t *)volume, FS_DEPENDENCY_VOLUME, "",
+			      (object_t *)volume, FS_DEPENDENCY_PARTITION, "",
 			      (object_t *)parent, FS_DEPENDENCY_PART_MGR, "");
 }
 
@@ -224,6 +226,7 @@ static int dep_tracker_commit(fs_dep_tracker_t *interface)
 		/* resolve */
 		switch (nit->type) {
 		case FS_DEPENDENCY_VOLUME:
+		case FS_DEPENDENCY_PARTITION:
 			ret = nit->data.volume->commit(nit->data.volume);
 			if (ret)
 				return -1;

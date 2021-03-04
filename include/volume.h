@@ -128,6 +128,10 @@ typedef enum {
 	MBR_PARTITION_TYPE_UNIXWARE_DATA = 0x06300000,
 } MBR_PARTITION_FLAGS;
 
+struct partition_t {
+	volume_t base;
+};
+
 /*
   An object that divides an underlying volume into several partitions and
   possibly adds meta data structures describing the partitions.
@@ -140,8 +144,8 @@ struct partition_mgr_t {
 	  given size. The flags are a combination of COMMON_PARTION_FLAGS
 	  base flags and implementation specific additiona flags.
 	 */
-	volume_t *(*create_parition)(partition_mgr_t *parent,
-				     uint64_t blk_count, uint64_t flags);
+	partition_t *(*create_parition)(partition_mgr_t *parent,
+					uint64_t blk_count, uint64_t flags);
 
 	/*
 	  Update the meta data structure and call commit on the
