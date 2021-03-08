@@ -56,6 +56,7 @@ static partition_t *mbr_disk_create_parition(partition_mgr_t *parent,
 
 	disk->partitions[disk->part_used].index = index;
 	disk->partitions[disk->part_used].blk_count = blk_count;
+	disk->partitions[disk->part_used].blk_count_min = blk_count;
 	disk->partitions[disk->part_used].flags = flags;
 
 	if (blk_count > 0) {
@@ -83,12 +84,50 @@ static partition_t *mbr_disk_create_parition(partition_mgr_t *parent,
 	return (partition_t *)part;
 }
 
+static int expand_last_part_to_fill(mbr_disk_t *disk)
+{
+	uint64_t index, diff, avail;
+	size_t i;
+
+	if (disk->part_used == 0)
+		return 0;
+
+	i = disk->part_used - 1;
+
+	if (!(disk->partitions[i].flags & COMMON_PARTION_FLAG_FILL))
+		return 0;
+
+	if (disk->partitions[i].index >= disk->volume->min_block_count)
+		return 0;
+
+	avail = disk->volume->min_block_count - disk->partitions[i].index;
+
+	if (disk->partitions[i].blk_count >= avail)
+		return 0;
+
+	index = disk->partitions[i].index + disk->partitions[i].blk_count;
+
+	diff = avail - disk->partitions[i].blk_count;
+
+	disk->partitions[i].blk_count += diff;
+
+	return disk->volume->discard_blocks(disk->volume, index, diff);
+}
+
 static int mbr_disk_commit(partition_mgr_t *mgr)
 {
 	mbr_disk_t *disk = (mbr_disk_t *)mgr;
 	mbr_header_t header;
 	uint32_t lba, count;
 	size_t i;
+
+	for (i = 0; i < disk->part_used; ++i) {
+		if (mbr_shrink_to_fit(disk, i))
+			return -1;
+	}
+
+	if (expand_last_part_to_fill(disk))
+		return -1;
 
 	memset(&header, 0, sizeof(header));
 

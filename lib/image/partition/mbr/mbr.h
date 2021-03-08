@@ -27,7 +27,9 @@ typedef struct {
 
 	struct {
 		uint64_t index;
+		uint64_t blk_count_min;
 		uint64_t blk_count;
+		uint64_t blk_used;
 		uint64_t flags;
 	} partitions[MAX_MBR_PARTITIONS];
 } mbr_disk_t;
@@ -60,6 +62,8 @@ extern "C" {
 
 mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index,
 			    uint32_t min_count, uint32_t max_count);
+
+int mbr_shrink_to_fit(mbr_disk_t *disk, size_t index);
 
 #ifdef __cplusplus
 }

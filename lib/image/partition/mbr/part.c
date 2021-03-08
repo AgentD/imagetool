@@ -6,6 +6,48 @@
  */
 #include "mbr.h"
 
+static int shrink_partition(mbr_disk_t *disk, size_t index, uint64_t diff)
+{
+	uint64_t start = disk->partitions[index].index;
+	uint64_t count = disk->partitions[index].blk_count;
+	uint64_t max = 0;
+	size_t i;
+
+	if (diff % MBR_PART_ALIGN)
+		diff -= diff % MBR_PART_ALIGN;
+
+	if (diff > count)
+		diff = count;
+
+	if ((count - diff) < MBR_PART_ALIGN)
+		diff = (count - MBR_PART_ALIGN);
+
+	if ((count - diff) < disk->partitions[index].blk_count_min)
+		diff = count - disk->partitions[index].blk_count_min;
+
+	if (diff == 0)
+		return 0;
+
+	for (i = 0; i < disk->part_used; ++i) {
+		uint64_t current = disk->partitions[i].index;
+		current += disk->partitions[i].blk_count - 1;
+
+		if (current > max)
+			max = current;
+	}
+
+	if (disk->volume->discard_blocks(disk->volume, max - diff, diff))
+		return -1;
+
+	for (i = 0; i < disk->part_used; ++i) {
+		if (disk->partitions[i].index > start)
+			disk->partitions[i].index -= diff;
+	}
+
+	disk->partitions[index].blk_count -= diff;
+	return 0;
+}
+
 static int grow_partition(mbr_part_t *part, uint64_t diff)
 {
 	uint64_t start = part->parent->partitions[part->index].index;
@@ -13,6 +55,13 @@ static int grow_partition(mbr_part_t *part, uint64_t diff)
 	uint64_t max = 0;
 	size_t i;
 	int ret;
+
+	for (i = 0; i < part->parent->part_used; ++i) {
+		if (part->parent->partitions[i].index > start) {
+			if (mbr_shrink_to_fit(part->parent, i))
+				return -1;
+		}
+	}
 
 	if (diff % MBR_PART_ALIGN || diff == 0)
 		diff += MBR_PART_ALIGN - (diff % MBR_PART_ALIGN);
@@ -78,6 +127,7 @@ static int part_write_partial_block(volume_t *vol, uint64_t index,
 	mbr_part_t *part = (mbr_part_t *)vol;
 	uint64_t start = part->parent->partitions[part->index].index;
 	uint64_t count = part->parent->partitions[part->index].blk_count;
+	uint64_t used = part->parent->partitions[part->index].blk_used;
 	uint64_t flags = part->parent->partitions[part->index].flags;
 	volume_t *volume = part->parent->volume;
 
@@ -94,6 +144,9 @@ static int part_write_partial_block(volume_t *vol, uint64_t index,
 		count = part->parent->partitions[part->index].blk_count;
 	}
 
+	if (index >= used)
+		part->parent->partitions[part->index].blk_used = (index + 1);
+
 	return volume->write_partial_block(volume, start + index, buffer,
 					   offset, size);
 }
@@ -102,17 +155,20 @@ static int part_discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 {
 	mbr_part_t *part = (mbr_part_t *)vol;
 	uint64_t blk_start = part->parent->partitions[part->index].index;
-	uint64_t blk_count = part->parent->partitions[part->index].blk_count;
+	uint64_t blk_used = part->parent->partitions[part->index].blk_used;
 	volume_t *volume = part->parent->volume;
 
-	if (index >= blk_count)
+	if (index >= blk_used)
 		return 0;
 
-	if (count > (blk_count - index))
-		count = blk_count - index;
+	if (count > (blk_used - index))
+		count = blk_used - index;
 
 	if (count == 0)
 		return 0;
+
+	if ((index + count) == blk_used)
+		part->parent->partitions[part->index].blk_used = index;
 
 	return volume->discard_blocks(volume, blk_start + index, count);
 }
@@ -124,6 +180,7 @@ static int part_move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 	mbr_part_t *part = (mbr_part_t *)vol;
 	uint64_t blk_start = part->parent->partitions[part->index].index;
 	uint64_t blk_count = part->parent->partitions[part->index].blk_count;
+	uint64_t blk_used = part->parent->partitions[part->index].blk_used;
 	uint64_t flags = part->parent->partitions[part->index].flags;
 	volume_t *volume = part->parent->volume;
 
@@ -135,16 +192,19 @@ static int part_move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 		}
 	}
 
-	if (src >= blk_count && dst >= blk_count)
+	if (src >= blk_used && dst >= blk_used)
 		return 0;
 
-	if (src >= blk_count)
+	if (src >= blk_used)
 		return part_discard_blocks(vol, dst, 1);
 
 	if (dst >= blk_count) {
 		if (grow_partition(part, dst - blk_count + 1))
 			return -1;
 	}
+
+	if (dst >= blk_used)
+		part->parent->partitions[part->index].blk_used = dst;
 
 	if (src_offset == 0 && dst_offset == 0 && size == vol->blocksize) {
 		return volume->move_block(volume, blk_start + src,
@@ -183,6 +243,22 @@ static void part_destroy(object_t *obj)
 
 	object_drop(part->parent);
 	free(part);
+}
+
+int mbr_shrink_to_fit(mbr_disk_t *disk, size_t index)
+{
+	uint64_t diff;
+
+	if (disk->partitions[index].blk_used <
+	    disk->partitions[index].blk_count) {
+		diff = disk->partitions[index].blk_count -
+			disk->partitions[index].blk_used;
+
+		if (shrink_partition(disk, index, diff))
+			return -1;
+	}
+
+	return 0;
 }
 
 mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index,
