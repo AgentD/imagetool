@@ -49,8 +49,8 @@ int main(void)
 	TEST_NOT_NULL(vol);
 
 	TEST_EQUAL_UI(vol->blocksize, blocksz);
-	TEST_EQUAL_UI(vol->min_block_count, 0);
-	TEST_EQUAL_UI(vol->max_block_count, 32);
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
 
 	/* read blocks */
 	for (i = 0; i < 16; ++i) {

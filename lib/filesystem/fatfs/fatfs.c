@@ -218,8 +218,10 @@ filesystem_t *filesystem_fatfs_create(volume_t *volume)
 	if (fs == NULL)
 		goto fail_errno;
 
-	if (MUL64_OV(volume->blocksize, volume->max_block_count, &size))
+	if (MUL64_OV(volume->blocksize, volume->get_max_block_count(volume),
+		     &size)) {
 		size = MAX_DISK_SIZE;
+	}
 
 	compute_fs_parameters(size, fatfs);
 

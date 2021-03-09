@@ -71,12 +71,13 @@ static partition_t *mbr_disk_create_parition(partition_mgr_t *parent,
 	min_count = disk->partitions[disk->part_used].blk_count;
 
 	if (flags & COMMON_PARTION_FLAG_GROW) {
-		max_count = disk->volume->max_block_count - index;
+		max_count = disk->volume->get_max_block_count(disk->volume);
+		max_count -= index;
 	} else {
 		max_count = min_count;
 	}
 
-	part = mbr_part_create(disk, disk->part_used, min_count, max_count);
+	part = mbr_part_create(disk, disk->part_used);
 	if (part == NULL)
 		return NULL;
 
@@ -97,10 +98,13 @@ static int expand_last_part_to_fill(mbr_disk_t *disk)
 	if (!(disk->partitions[i].flags & COMMON_PARTION_FLAG_FILL))
 		return 0;
 
-	if (disk->partitions[i].index >= disk->volume->min_block_count)
+	if (disk->partitions[i].index >=
+	    disk->volume->get_min_block_count(disk->volume)) {
 		return 0;
+	}
 
-	avail = disk->volume->min_block_count - disk->partitions[i].index;
+	avail = disk->volume->get_min_block_count(disk->volume);
+	avail -= disk->partitions[i].index;
 
 	if (disk->partitions[i].blk_count >= avail)
 		return 0;

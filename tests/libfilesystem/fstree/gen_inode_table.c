@@ -78,9 +78,6 @@ static volume_t dummy_vol = {
 
 	.blocksize = 1337,
 
-	.min_block_count = 0,
-	.max_block_count = 10,
-
 	.read_block = NULL,
 	.write_block = NULL,
 	.move_block = NULL,

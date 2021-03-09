@@ -60,8 +60,7 @@ typedef struct {
 extern "C" {
 #endif
 
-mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index,
-			    uint32_t min_count, uint32_t max_count);
+mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index);
 
 int mbr_shrink_to_fit(mbr_disk_t *disk, size_t index);
 

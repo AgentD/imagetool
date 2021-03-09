@@ -58,10 +58,10 @@ int main(void)
 	TEST_EQUAL_UI(p2->blocksize, 512);
 	TEST_EQUAL_UI(p3->blocksize, 512);
 
-	TEST_EQUAL_UI(p0->min_block_count, 2048);
-	TEST_EQUAL_UI(p1->min_block_count, 2048);
-	TEST_EQUAL_UI(p2->min_block_count, 2048);
-	TEST_EQUAL_UI(p3->min_block_count, 4096);
+	TEST_EQUAL_UI(p0->get_min_block_count(p0), 2048);
+	TEST_EQUAL_UI(p1->get_min_block_count(p1), 2048);
+	TEST_EQUAL_UI(p2->get_min_block_count(p2), 2048);
+	TEST_EQUAL_UI(p3->get_min_block_count(p3), 4096);
 
 	/* write to the partitions */
 	memset(sector, 0, sizeof(sector));

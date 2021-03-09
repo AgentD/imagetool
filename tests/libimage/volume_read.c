@@ -35,9 +35,6 @@ static volume_t dummy = {
 
 	.blocksize = 3,
 
-	.min_block_count = 0,
-	.max_block_count = 10,
-
 	.read_block = dummy_read_block,
 	.read_partial_block = dummy_read_partial_block,
 };

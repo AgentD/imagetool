@@ -21,9 +21,6 @@ static volume_t root_vol = {
 
 	.blocksize = 512,
 
-	.min_block_count = 0,
-	.max_block_count = 10,
-
 	.read_block = NULL,
 	.write_block = NULL,
 	.move_block = NULL,
@@ -95,9 +92,6 @@ static volume_t usr_vol = {
 
 	.blocksize = 16,
 
-	.min_block_count = 0,
-	.max_block_count = 4,
-
 	.write_block = usr_write_block,
 	.write_partial_block = usr_write_partial_block,
 	.discard_blocks = usr_discard_blocks,
@@ -122,9 +116,6 @@ static volume_t boot_vol = {
 	},
 
 	.blocksize = 512,
-
-	.min_block_count = 0,
-	.max_block_count = 10,
 
 	.read_block = NULL,
 	.write_block = NULL,

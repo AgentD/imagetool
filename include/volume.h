@@ -24,8 +24,9 @@ struct volume_t {
 
 	uint32_t blocksize;
 
-	uint64_t min_block_count;
-	uint64_t max_block_count;
+	uint64_t (*get_min_block_count)(volume_t *vol);
+
+	uint64_t (*get_max_block_count)(volume_t *vol);
 
 	/*
 	  Read a block using its block index into a buffer that must be large

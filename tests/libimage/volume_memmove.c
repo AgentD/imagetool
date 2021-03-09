@@ -47,9 +47,6 @@ static volume_t dummy = {
 
 	.blocksize = 3,
 
-	.min_block_count = 0,
-	.max_block_count = 10,
-
 	.move_block_partial = dummy_move_block_partial,
 	.move_block = dummy_move_block,
 };

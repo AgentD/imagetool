@@ -97,6 +97,18 @@ static int dummy_discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	return 0;
 }
 
+static uint64_t dummy_get_min_block_count(volume_t *vol)
+{
+	(void)vol;
+	return 0;
+}
+
+static uint64_t dummy_get_max_block_count(volume_t *vol)
+{
+	(void)vol;
+	return BLK_COUNT;
+}
+
 static volume_t dummy = {
 	.base = {
 		.refcount = 1,
@@ -105,9 +117,8 @@ static volume_t dummy = {
 
 	.blocksize = BLK_SIZE,
 
-	.min_block_count = 0,
-	.max_block_count = BLK_COUNT,
-
+	.get_min_block_count = dummy_get_min_block_count,
+	.get_max_block_count = dummy_get_max_block_count,
 	.write_partial_block = dummy_write_partial_block,
 	.write_block = dummy_write_block,
 	.move_block = dummy_move_block,

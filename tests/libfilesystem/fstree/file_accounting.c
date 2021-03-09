@@ -17,9 +17,6 @@ static volume_t dummy = {
 	},
 
 	.blocksize = 512,
-
-	.min_block_count = 0,
-	.max_block_count = 1337,
 };
 
 int main(void)

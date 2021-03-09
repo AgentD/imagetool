@@ -27,6 +27,9 @@ typedef struct {
 	bitmap_t *bitmap;
 	uint64_t bytes_used;
 
+	uint64_t min_block_count;
+	uint64_t max_block_count;
+
 	uint8_t scratch[];
 } file_volume_t;
 
@@ -67,6 +70,7 @@ static int set_property(const meta_object_t *meta, size_t i,
 			object_t *obj, const property_value_t *value)
 {
 	volume_t *vol = (volume_t *)obj;
+	file_volume_t *fvol = (file_volume_t *)vol;
 	(void)meta;
 
 	switch (i) {
@@ -74,21 +78,21 @@ static int set_property(const meta_object_t *meta, size_t i,
 		if (value->type != PROPERTY_TYPE_U64_SIZE)
 			return -1;
 
-		vol->min_block_count = value->value.u64 / vol->blocksize;
+		fvol->min_block_count = value->value.u64 / vol->blocksize;
 
 		if (value->value.u64 % vol->blocksize)
-			vol->min_block_count += 1;
+			fvol->min_block_count += 1;
 
-		if (vol->min_block_count > vol->max_block_count)
-			vol->min_block_count = vol->min_block_count;
+		if (fvol->min_block_count > fvol->max_block_count)
+			fvol->min_block_count = fvol->min_block_count;
 		break;
 	case PROP_MAX_SIZE:
 		if (value->type != PROPERTY_TYPE_U64_SIZE)
 			return -1;
 
-		vol->max_block_count = value->value.u64 / vol->blocksize;
-		if (vol->min_block_count > vol->max_block_count)
-			vol->min_block_count = vol->min_block_count;
+		fvol->max_block_count = value->value.u64 / vol->blocksize;
+		if (fvol->min_block_count > fvol->max_block_count)
+			fvol->min_block_count = fvol->min_block_count;
 		break;
 	default:
 		return -1;
@@ -101,16 +105,17 @@ static int get_property(const meta_object_t *meta, size_t i,
 			const object_t *obj, property_value_t *value)
 {
 	const volume_t *vol = (const volume_t *)obj;
+	const file_volume_t *fvol = (const file_volume_t *)vol;
 	(void)meta;
 
 	switch (i) {
 	case PROP_MIN_SIZE:
 		value->type = PROPERTY_TYPE_U64_SIZE;
-		value->value.u64 = vol->blocksize * vol->min_block_count;
+		value->value.u64 = vol->blocksize * fvol->min_block_count;
 		break;
 	case PROP_MAX_SIZE:
 		value->type = PROPERTY_TYPE_U64_SIZE;
-		value->value.u64 = vol->blocksize * vol->max_block_count;
+		value->value.u64 = vol->blocksize * fvol->max_block_count;
 		break;
 	default:
 		return -1;
@@ -188,7 +193,7 @@ static int transfer_blocks(file_volume_t *fvol, uint64_t src, uint64_t dst,
 static int check_bounds(file_volume_t *fvol, uint64_t index,
 			uint32_t offset, uint32_t size)
 {
-	if (index >= ((volume_t *)fvol)->max_block_count)
+	if (index >= fvol->max_block_count)
 		goto fail;
 
 	if (offset > ((volume_t *)fvol)->blocksize)
@@ -309,17 +314,17 @@ static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	int ret;
 
 	/* sanity check */
-	if (index >= vol->max_block_count)
+	if (index >= fvol->max_block_count)
 		return 0;
 
-	if (count > (vol->max_block_count - index))
-		count = vol->max_block_count - index;
+	if (count > (fvol->max_block_count - index))
+		count = fvol->max_block_count - index;
 
 	if (count == 0)
 		return 0;
 
 	/* fast-path */
-	if (count == (vol->max_block_count - index)) {
+	if (count == (fvol->max_block_count - index)) {
 		ret = truncate_file(fvol->fd, index * vol->blocksize);
 	} else {
 		ret = punch_hole(fvol->fd, index * vol->blocksize,
@@ -458,6 +463,16 @@ static int commit(volume_t *vol)
 	return 0;
 }
 
+static uint64_t get_min_block_count(volume_t *vol)
+{
+	return ((file_volume_t *)vol)->min_block_count;
+}
+
+static uint64_t get_max_block_count(volume_t *vol)
+{
+	return ((file_volume_t *)vol)->max_block_count;
+}
+
 volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 {
 	uint64_t i, used, max_count;
@@ -508,12 +523,14 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 
 	fvol->fd = fd;
 	fvol->bytes_used = used * blocksize;
+	fvol->min_block_count = 0;
+	fvol->max_block_count = max_count;
 	((object_t *)fvol)->meta = &file_volume_meta;
 	((object_t *)fvol)->refcount = 1;
 	((object_t *)fvol)->destroy = destroy;
 	((volume_t *)fvol)->blocksize = blocksize;
-	((volume_t *)fvol)->min_block_count = 0;
-	((volume_t *)fvol)->max_block_count = max_count;
+	((volume_t *)fvol)->get_min_block_count = get_min_block_count;
+	((volume_t *)fvol)->get_max_block_count = get_max_block_count;
 	((volume_t *)fvol)->read_block = read_block;
 	((volume_t *)fvol)->read_partial_block = read_partial_block;
 	((volume_t *)fvol)->write_block = write_block;

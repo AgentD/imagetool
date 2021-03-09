@@ -21,10 +21,42 @@ typedef struct {
 	uint8_t scratch[];
 } adapter_t;
 
+static uint64_t get_min_block_count(volume_t *vol)
+{
+	adapter_t *adapter = (adapter_t *)vol;
+	uint64_t count;
+
+	count = adapter->wrapped->get_min_block_count(adapter->wrapped);
+
+	if (MUL64_OV(count, adapter->wrapped->blocksize, &count))
+		count = 0xFFFFFFFFFFFFFFFFUL;
+
+	if (count < adapter->offset)
+		return 0;
+
+	return (count - adapter->offset) / vol->blocksize;
+}
+
+static uint64_t get_max_block_count(volume_t *vol)
+{
+	adapter_t *adapter = (adapter_t *)vol;
+	uint64_t count;
+
+	count = adapter->wrapped->get_max_block_count(adapter->wrapped);
+
+	if (MUL64_OV(count, adapter->wrapped->blocksize, &count))
+		count = 0xFFFFFFFFFFFFFFFFUL;
+
+	if (count < adapter->offset)
+		return 0;
+
+	return (count - adapter->offset) / vol->blocksize;
+}
+
 static int check_bounds(volume_t *vol, uint64_t index,
 			uint32_t blk_offset, uint32_t size)
 {
-	if (index >= vol->max_block_count || blk_offset > vol->blocksize ||
+	if (index >= get_max_block_count(vol) || blk_offset > vol->blocksize ||
 	    size > (vol->blocksize - blk_offset)) {
 		fputs("Out of bounds access on block size adapter.\n", stderr);
 		return -1;
@@ -69,13 +101,15 @@ static int write_partial_block(volume_t *vol, uint64_t index,
 static int discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 {
 	adapter_t *adapter = (adapter_t *)vol;
-	uint64_t offset, size;
+	uint64_t offset, size, max;
 
-	if (index >= vol->max_block_count)
+	max = get_max_block_count(vol);
+
+	if (index >= max)
 		return 0;
 
-	if (count > (vol->max_block_count - index))
-		count = vol->max_block_count - index;
+	if (count > (max - index))
+		count = max - index;
 
 	offset = adapter->offset + index * vol->blocksize;
 	size = count * vol->blocksize;
@@ -132,7 +166,6 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 					  uint32_t offset)
 {
 	adapter_t *adapter;
-	uint64_t count;
 
 	adapter = calloc(1, sizeof(*adapter) + blocksize);
 	if (adapter == NULL) {
@@ -140,19 +173,14 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 		return NULL;
 	}
 
-	if (MUL64_OV(vol->max_block_count, vol->blocksize, &count))
-		count = 0xFFFFFFFFFFFFFFFFUL;
-
-	count = (count - offset) / blocksize;
-
 	adapter->offset = offset;
 	adapter->wrapped = object_grab(vol);
 
 	((object_t *)adapter)->refcount = 1;
 	((object_t *)adapter)->destroy = destroy;
 	((volume_t *)adapter)->blocksize = blocksize;
-	((volume_t *)adapter)->min_block_count = 0;
-	((volume_t *)adapter)->max_block_count = count;
+	((volume_t *)adapter)->get_min_block_count = get_min_block_count;
+	((volume_t *)adapter)->get_max_block_count = get_max_block_count;
 	((volume_t *)adapter)->read_block = read_block;
 	((volume_t *)adapter)->read_partial_block = read_partial_block;
 	((volume_t *)adapter)->write_block = write_block;

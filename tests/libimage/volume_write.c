@@ -63,9 +63,6 @@ static volume_t dummy = {
 
 	.blocksize = 3,
 
-	.min_block_count = 0,
-	.max_block_count = 10,
-
 	.write_block = dummy_write_block,
 	.write_partial_block = dummy_write_partial_block,
 	.discard_blocks = dummy_discard_blocks,

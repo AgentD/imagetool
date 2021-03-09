@@ -261,8 +261,38 @@ int mbr_shrink_to_fit(mbr_disk_t *disk, size_t index)
 	return 0;
 }
 
-mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index,
-			    uint32_t min_count, uint32_t max_count)
+static uint64_t get_min_count(volume_t *vol)
+{
+	mbr_part_t *part = (mbr_part_t *)vol;
+
+	return part->parent->partitions[part->index].blk_count_min;
+}
+
+static uint64_t get_max_count(volume_t *vol)
+{
+	mbr_part_t *part = (mbr_part_t *)vol;
+	uint64_t count;
+	size_t i;
+
+	count = part->parent->partitions[part->index].blk_count;
+
+	if (part->parent->partitions[part->index].flags &
+	    COMMON_PARTION_FLAG_GROW) {
+		uint64_t used = 0;
+		uint64_t free = part->parent->volume->
+			get_max_block_count(part->parent->volume);
+
+		for (i = 0; i < part->parent->part_used; ++i)
+			used += part->parent->partitions[i].blk_count;
+
+		free = used < free ? (free - used) : 0;
+		count += free;
+	}
+
+	return count;
+}
+
+mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index)
 {
 	mbr_part_t *part = calloc(1, sizeof(*part));
 	volume_t *vol = (volume_t *)part;
@@ -275,8 +305,8 @@ mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index,
 
 	part->parent = object_grab(parent);
 	part->index = index;
-	vol->min_block_count = min_count;
-	vol->max_block_count = max_count;
+	vol->get_min_block_count = get_min_count;
+	vol->get_max_block_count = get_max_count;
 	vol->blocksize = parent->volume->blocksize;
 	vol->read_partial_block = part_read_partial_block;
 	vol->write_partial_block = part_write_partial_block;

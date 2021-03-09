@@ -18,6 +18,9 @@ typedef struct {
 	fstree_t *fstree;
 	tree_node_t *node;
 
+	uint64_t max_block_count;
+	uint64_t min_block_count;
+
 	uint8_t scratch[];
 } file_volume_t;
 
@@ -28,7 +31,7 @@ static int check_bounds(volume_t *vol, uint64_t index,
 	file_volume_t *fsvol = (file_volume_t *)vol;
 	char *path;
 
-	if (index >= vol->max_block_count || blk_offset > vol->blocksize ||
+	if (index >= fsvol->max_block_count || blk_offset > vol->blocksize ||
 	    size > (vol->blocksize - blk_offset)) {
 		path = fstree_get_path(fsvol->node);
 		fprintf(stderr,
@@ -104,9 +107,9 @@ static int fsvol_discard_blocks(volume_t *vol, uint64_t index, uint64_t count)
 	if (ret)
 		return -1;
 
-	if (index < vol->min_block_count) {
+	if (index < fsvol->min_block_count) {
 		ret = fstree_file_truncate(fsvol->fstree, fsvol->node,
-					   vol->min_block_count *
+					   fsvol->min_block_count *
 					   vol->blocksize);
 		if (ret)
 			return -1;
@@ -140,6 +143,16 @@ static int fsvol_move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 					 dst_offset, size);
 }
 
+static uint64_t get_min_block_count(volume_t *vol)
+{
+	return ((file_volume_t *)vol)->min_block_count;
+}
+
+static uint64_t get_max_block_count(volume_t *vol)
+{
+	return ((file_volume_t *)vol)->max_block_count;
+}
+
 static int fsvol_commit(volume_t *vol)
 {
 	(void)vol;
@@ -165,24 +178,26 @@ volume_t *fstree_file_volume_create(fstree_t *fs, tree_node_t *n,
 	int ret;
 
 	vol->blocksize = blocksize;
-	vol->max_block_count = max_size / blocksize;
-	vol->min_block_count = min_size / blocksize;
+	fsvol->max_block_count = max_size / blocksize;
+	fsvol->min_block_count = min_size / blocksize;
 	if (min_size % blocksize)
-		vol->min_block_count += 1;
+		fsvol->min_block_count += 1;
 
 	blk_used = n->data.file.size / blocksize;
 	if (n->data.file.size % blocksize)
 		blk_used += 1;
 
-	if (vol->min_block_count > 0 && blk_used < vol->min_block_count) {
+	if (fsvol->min_block_count > 0 && blk_used < fsvol->min_block_count) {
 		ret = fstree_file_truncate(fs, n,
-					   vol->min_block_count * blocksize);
+					   fsvol->min_block_count * blocksize);
 		if (ret) {
 			free(fsvol);
 			return NULL;
 		}
 	}
 
+	vol->get_min_block_count = get_min_block_count;
+	vol->get_max_block_count = get_max_block_count;
 	vol->read_block = fsvol_read_block;
 	vol->read_partial_block = fsvol_read_partial_block;
 	vol->write_block = fsvol_write_block;

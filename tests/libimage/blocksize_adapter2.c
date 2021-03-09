@@ -106,6 +106,18 @@ static int dummy_commit(volume_t *vol)
 	return 0;
 }
 
+static uint64_t dummy_get_min_block_count(volume_t *vol)
+{
+	(void)vol;
+	return 0;
+}
+
+static uint64_t dummy_get_max_block_count(volume_t *vol)
+{
+	(void)vol;
+	return 4;
+}
+
 static volume_t dummy = {
 	.base = {
 		.refcount = 1,
@@ -114,9 +126,8 @@ static volume_t dummy = {
 
 	.blocksize = 7,
 
-	.min_block_count = 0,
-	.max_block_count = 4,
-
+	.get_min_block_count = dummy_get_min_block_count,
+	.get_max_block_count = dummy_get_max_block_count,
 	.read_block = dummy_read_block,
 	.read_partial_block = dummy_read_partial_block,
 	.write_block = dummy_write_block,
@@ -138,8 +149,8 @@ int main(void)
 	TEST_EQUAL_UI(dummy.base.refcount, 2);
 
 	TEST_EQUAL_UI(vol->blocksize, 3);
-	TEST_EQUAL_UI(vol->min_block_count, 0);
-	TEST_EQUAL_UI(vol->max_block_count, 9);
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 9);
 
 	/* read blocks */
 	temp[3] = '\0';
