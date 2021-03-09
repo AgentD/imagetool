@@ -131,6 +131,17 @@ typedef enum {
 
 struct partition_t {
 	volume_t base;
+
+	/*
+	  Change the minimum number of blocks occupied by the partition
+	  and resize it if necessary.
+	 */
+	int (*set_base_block_count)(partition_t *part, uint64_t size);
+
+	uint64_t (*get_flags)(partition_t *part);
+
+	/* Change partition flags after creation */
+	int (*set_flags)(partition_t *part, uint64_t flags);
 };
 
 /*

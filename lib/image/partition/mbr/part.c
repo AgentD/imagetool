@@ -237,6 +237,43 @@ static int part_commit(volume_t *vol)
 	return 0;
 }
 
+static int part_set_base_block_count(partition_t *part, uint64_t size)
+{
+	mbr_part_t *mbr = (mbr_part_t *)part;
+	uint64_t diff;
+
+	if (size > mbr->parent->partitions[mbr->index].blk_count) {
+		diff = size - mbr->parent->partitions[mbr->index].blk_count;
+
+		if (grow_partition(mbr, diff))
+			return -1;
+	} else if (size < mbr->parent->partitions[mbr->index].blk_count &&
+		   size > mbr->parent->partitions[mbr->index].blk_used) {
+		diff = size - mbr->parent->partitions[mbr->index].blk_used;
+
+		if (shrink_partition(mbr->parent, mbr->index, diff))
+			return -1;
+	}
+
+	mbr->parent->partitions[mbr->index].blk_count_min = size;
+	return 0;
+}
+
+static uint64_t part_get_flags(partition_t *part)
+{
+	mbr_part_t *mbr = (mbr_part_t *)part;
+
+	return mbr->parent->partitions[mbr->index].flags;
+}
+
+static int part_set_flags(partition_t *part, uint64_t flags)
+{
+	mbr_part_t *mbr = (mbr_part_t *)part;
+
+	mbr->parent->partitions[mbr->index].flags = flags;
+	return 0;
+}
+
 static void part_destroy(object_t *obj)
 {
 	mbr_part_t *part = (mbr_part_t *)obj;
@@ -305,6 +342,9 @@ mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index)
 
 	part->parent = object_grab(parent);
 	part->index = index;
+	((partition_t *)part)->get_flags = part_get_flags;
+	((partition_t *)part)->set_flags = part_set_flags;
+	((partition_t *)part)->set_base_block_count = part_set_base_block_count;
 	vol->get_min_block_count = get_min_count;
 	vol->get_max_block_count = get_max_count;
 	vol->blocksize = parent->volume->blocksize;
