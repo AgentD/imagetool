@@ -175,6 +175,7 @@ partition_mgr_t *mbrdisk_create(volume_t *base)
 		if (disk->volume == NULL) {
 			fputs("Error creating blocksize adapter "
 			      "for MBR disk.\n",stderr);
+			object_drop(disk);
 			return NULL;
 		}
 	}
