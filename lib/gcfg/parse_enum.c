@@ -9,11 +9,12 @@
 #include <string.h>
 
 const char *gcfg_parse_enum(gcfg_file_t *f, const char *in,
-			    const gcfg_enum_t *tokens, int *out)
+			    const property_enum_t *tokens, size_t count,
+			    int *out)
 {
 	size_t i, len;
 
-	for (i = 0; tokens[i].name != NULL; ++i) {
+	for (i = 0; i < count; ++i) {
 		len = strlen(tokens[i].name);
 
 		if (strncmp(tokens[i].name, in, len) != 0)
@@ -23,7 +24,7 @@ const char *gcfg_parse_enum(gcfg_file_t *f, const char *in,
 			break;
 	}
 
-	if (tokens[i].name == NULL) {
+	if (i >= count) {
 		if (f != NULL)
 			f->report_error(f, "unexpected '%.5s...'", in);
 		return NULL;

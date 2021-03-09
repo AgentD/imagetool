@@ -21,7 +21,6 @@ typedef enum {
 
 	GCFG_ARG_BOOLEAN = 0x01,
 	GCFG_ARG_STRING = 0x02,
-	GCFG_ARG_ENUM = 0x04,
 
 	GCFG_ARG_NUMBER = 0x05,
 	GCFG_ARG_VEC2 = 0x06,
@@ -37,11 +36,6 @@ struct gcfg_number_t {
 	uint32_t fraction;
 	uint16_t fraction_digits;
 	int16_t exponent;
-};
-
-struct gcfg_enum_t {
-	const char *name;
-	intptr_t value;
 };
 
 struct gcfg_file_t {
@@ -69,10 +63,6 @@ struct gcfg_keyword_t {
 	const char *name;
 
 	union {
-		const gcfg_enum_t *enumtokens;
-	} option;
-
-	union {
 		object_t *(*cb_none)(const gcfg_keyword_t *kwd,
 				     gcfg_file_t *file, object_t *parent);
 		object_t *(*cb_bool)(const gcfg_keyword_t *kwd,
@@ -81,9 +71,6 @@ struct gcfg_keyword_t {
 		object_t *(*cb_string)(const gcfg_keyword_t *kwd,
 				       gcfg_file_t *file, object_t *parent,
 				       const char *string);
-		object_t *(*cb_enum)(const gcfg_keyword_t *kwd,
-				     gcfg_file_t *file, object_t *parent,
-				     int value);
 		object_t *(*cb_number)(const gcfg_keyword_t *kwd,
 				       gcfg_file_t *file, object_t *parent,
 				       const gcfg_number_t *num, int count);
@@ -127,7 +114,8 @@ const char *gcfg_parse_vector(gcfg_file_t *f, const char *in,
 			      int count, gcfg_number_t *out);
 
 const char *gcfg_parse_enum(gcfg_file_t *f, const char *in,
-			    const gcfg_enum_t *tokens, int *out);
+			    const property_enum_t *tokens, size_t count,
+			    int *out);
 
 const char *gcfg_parse_size(gcfg_file_t *f, const char *in, uint64_t *ret);
 

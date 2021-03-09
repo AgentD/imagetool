@@ -79,12 +79,6 @@ static const char *apply_arg(gcfg_file_t *file, const gcfg_keyword_t *kwd,
 			return NULL;
 		*child_out = kwd->handle.cb_string(kwd, file, parent, strval);
 		break;
-	case GCFG_ARG_ENUM:
-		ptr = gcfg_parse_enum(file, ptr, kwd->option.enumtokens, &iret);
-		if (ptr == NULL)
-			return NULL;
-		*child_out = kwd->handle.cb_enum(kwd, file, parent, iret);
-		break;
 	case GCFG_ARG_NUMBER:
 		ptr = gcfg_parse_number(file, ptr, num);
 		if (ptr == NULL)
@@ -210,6 +204,13 @@ static const char *apply_reflection_arg(gcfg_file_t *file, const char *ptr,
 		ptr = gcfg_parse_size(file, ptr, &value.value.u64);
 		if (ptr == NULL)
 			return NULL;
+		break;
+	case PROPERTY_TYPE_ENUM:
+		ptr = gcfg_parse_enum(file, ptr, desc->enum_ent,
+				      desc->enum_count, &iret);
+		if (ptr == NULL)
+			return NULL;
+		value.value.ival = iret;
 		break;
 	case PROPERTY_TYPE_NONE:
 	default:

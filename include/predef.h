@@ -23,6 +23,7 @@ typedef struct object_t object_t;
 typedef struct meta_object_t meta_object_t;
 typedef struct property_value_t property_value_t;
 typedef struct property_desc_t property_desc_t;
+typedef struct property_enum_t property_enum_t;
 
 typedef enum {
 	PROPERTY_TYPE_NONE = 0,
@@ -31,6 +32,7 @@ typedef enum {
 	PROPERTY_TYPE_U32_NUMBER,
 	PROPERTY_TYPE_U64_NUMBER,
 	PROPERTY_TYPE_U64_SIZE,
+	PROPERTY_TYPE_ENUM,
 } PROPERTY_TYPE;
 
 struct object_t {
@@ -38,6 +40,11 @@ struct object_t {
 	const meta_object_t *meta;
 
 	void (*destroy)(object_t *obj);
+};
+
+struct property_enum_t {
+	const char *name;
+	int value;
 };
 
 struct property_value_t {
@@ -48,12 +55,16 @@ struct property_value_t {
 		bool boolean;
 		uint32_t u32;
 		uint64_t u64;
+		int ival;
 	} value;
 };
 
 struct property_desc_t {
 	PROPERTY_TYPE type;
 	const char *name;
+
+	const property_enum_t *enum_ent;
+	size_t enum_count;
 };
 
 struct meta_object_t {
