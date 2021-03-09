@@ -174,6 +174,7 @@ static const char *apply_reflection_arg(gcfg_file_t *file, const char *ptr,
 					PROPERTY_TYPE type, const char *name)
 {
 	property_value_t value;
+	uint32_t u32val;
 	char *strval;
 	int iret;
 
@@ -197,7 +198,8 @@ static const char *apply_reflection_arg(gcfg_file_t *file, const char *ptr,
 		ptr = gcfg_dec_num(file, ptr, &value.value.u64, 0x0FFFFFFFFUL);
 		if (ptr == NULL)
 			return NULL;
-		value.value.u32 = value.value.u64;
+		u32val = value.value.u64 & 0x0FFFFFFFFUL;
+		value.value.u32 = u32val;
 		break;
 	case PROPERTY_TYPE_U64_NUMBER:
 		ptr = gcfg_dec_num(file, ptr, &value.value.u64, ~(0UL));
