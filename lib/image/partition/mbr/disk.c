@@ -6,15 +6,26 @@
  */
 #include "mbr.h"
 
+/* (63 sectors) * (254 heads) * (1023 cylinders) */
+#define MAX_LBA (16370046)
+
 static void lba_to_chs(uint32_t lba, uint8_t *chs)
 {
 	/* XXX: sane default values imposed by the UEFI spec */
 	static uint32_t sectors_per_track = 63;
 	static uint32_t heads_per_cylinder = 254;
+	uint8_t h, s;
+	uint16_t c;
 
-	uint16_t c = lba / (heads_per_cylinder * sectors_per_track);
-	uint8_t h = (lba / sectors_per_track) % heads_per_cylinder;
-	uint8_t s = 1 + (lba % sectors_per_track);
+	if (lba >= MAX_LBA) {
+		c = 1023;
+		h = 254;
+		s = 63;
+	} else {
+		c = lba / (heads_per_cylinder * sectors_per_track);
+		h = (lba / sectors_per_track) % heads_per_cylinder;
+		s = 1 + (lba % sectors_per_track);
+	}
 
 	chs[0] = h;
 	chs[1] = ((c >> 2) & 0xC0) | (s & 0x3F);
