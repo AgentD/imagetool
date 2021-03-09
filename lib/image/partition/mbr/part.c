@@ -48,17 +48,17 @@ static int shrink_partition(mbr_disk_t *disk, size_t index, uint64_t diff)
 	return 0;
 }
 
-static int grow_partition(mbr_part_t *part, uint64_t diff)
+static int grow_partition(mbr_disk_t *disk, size_t index, uint64_t diff)
 {
-	uint64_t start = part->parent->partitions[part->index].index;
-	uint64_t count = part->parent->partitions[part->index].blk_count;
+	uint64_t start = disk->partitions[index].index;
+	uint64_t count = disk->partitions[index].blk_count;
 	uint64_t max = 0;
 	size_t i;
 	int ret;
 
-	for (i = 0; i < part->parent->part_used; ++i) {
-		if (part->parent->partitions[i].index > start) {
-			if (mbr_shrink_to_fit(part->parent, i))
+	for (i = 0; i < disk->part_used; ++i) {
+		if (disk->partitions[i].index > start) {
+			if (mbr_shrink_to_fit(disk, i))
 				return -1;
 		}
 	}
@@ -66,34 +66,83 @@ static int grow_partition(mbr_part_t *part, uint64_t diff)
 	if (diff % MBR_PART_ALIGN || diff == 0)
 		diff += MBR_PART_ALIGN - (diff % MBR_PART_ALIGN);
 
-	for (i = 0; i < part->parent->part_used; ++i) {
-		uint64_t current = part->parent->partitions[i].index;
-		current += part->parent->partitions[i].blk_count - 1;
+	for (i = 0; i < disk->part_used; ++i) {
+		uint64_t current = disk->partitions[i].index;
+		current += disk->partitions[i].blk_count - 1;
 
 		if (current > max)
 			max = current;
 	}
 
-	ret = volume_memmove(part->parent->volume,
+	ret = volume_memmove(disk->volume,
 			     (start + count + diff) * SECTOR_SIZE,
 			     (start + count) * SECTOR_SIZE,
 			     (max - (start + count - 1)) * SECTOR_SIZE);
 	if (ret)
 		return -1;
 
-	ret = volume_write(part->parent->volume, (start + count) * SECTOR_SIZE,
+	ret = volume_write(disk->volume, (start + count) * SECTOR_SIZE,
 			   NULL, diff * SECTOR_SIZE);
 	if (ret)
 		return -1;
 
-	for (i = 0; i < part->parent->part_used; ++i) {
-		if (part->parent->partitions[i].index > start)
-			part->parent->partitions[i].index += diff;
+	for (i = 0; i < disk->part_used; ++i) {
+		if (disk->partitions[i].index > start)
+			disk->partitions[i].index += diff;
 	}
 
-	part->parent->partitions[part->index].blk_count += diff;
+	disk->partitions[index].blk_count += diff;
 	return 0;
 }
+
+static uint64_t get_free_space(mbr_disk_t *disk)
+{
+	uint64_t used = MBR_RESERVED;
+	uint64_t free = disk->volume->get_max_block_count(disk->volume);
+	size_t i;
+
+	if (free % MBR_PART_ALIGN)
+		free -= free % MBR_PART_ALIGN;
+
+	for (i = 0; i < disk->part_used; ++i)
+		used += disk->partitions[i].blk_count;
+
+	return used < free ? (free - used) : 0;
+}
+
+int mbr_shrink_to_fit(mbr_disk_t *disk, size_t index)
+{
+	uint64_t diff;
+
+	if (disk->partitions[index].blk_used >=
+	    disk->partitions[index].blk_count) {
+		return 0;
+	}
+
+	diff = disk->partitions[index].blk_count -
+		disk->partitions[index].blk_used;
+
+	return shrink_partition(disk, index, diff);
+}
+
+int mbr_apply_expand_policy(mbr_disk_t *disk, size_t index)
+{
+	uint64_t diff, avail;
+
+	if (!(disk->partitions[index].flags & COMMON_PARTION_FLAG_FILL))
+		return 0;
+
+	avail = get_free_space(disk);
+
+	if (disk->partitions[index].blk_count >= avail)
+		return 0;
+
+	diff = avail - disk->partitions[index].blk_count;
+
+	return grow_partition(disk, index, diff);
+}
+
+/*****************************************************************************/
 
 static int part_read_partial_block(volume_t *vol, uint64_t index,
 				   void *buffer, uint32_t offset,
@@ -138,8 +187,10 @@ static int part_write_partial_block(volume_t *vol, uint64_t index,
 			return -1;
 		}
 
-		if (grow_partition(part, index - count + 1))
+		if (grow_partition(part->parent, part->index,
+				   index - count + 1)) {
 			return -1;
+		}
 
 		count = part->parent->partitions[part->index].blk_count;
 	}
@@ -199,8 +250,10 @@ static int part_move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 		return part_discard_blocks(vol, dst, 1);
 
 	if (dst >= blk_count) {
-		if (grow_partition(part, dst - blk_count + 1))
+		if (grow_partition(part->parent, part->index,
+				   dst - blk_count + 1)) {
 			return -1;
+		}
 	}
 
 	if (dst >= blk_used)
@@ -245,7 +298,7 @@ static int part_set_base_block_count(partition_t *part, uint64_t size)
 	if (size > mbr->parent->partitions[mbr->index].blk_count) {
 		diff = size - mbr->parent->partitions[mbr->index].blk_count;
 
-		if (grow_partition(mbr, diff))
+		if (grow_partition(mbr->parent, mbr->index, diff))
 			return -1;
 	} else if (size < mbr->parent->partitions[mbr->index].blk_count &&
 		   size > mbr->parent->partitions[mbr->index].blk_used) {
@@ -282,22 +335,6 @@ static void part_destroy(object_t *obj)
 	free(part);
 }
 
-int mbr_shrink_to_fit(mbr_disk_t *disk, size_t index)
-{
-	uint64_t diff;
-
-	if (disk->partitions[index].blk_used <
-	    disk->partitions[index].blk_count) {
-		diff = disk->partitions[index].blk_count -
-			disk->partitions[index].blk_used;
-
-		if (shrink_partition(disk, index, diff))
-			return -1;
-	}
-
-	return 0;
-}
-
 static uint64_t get_min_count(volume_t *vol)
 {
 	mbr_part_t *part = (mbr_part_t *)vol;
@@ -309,21 +346,12 @@ static uint64_t get_max_count(volume_t *vol)
 {
 	mbr_part_t *part = (mbr_part_t *)vol;
 	uint64_t count;
-	size_t i;
 
 	count = part->parent->partitions[part->index].blk_count;
 
 	if (part->parent->partitions[part->index].flags &
 	    COMMON_PARTION_FLAG_GROW) {
-		uint64_t used = 0;
-		uint64_t free = part->parent->volume->
-			get_max_block_count(part->parent->volume);
-
-		for (i = 0; i < part->parent->part_used; ++i)
-			used += part->parent->partitions[i].blk_count;
-
-		free = used < free ? (free - used) : 0;
-		count += free;
+		count += get_free_space(part->parent);
 	}
 
 	return count;

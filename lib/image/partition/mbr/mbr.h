@@ -17,6 +17,7 @@
 #define MAX_MBR_PARTITIONS (4)
 #define IBM_BOOT_MAGIC (0xAA55)
 #define MBR_PART_ALIGN (1024 * 1024 / SECTOR_SIZE)
+#define MBR_RESERVED MBR_PART_ALIGN
 
 typedef struct {
 	partition_mgr_t base;
@@ -63,6 +64,8 @@ extern "C" {
 mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index);
 
 int mbr_shrink_to_fit(mbr_disk_t *disk, size_t index);
+
+int mbr_apply_expand_policy(mbr_disk_t *disk, size_t index);
 
 #ifdef __cplusplus
 }
