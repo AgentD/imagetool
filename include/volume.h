@@ -111,7 +111,8 @@ typedef enum {
 	COMMON_PARTION_FLAG_GROW = 0x01,
 
 	/*
-	  If this is the last partition, expand it to fill the entire disk.
+	  Expand the partition to fill the entire disk. Can only be set on
+	  one partition.
 	 */
 	COMMON_PARTION_FLAG_FILL = 0x02,
 } COMMON_PARTION_FLAGS;

@@ -92,6 +92,11 @@ static partition_t *mbr_disk_create_parition(partition_mgr_t *parent,
 	if (part == NULL)
 		return NULL;
 
+	if (flags & COMMON_PARTION_FLAG_FILL) {
+		for (i = 0; i < disk->part_used; ++i)
+			disk->partitions[i].flags &= ~COMMON_PARTION_FLAG_FILL;
+	}
+
 	disk->part_used += 1;
 	return (partition_t *)part;
 }

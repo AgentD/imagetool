@@ -322,6 +322,14 @@ static uint64_t part_get_flags(partition_t *part)
 static int part_set_flags(partition_t *part, uint64_t flags)
 {
 	mbr_part_t *mbr = (mbr_part_t *)part;
+	size_t i;
+
+	if (flags & COMMON_PARTION_FLAG_FILL) {
+		for (i = 0; i < mbr->parent->part_used; ++i) {
+			mbr->parent->partitions[i].flags &=
+				~COMMON_PARTION_FLAG_FILL;
+		}
+	}
 
 	mbr->parent->partitions[mbr->index].flags = flags;
 	return 0;
