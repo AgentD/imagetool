@@ -13,11 +13,6 @@
   A "volume" represents what Unix might call a block device. It manages a chunk
   of data that is divided into uniformly sized blocks that can be read,
   overwritten, and so on, but only with block granularity.
-
-  A volume can have sub volumes that have a part of the space assigned. For
-  instance, a GPT or MBR formated disk may be represented as a volume that on
-  its own doesn't allow direct read/write access, but can create sub volumes
-  representing partitions.
  */
 struct volume_t {
 	object_t base;
