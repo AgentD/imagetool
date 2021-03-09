@@ -57,6 +57,8 @@ typedef struct {
 	uint16_t boot_magic;
 } __attribute__((packed)) mbr_header_t;
 
+extern const meta_object_t mbr_part_meta;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

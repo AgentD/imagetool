@@ -394,5 +394,6 @@ mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index)
 	vol->commit = part_commit;
 	obj->refcount = 1;
 	obj->destroy = part_destroy;
+	obj->meta = &mbr_part_meta;
 	return part;
 }

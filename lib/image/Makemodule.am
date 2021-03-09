@@ -9,6 +9,7 @@ libimage_a_SOURCES += lib/image/basic/blocksize_adapter.c
 
 libimage_a_SOURCES += lib/image/partition/mbr/disk.c
 libimage_a_SOURCES += lib/image/partition/mbr/part.c
+libimage_a_SOURCES += lib/image/partition/mbr/meta.c
 libimage_a_SOURCES += lib/image/partition/mbr/mbr.h
 
 noinst_LIBRARIES += libimage.a
