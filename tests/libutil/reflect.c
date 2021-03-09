@@ -39,17 +39,17 @@ static size_t shape_get_property_count(const meta_object_t *meta)
 }
 
 static int shape_get_property_desc(const meta_object_t *meta, size_t i,
-				   PROPERTY_TYPE *type, const char **name)
+				   property_desc_t *desc)
 {
 	(void)meta;
 	switch (i) {
 	case SHAPE_PROP_X:
-		*type = PROPERTY_TYPE_U32_NUMBER;
-		*name = "x";
+		desc->type = PROPERTY_TYPE_U32_NUMBER;
+		desc->name = "x";
 		break;
 	case SHAPE_PROP_Y:
-		*type = PROPERTY_TYPE_U32_NUMBER;
-		*name = "y";
+		desc->type = PROPERTY_TYPE_U32_NUMBER;
+		desc->name = "y";
 		break;
 	default:
 		return -1;
@@ -121,17 +121,17 @@ static size_t rect_get_property_count(const meta_object_t *meta)
 }
 
 static int rect_get_property_desc(const meta_object_t *meta, size_t i,
-				  PROPERTY_TYPE *type, const char **name)
+				  property_desc_t *desc)
 {
 	(void)meta;
 	switch (i) {
 	case RECT_PROP_WIDTH:
-		*type = PROPERTY_TYPE_U32_NUMBER;
-		*name = "width";
+		desc->type = PROPERTY_TYPE_U32_NUMBER;
+		desc->name = "width";
 		break;
 	case RECT_PROP_HEIGHT:
-		*type = PROPERTY_TYPE_U32_NUMBER;
-		*name = "height";
+		desc->type = PROPERTY_TYPE_U32_NUMBER;
+		desc->name = "height";
 		break;
 	default:
 		return -1;
@@ -202,13 +202,13 @@ static size_t circle_get_property_count(const meta_object_t *meta)
 }
 
 static int circle_get_property_desc(const meta_object_t *meta, size_t i,
-				    PROPERTY_TYPE *type, const char **name)
+				    property_desc_t *desc)
 {
 	(void)meta;
 	switch (i) {
 	case CIRCLE_PROP_RADIUS:
-		*type = PROPERTY_TYPE_U32_NUMBER;
-		*name = "radius";
+		desc->type = PROPERTY_TYPE_U32_NUMBER;
+		desc->name = "radius";
 		break;
 	default:
 		return -1;
@@ -302,8 +302,7 @@ static circle_t *create_circle(uint32_t x, uint32_t y, uint32_t radius)
 int main(void)
 {
 	property_value_t value;
-	PROPERTY_TYPE type;
-	const char *name;
+	property_desc_t desc;
 	object_t *r, *c;
 	size_t count;
 	int ret;
@@ -320,47 +319,47 @@ int main(void)
 	count = object_get_property_count(r);
 	TEST_EQUAL_UI(count, 4);
 
-	ret = object_get_property_desc(r, 0, &type, &name);
+	ret = object_get_property_desc(r, 0, &desc);
 	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(type, PROPERTY_TYPE_U32_NUMBER);
-	TEST_STR_EQUAL(name, "width");
+	TEST_EQUAL_UI(desc.type, PROPERTY_TYPE_U32_NUMBER);
+	TEST_STR_EQUAL(desc.name, "width");
 
 	ret = object_get_property(r, 0, &value);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(value.type, PROPERTY_TYPE_U32_NUMBER);
 	TEST_EQUAL_UI(value.value.u32, 42);
 
-	ret = object_get_property_desc(r, 1, &type, &name);
+	ret = object_get_property_desc(r, 1, &desc);
 	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(type, PROPERTY_TYPE_U32_NUMBER);
-	TEST_STR_EQUAL(name, "height");
+	TEST_EQUAL_UI(desc.type, PROPERTY_TYPE_U32_NUMBER);
+	TEST_STR_EQUAL(desc.name, "height");
 
 	ret = object_get_property(r, 1, &value);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(value.type, PROPERTY_TYPE_U32_NUMBER);
 	TEST_EQUAL_UI(value.value.u32, 69);
 
-	ret = object_get_property_desc(r, 2, &type, &name);
+	ret = object_get_property_desc(r, 2, &desc);
 	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(type, PROPERTY_TYPE_U32_NUMBER);
-	TEST_STR_EQUAL(name, "x");
+	TEST_EQUAL_UI(desc.type, PROPERTY_TYPE_U32_NUMBER);
+	TEST_STR_EQUAL(desc.name, "x");
 
 	ret = object_get_property(r, 2, &value);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(value.type, PROPERTY_TYPE_U32_NUMBER);
 	TEST_EQUAL_UI(value.value.u32, 13);
 
-	ret = object_get_property_desc(r, 3, &type, &name);
+	ret = object_get_property_desc(r, 3, &desc);
 	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(type, PROPERTY_TYPE_U32_NUMBER);
-	TEST_STR_EQUAL(name, "y");
+	TEST_EQUAL_UI(desc.type, PROPERTY_TYPE_U32_NUMBER);
+	TEST_STR_EQUAL(desc.name, "y");
 
 	ret = object_get_property(r, 3, &value);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(value.type, PROPERTY_TYPE_U32_NUMBER);
 	TEST_EQUAL_UI(value.value.u32, 37);
 
-	ret = object_get_property_desc(r, 4, &type, &name);
+	ret = object_get_property_desc(r, 4, &desc);
 	TEST_ASSERT(ret < 0);
 
 	/* inspect the circle */
@@ -369,37 +368,37 @@ int main(void)
 	count = object_get_property_count(c);
 	TEST_EQUAL_UI(count, 3);
 
-	ret = object_get_property_desc(c, 0, &type, &name);
+	ret = object_get_property_desc(c, 0, &desc);
 	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(type, PROPERTY_TYPE_U32_NUMBER);
-	TEST_STR_EQUAL(name, "radius");
+	TEST_EQUAL_UI(desc.type, PROPERTY_TYPE_U32_NUMBER);
+	TEST_STR_EQUAL(desc.name, "radius");
 
 	ret = object_get_property(c, 0, &value);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(value.type, PROPERTY_TYPE_U32_NUMBER);
 	TEST_EQUAL_UI(value.value.u32, 42);
 
-	ret = object_get_property_desc(c, 1, &type, &name);
+	ret = object_get_property_desc(c, 1, &desc);
 	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(type, PROPERTY_TYPE_U32_NUMBER);
-	TEST_STR_EQUAL(name, "x");
+	TEST_EQUAL_UI(desc.type, PROPERTY_TYPE_U32_NUMBER);
+	TEST_STR_EQUAL(desc.name, "x");
 
 	ret = object_get_property(c, 1, &value);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(value.type, PROPERTY_TYPE_U32_NUMBER);
 	TEST_EQUAL_UI(value.value.u32, 47);
 
-	ret = object_get_property_desc(c, 2, &type, &name);
+	ret = object_get_property_desc(c, 2, &desc);
 	TEST_EQUAL_I(ret, 0);
-	TEST_EQUAL_UI(type, PROPERTY_TYPE_U32_NUMBER);
-	TEST_STR_EQUAL(name, "y");
+	TEST_EQUAL_UI(desc.type, PROPERTY_TYPE_U32_NUMBER);
+	TEST_STR_EQUAL(desc.name, "y");
 
 	ret = object_get_property(c, 2, &value);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(value.type, PROPERTY_TYPE_U32_NUMBER);
 	TEST_EQUAL_UI(value.value.u32, 11);
 
-	ret = object_get_property_desc(c, 3, &type, &name);
+	ret = object_get_property_desc(c, 3, &desc);
 	TEST_ASSERT(ret < 0);
 
 	/* change the circle properties */

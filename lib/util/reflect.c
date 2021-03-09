@@ -35,15 +35,14 @@ static const meta_object_t *meta_from_property_index(const void *obj,
 	return meta;
 }
 
-int object_get_property_desc(const void *obj, size_t idx, PROPERTY_TYPE *type,
-			     const char **name)
+int object_get_property_desc(const void *obj, size_t idx, property_desc_t *desc)
 {
 	const meta_object_t *meta = meta_from_property_index(obj, &idx);
 
 	if (meta == NULL)
 		return -1;
 
-	return meta->get_property_desc(meta, idx, type, name);
+	return meta->get_property_desc(meta, idx, desc);
 }
 
 int object_get_property(const void *obj, size_t idx, property_value_t *out)

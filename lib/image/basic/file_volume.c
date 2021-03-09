@@ -41,6 +41,17 @@ enum {
 	PROP_COUNT,
 };
 
+static const property_desc_t properties[PROP_COUNT] = {
+	[PROP_MIN_SIZE] = {
+		.type = PROPERTY_TYPE_U64_SIZE,
+		.name = "minsize",
+	},
+	[PROP_MAX_SIZE] = {
+		.type = PROPERTY_TYPE_U64_SIZE,
+		.name = "maxsize",
+	},
+};
+
 static size_t get_property_count(const meta_object_t *meta)
 {
 	(void)meta;
@@ -48,21 +59,13 @@ static size_t get_property_count(const meta_object_t *meta)
 }
 
 static int get_property_desc(const meta_object_t *meta, size_t i,
-			     PROPERTY_TYPE *type, const char **name)
+			     property_desc_t *desc)
 {
 	(void)meta;
-	switch (i) {
-	case PROP_MIN_SIZE:
-		*type = PROPERTY_TYPE_U64_SIZE;
-		*name = "minsize";
-		break;
-	case PROP_MAX_SIZE:
-		*type = PROPERTY_TYPE_U64_SIZE;
-		*name = "maxsize";
-		break;
-	default:
+	if (i >= (size_t)PROP_COUNT)
 		return -1;
-	}
+
+	*desc = properties[i];
 	return 0;
 }
 

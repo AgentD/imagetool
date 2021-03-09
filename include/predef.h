@@ -22,6 +22,7 @@
 typedef struct object_t object_t;
 typedef struct meta_object_t meta_object_t;
 typedef struct property_value_t property_value_t;
+typedef struct property_desc_t property_desc_t;
 
 typedef enum {
 	PROPERTY_TYPE_NONE = 0,
@@ -50,6 +51,11 @@ struct property_value_t {
 	} value;
 };
 
+struct property_desc_t {
+	PROPERTY_TYPE type;
+	const char *name;
+};
+
 struct meta_object_t {
 	/* name of this data structure */
 	const char *name;
@@ -60,7 +66,7 @@ struct meta_object_t {
 	size_t (*get_property_count)(const meta_object_t *meta);
 
 	int (*get_property_desc)(const meta_object_t *meta, size_t i,
-				 PROPERTY_TYPE *type, const char **name);
+				 property_desc_t *desc);
 
 	int (*set_property)(const meta_object_t *meta, size_t i,
 			    object_t *obj, const property_value_t *value);
@@ -166,7 +172,7 @@ extern "C" {
 size_t object_get_property_count(const void *obj);
 
 int object_get_property_desc(const void *obj, size_t idx,
-			     PROPERTY_TYPE *type, const char **name);
+			     property_desc_t *desc);
 
 int object_get_property(const void *obj, size_t idx, property_value_t *out);
 

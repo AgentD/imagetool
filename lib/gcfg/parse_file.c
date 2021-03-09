@@ -171,16 +171,16 @@ fail_brace_extra:
 
 static const char *apply_reflection_arg(gcfg_file_t *file, const char *ptr,
 					object_t *obj, size_t idx,
-					PROPERTY_TYPE type, const char *name)
+					property_desc_t *desc)
 {
 	property_value_t value;
 	uint32_t u32val;
 	char *strval;
 	int iret;
 
-	value.type = type;
+	value.type = desc->type;
 
-	switch (type) {
+	switch (desc->type) {
 	case PROPERTY_TYPE_STRING:
 		strval = file->buffer;
 		ptr = gcfg_parse_string(file, ptr, strval);
@@ -221,10 +221,11 @@ static const char *apply_reflection_arg(gcfg_file_t *file, const char *ptr,
 
 	return skip_space(ptr);
 fail_set:
-	file->report_error(file, "error setting property '%s'", name);
+	file->report_error(file, "error setting property '%s'", desc->name);
 	return NULL;
 fail_type:
-	file->report_error(file, "[BUG] unknown data type for '%s'", name);
+	file->report_error(file, "[BUG] unknown data type for '%s'",
+			   desc->name);
 	return NULL;
 }
 
@@ -259,14 +260,15 @@ static int parse(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 
 		if (parent != NULL) {
 			size_t i, len, count;
-			PROPERTY_TYPE type;
+			property_desc_t desc;
 
 			count = object_get_property_count(parent);
 
 			for (i = 0; i < count; ++i) {
 				int ret = object_get_property_desc(parent, i,
-								   &type,
-								   &name);
+								   &desc);
+
+				name = desc.name;
 				if (ret)
 					continue;
 
@@ -283,7 +285,7 @@ static int parse(gcfg_file_t *file, const gcfg_keyword_t *keywords,
 			if (i < count) {
 				ptr = skip_space(ptr + len);
 				ptr = apply_reflection_arg(file, ptr, parent,
-							   i, type, name);
+							   i, &desc);
 				if (ptr == NULL)
 					return -1;
 
