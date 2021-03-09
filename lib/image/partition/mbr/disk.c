@@ -81,7 +81,7 @@ static partition_t *mbr_disk_create_parition(partition_mgr_t *parent,
 
 	min_count = disk->partitions[disk->part_used].blk_count;
 
-	if (flags & COMMON_PARTION_FLAG_GROW) {
+	if (flags & COMMON_PARTITION_FLAG_GROW) {
 		max_count = disk->volume->get_max_block_count(disk->volume);
 		max_count -= index;
 	} else {
@@ -92,9 +92,11 @@ static partition_t *mbr_disk_create_parition(partition_mgr_t *parent,
 	if (part == NULL)
 		return NULL;
 
-	if (flags & COMMON_PARTION_FLAG_FILL) {
-		for (i = 0; i < disk->part_used; ++i)
-			disk->partitions[i].flags &= ~COMMON_PARTION_FLAG_FILL;
+	if (flags & COMMON_PARTITION_FLAG_FILL) {
+		for (i = 0; i < disk->part_used; ++i) {
+			disk->partitions[i].flags &=
+				~COMMON_PARTITION_FLAG_FILL;
+		}
 	}
 
 	disk->part_used += 1;

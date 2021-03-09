@@ -103,14 +103,14 @@ typedef enum {
 	  Interpret the size as a minimum and allow the partition to grow,
 	  displacing any partitions that comes afterwards if necessary.
 	 */
-	COMMON_PARTION_FLAG_GROW = 0x01,
+	COMMON_PARTITION_FLAG_GROW = 0x01,
 
 	/*
 	  Expand the partition to fill the entire disk. Can only be set on
 	  one partition.
 	 */
-	COMMON_PARTION_FLAG_FILL = 0x02,
-} COMMON_PARTION_FLAGS;
+	COMMON_PARTITION_FLAG_FILL = 0x02,
+} COMMON_PARTITION_FLAGS;
 
 typedef enum {
 	MBR_PARTITION_FLAG_BOOTABLE = 0x00010000,
@@ -149,7 +149,7 @@ struct partition_mgr_t {
 
 	/*
 	  Create a parition at the next available block index with the
-	  given size. The flags are a combination of COMMON_PARTION_FLAGS
+	  given size. The flags are a combination of COMMON_PARTITION_FLAGS
 	  base flags and implementation specific additiona flags.
 	 */
 	partition_t *(*create_parition)(partition_mgr_t *parent,

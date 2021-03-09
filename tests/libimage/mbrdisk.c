@@ -33,7 +33,7 @@ int main(void)
 
 	/* create a few partitions */
 	p0 = (volume_t *)mbr->create_parition(mbr, 5,
-					      COMMON_PARTION_FLAG_GROW);
+					      COMMON_PARTITION_FLAG_GROW);
 	TEST_NOT_NULL(p0);
 	TEST_EQUAL_UI(((object_t *)mbr)->refcount, 2);
 	TEST_EQUAL_UI(((object_t *)p0)->refcount, 1);

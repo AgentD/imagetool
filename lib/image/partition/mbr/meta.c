@@ -90,16 +90,16 @@ static int mbr_part_set_property(const meta_object_t *meta, size_t i,
 		return part->set_flags(part, flags);
 	case MBR_GROW:
 		if (value->value.boolean) {
-			flags |= COMMON_PARTION_FLAG_GROW;
+			flags |= COMMON_PARTITION_FLAG_GROW;
 		} else {
-			flags &= ~COMMON_PARTION_FLAG_GROW;
+			flags &= ~COMMON_PARTITION_FLAG_GROW;
 		}
 		return part->set_flags(part, flags);
 	case MBR_FILL:
 		if (value->value.boolean) {
-			flags |= COMMON_PARTION_FLAG_FILL;
+			flags |= COMMON_PARTITION_FLAG_FILL;
 		} else {
-			flags &= ~COMMON_PARTION_FLAG_FILL;
+			flags &= ~COMMON_PARTITION_FLAG_FILL;
 		}
 		return part->set_flags(part, flags);
 	default:
@@ -128,11 +128,11 @@ static int mbr_part_get_property(const meta_object_t *meta, size_t i,
 		break;
 	case MBR_GROW:
 		value->type = PROPERTY_TYPE_BOOL;
-		value->value.boolean = !!(flags & COMMON_PARTION_FLAG_GROW);
+		value->value.boolean = !!(flags & COMMON_PARTITION_FLAG_GROW);
 		break;
 	case MBR_FILL:
 		value->type = PROPERTY_TYPE_BOOL;
-		value->value.boolean = !!(flags & COMMON_PARTION_FLAG_FILL);
+		value->value.boolean = !!(flags & COMMON_PARTITION_FLAG_FILL);
 		break;
 	default:
 		return -1;

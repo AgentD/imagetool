@@ -129,7 +129,7 @@ int mbr_apply_expand_policy(mbr_disk_t *disk, size_t index)
 {
 	uint64_t diff, avail;
 
-	if (!(disk->partitions[index].flags & COMMON_PARTION_FLAG_FILL))
+	if (!(disk->partitions[index].flags & COMMON_PARTITION_FLAG_FILL))
 		return 0;
 
 	avail = get_free_space(disk);
@@ -155,7 +155,7 @@ static int part_read_partial_block(volume_t *vol, uint64_t index,
 	volume_t *volume = part->parent->volume;
 
 	if (index >= count) {
-		if (!(flags & COMMON_PARTION_FLAG_GROW)) {
+		if (!(flags & COMMON_PARTITION_FLAG_GROW)) {
 			fprintf(stderr, "Out-of-bounds read on "
 				"MBR partition %zu.\n", part->index);
 			return -1;
@@ -181,7 +181,7 @@ static int part_write_partial_block(volume_t *vol, uint64_t index,
 	volume_t *volume = part->parent->volume;
 
 	if (index >= count) {
-		if (!(flags & COMMON_PARTION_FLAG_GROW)) {
+		if (!(flags & COMMON_PARTITION_FLAG_GROW)) {
 			fprintf(stderr, "Out-of-bounds write on "
 				"MBR partition %zu.\n", part->index);
 			return -1;
@@ -236,7 +236,7 @@ static int part_move_block_partial(volume_t *vol, uint64_t src, uint64_t dst,
 	volume_t *volume = part->parent->volume;
 
 	if (src >= blk_count || dst >= blk_count) {
-		if (!(flags & COMMON_PARTION_FLAG_GROW)) {
+		if (!(flags & COMMON_PARTITION_FLAG_GROW)) {
 			fprintf(stderr, "Out-of-bounds block move on "
 				"MBR partition %zu.\n", part->index);
 			return -1;
@@ -324,10 +324,10 @@ static int part_set_flags(partition_t *part, uint64_t flags)
 	mbr_part_t *mbr = (mbr_part_t *)part;
 	size_t i;
 
-	if (flags & COMMON_PARTION_FLAG_FILL) {
+	if (flags & COMMON_PARTITION_FLAG_FILL) {
 		for (i = 0; i < mbr->parent->part_used; ++i) {
 			mbr->parent->partitions[i].flags &=
-				~COMMON_PARTION_FLAG_FILL;
+				~COMMON_PARTITION_FLAG_FILL;
 		}
 	}
 
@@ -358,7 +358,7 @@ static uint64_t get_max_count(volume_t *vol)
 	count = part->parent->partitions[part->index].blk_count;
 
 	if (part->parent->partitions[part->index].flags &
-	    COMMON_PARTION_FLAG_GROW) {
+	    COMMON_PARTITION_FLAG_GROW) {
 		count += get_free_space(part->parent);
 	}
 
