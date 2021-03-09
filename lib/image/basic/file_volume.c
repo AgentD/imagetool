@@ -84,15 +84,15 @@ static int set_property(const meta_object_t *meta, size_t i,
 			fvol->min_block_count += 1;
 
 		if (fvol->min_block_count > fvol->max_block_count)
-			fvol->min_block_count = fvol->min_block_count;
+			fvol->min_block_count = fvol->max_block_count;
 		break;
 	case PROP_MAX_SIZE:
 		if (value->type != PROPERTY_TYPE_U64_SIZE)
 			return -1;
 
 		fvol->max_block_count = value->value.u64 / vol->blocksize;
-		if (fvol->min_block_count > fvol->max_block_count)
-			fvol->min_block_count = fvol->min_block_count;
+		if (fvol->max_block_count < fvol->min_block_count)
+			fvol->max_block_count = fvol->min_block_count;
 		break;
 	default:
 		return -1;
