@@ -13,6 +13,7 @@ typedef enum {
 	PLUGIN_TYPE_FILESYSTEM = 0,
 	PLUGIN_TYPE_FILE_SOURCE,
 	PLUGIN_TYPE_VOLUME,
+	PLUGIN_TYPE_PARTITION_MGR,
 
 	PLUGIN_TYPE_COUNT,
 } PLUGIN_TYPE;
@@ -44,6 +45,10 @@ struct plugin_t {
 
 		volume_t *(*volume)(plugin_t *plugin, imgtool_state_t *state,
 				    volume_t *parent);
+
+		partition_mgr_t *(*part_mgr)(plugin_t *plugin,
+					     imgtool_state_t *state,
+					     volume_t *parent);
 	} create;
 };
 

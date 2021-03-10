@@ -24,6 +24,7 @@ struct imgtool_state_t {
 	gcfg_keyword_t *cfg_global;
 	gcfg_keyword_t *cfg_fs_or_volume;
 	gcfg_keyword_t *cfg_fs_common;
+	gcfg_keyword_t *cfg_part_mgr_common;
 	gcfg_keyword_t *cfg_sources;
 };
 

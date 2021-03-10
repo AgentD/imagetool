@@ -178,6 +178,54 @@ static object_t *cb_create_volume(const gcfg_keyword_t *kwd,
 	return (object_t *)volume;
 }
 
+static object_t *cb_create_part_mgr(const gcfg_keyword_t *kwd,
+				    gcfg_file_t *file, object_t *parent)
+{
+	plugin_t *plugin = kwd->plugin;
+	partition_mgr_t *mgr;
+
+	mgr = plugin->create.part_mgr(plugin, kwd->state, (volume_t *)parent);
+	if (mgr == NULL) {
+		file->report_error(file, "error creating %s partition manager",
+				   kwd->name);
+		return NULL;
+	}
+
+	if (kwd->state->dep_tracker->
+	    add_partition_mgr(kwd->state->dep_tracker, mgr,
+			      (volume_t *)parent)) {
+		file->report_error(file,
+				   "error reginstering %s partition manager",
+				   kwd->name);
+		object_drop(mgr);
+		return NULL;
+	}
+
+	return (object_t *)mgr;
+}
+
+static object_t *cb_create_partition(const gcfg_keyword_t *kwd,
+				     gcfg_file_t *file, object_t *parent)
+{
+	partition_mgr_t *mgr = (partition_mgr_t *)parent;
+	partition_t *part;
+
+	part = mgr->create_parition(mgr, 0, COMMON_PARTITION_FLAG_GROW);
+	if (part == NULL) {
+		file->report_error(file, "error adding partition");
+		return NULL;
+	}
+
+	if (kwd->state->dep_tracker->
+	    add_partition(kwd->state->dep_tracker, part, mgr)) {
+		file->report_error(file, "error registering partition");
+		object_drop(part);
+		return NULL;
+	}
+
+	return (object_t *)part;
+}
+
 static object_t *cb_create_volumefile(const gcfg_keyword_t *kwd,
 				      gcfg_file_t *file, object_t *parent,
 				      const char *string)
@@ -340,6 +388,12 @@ static void state_destroy(object_t *obj)
 		free(it);
 	}
 
+	while (state->cfg_part_mgr_common != NULL) {
+		it = state->cfg_part_mgr_common;
+		state->cfg_part_mgr_common = it->next;
+		free(it);
+	}
+
 	object_drop(state->out_file);
 	object_drop(state->dep_tracker);
 	object_drop(state->registry);
@@ -405,6 +459,11 @@ int imgtool_state_init_config(imgtool_state_t *state)
 	if (state->cfg_fs_common == NULL)
 		goto fail;
 
+	state->cfg_part_mgr_common =
+		calloc(1, sizeof(state->cfg_part_mgr_common[0]));
+	if (state->cfg_part_mgr_common == NULL)
+		goto fail;
+
 	state->cfg_fs_or_volume = NULL;
 	last = NULL;
 
@@ -457,6 +516,37 @@ int imgtool_state_init_config(imgtool_state_t *state)
 
 		kwd_it->children = state->cfg_fs_or_volume;
 	}
+
+	/* partition managers */
+	it = state->registry->plugins[PLUGIN_TYPE_PARTITION_MGR];
+
+	for (; it != NULL; it = it->next) {
+		kwd_it = calloc(1, sizeof(*kwd_it));
+		if (kwd_it == NULL)
+			goto fail;
+
+		kwd_it->arg = GCFG_ARG_NONE;
+		kwd_it->name = it->name;
+		kwd_it->state = state;
+		kwd_it->plugin = it;
+		kwd_it->handle.cb_none = cb_create_part_mgr;
+		kwd_it->children = state->cfg_part_mgr_common;
+
+		if (last == NULL) {
+			state->cfg_fs_or_volume = kwd_it;
+		} else {
+			last->next = kwd_it;
+		}
+		last = kwd_it;
+	}
+
+	/* partition manager common */
+	state->cfg_part_mgr_common[0].arg = GCFG_ARG_NONE;
+	state->cfg_part_mgr_common[0].name = "partition";
+	state->cfg_part_mgr_common[0].handle.cb_none = cb_create_partition;
+	state->cfg_part_mgr_common[0].state = state;
+	state->cfg_part_mgr_common[0].next = NULL;
+	state->cfg_part_mgr_common[0].children = state->cfg_fs_or_volume;
 
 	/* file system common */
 	state->cfg_fs_common[0].arg = GCFG_ARG_STRING;
