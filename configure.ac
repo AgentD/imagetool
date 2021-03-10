@@ -178,6 +178,7 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([tests/imgtool/test1.sh], [chmod +x tests/imgtool/test1.sh])
 AC_CONFIG_FILES([tests/imgtool/test2.sh], [chmod +x tests/imgtool/test2.sh])
 AC_CONFIG_FILES([tests/imgtool/test3.sh], [chmod +x tests/imgtool/test3.sh])
+AC_CONFIG_FILES([tests/imgtool/test4.sh], [chmod +x tests/imgtool/test4.sh])
 
 AC_OUTPUT([Makefile])
 

@@ -1,0 +1,9 @@
+#!/bin/sh
+
+set -e
+
+"@abs_top_builddir@/imagebuild" -c "@abs_top_srcdir@/tests/imgtool/test4.cfg" \
+				-O test4.img
+
+diff "@abs_top_srcdir@/tests/imgtool/test4.img" test4.img
+rm test4.img
