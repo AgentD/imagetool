@@ -258,6 +258,7 @@ static int read_partial_block(volume_t *vol, uint64_t index,
 			      void *buffer, uint32_t offset, uint32_t size)
 {
 	file_volume_t *fvol = (file_volume_t *)vol;
+	uint64_t pos, avail;
 
 	if (check_bounds(fvol, index, offset, size))
 		return -1;
@@ -270,9 +271,16 @@ static int read_partial_block(volume_t *vol, uint64_t index,
 		return 0;
 	}
 
-	return read_retry(fvol->filename, fvol->fd,
-			  index * vol->blocksize + offset,
-			  buffer, size);
+	pos = index * vol->blocksize + offset;
+
+	avail = fvol->bytes_used - pos;
+
+	if ((uint64_t)size >= avail) {
+		memset((char *)buffer + avail, 0, size - avail);
+		size = avail;
+	}
+
+	return read_retry(fvol->filename, fvol->fd, pos, buffer, size);
 }
 
 static int read_block(volume_t *vol, uint64_t index, void *buffer)
@@ -466,6 +474,14 @@ static int commit(volume_t *vol)
 	return 0;
 }
 
+static uint64_t get_block_count(volume_t *vol)
+{
+	file_volume_t *fvol = (file_volume_t *)vol;
+	uint64_t count = fvol->bytes_used / vol->blocksize;
+
+	return (fvol->bytes_used % vol->blocksize) ? (count + 1) : count;
+}
+
 static uint64_t get_min_block_count(volume_t *vol)
 {
 	return ((file_volume_t *)vol)->min_block_count;
@@ -474,6 +490,32 @@ static uint64_t get_min_block_count(volume_t *vol)
 static uint64_t get_max_block_count(volume_t *vol)
 {
 	return ((file_volume_t *)vol)->max_block_count;
+}
+
+static int file_volume_truncate(volume_t *vol, uint64_t size)
+{
+	file_volume_t *fvol = (file_volume_t *)vol;
+	uint64_t count = size / vol->blocksize;
+
+	if (size % vol->blocksize)
+		count += 1;
+
+	if (count > fvol->max_block_count) {
+		fprintf(stderr, "%s: Tried to grow file volume "
+			"past maximum block count\n", fvol->filename);
+		return -1;
+	}
+
+	if (count <= fvol->min_block_count)
+		return 0;
+
+	if (truncate_file(fvol->fd, size) != 0) {
+		perror(fvol->filename);
+		return -1;
+	}
+
+	fvol->bytes_used = size;
+	return 0;
 }
 
 volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
@@ -534,6 +576,8 @@ volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
 	((volume_t *)fvol)->blocksize = blocksize;
 	((volume_t *)fvol)->get_min_block_count = get_min_block_count;
 	((volume_t *)fvol)->get_max_block_count = get_max_block_count;
+	((volume_t *)fvol)->get_block_count = get_block_count;
+	((volume_t *)fvol)->truncate = file_volume_truncate;
 	((volume_t *)fvol)->read_block = read_block;
 	((volume_t *)fvol)->read_partial_block = read_partial_block;
 	((volume_t *)fvol)->write_block = write_block;

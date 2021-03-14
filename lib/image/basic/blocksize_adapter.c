@@ -21,6 +21,17 @@ typedef struct {
 	uint8_t scratch[];
 } adapter_t;
 
+static uint64_t conv_blk_count(adapter_t *adapter, uint64_t count)
+{
+	if (MUL64_OV(count, adapter->wrapped->blocksize, &count))
+		count = 0xFFFFFFFFFFFFFFFFUL;
+
+	if (count < adapter->offset)
+		return 0;
+
+	return (count - adapter->offset) / ((volume_t *)adapter)->blocksize;
+}
+
 static uint64_t get_min_block_count(volume_t *vol)
 {
 	adapter_t *adapter = (adapter_t *)vol;
@@ -28,13 +39,7 @@ static uint64_t get_min_block_count(volume_t *vol)
 
 	count = adapter->wrapped->get_min_block_count(adapter->wrapped);
 
-	if (MUL64_OV(count, adapter->wrapped->blocksize, &count))
-		count = 0xFFFFFFFFFFFFFFFFUL;
-
-	if (count < adapter->offset)
-		return 0;
-
-	return (count - adapter->offset) / vol->blocksize;
+	return conv_blk_count(adapter, count);
 }
 
 static uint64_t get_max_block_count(volume_t *vol)
@@ -44,13 +49,35 @@ static uint64_t get_max_block_count(volume_t *vol)
 
 	count = adapter->wrapped->get_max_block_count(adapter->wrapped);
 
-	if (MUL64_OV(count, adapter->wrapped->blocksize, &count))
-		count = 0xFFFFFFFFFFFFFFFFUL;
+	return conv_blk_count(adapter, count);
+}
 
-	if (count < adapter->offset)
+static uint64_t get_block_count(volume_t *vol)
+{
+	adapter_t *adapter = (adapter_t *)vol;
+	uint64_t count = adapter->wrapped->get_block_count(adapter->wrapped);
+
+	return conv_blk_count(adapter, count);
+}
+
+static int adapter_truncate(volume_t *vol, uint64_t size)
+{
+	adapter_t *adapter = (adapter_t *)vol;
+	uint64_t count = size / vol->blocksize;
+
+	if (size % vol->blocksize)
+		count += 1;
+
+	if (count <= get_min_block_count(vol))
 		return 0;
 
-	return (count - adapter->offset) / vol->blocksize;
+	if (SZ_MUL_OV(count, adapter->wrapped->blocksize, &size))
+		size = 0xFFFFFFFFFFFFFFFF;
+
+	if (SZ_ADD_OV(size, adapter->offset, &size))
+		size = 0xFFFFFFFFFFFFFFFF;
+
+	return adapter->wrapped->truncate(adapter->wrapped, size);
 }
 
 static int check_bounds(volume_t *vol, uint64_t index,
@@ -181,6 +208,8 @@ volume_t *volume_blocksize_adapter_create(volume_t *vol, uint32_t blocksize,
 	((volume_t *)adapter)->blocksize = blocksize;
 	((volume_t *)adapter)->get_min_block_count = get_min_block_count;
 	((volume_t *)adapter)->get_max_block_count = get_max_block_count;
+	((volume_t *)adapter)->get_block_count = get_block_count;
+	((volume_t *)adapter)->truncate = adapter_truncate;
 	((volume_t *)adapter)->read_block = read_block;
 	((volume_t *)adapter)->read_partial_block = read_partial_block;
 	((volume_t *)adapter)->write_block = write_block;

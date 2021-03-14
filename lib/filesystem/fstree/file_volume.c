@@ -153,6 +153,41 @@ static uint64_t get_max_block_count(volume_t *vol)
 	return ((file_volume_t *)vol)->max_block_count;
 }
 
+static uint64_t get_block_count(volume_t *vol)
+{
+	file_volume_t *fsvol = (file_volume_t *)vol;
+	uint64_t count;
+
+	count = fsvol->node->data.file.size / vol->blocksize;
+	if (fsvol->node->data.file.size % vol->blocksize)
+		count += 1;
+
+	return count;
+}
+
+static int fsvol_truncate(volume_t *vol, uint64_t size)
+{
+	file_volume_t *fsvol = (file_volume_t *)vol;
+	uint64_t count = size / vol->blocksize;
+	char *path;
+
+	if (size % vol->blocksize)
+		count += 1;
+
+	if (count <= fsvol->min_block_count)
+		return 0;
+
+	if (count > fsvol->max_block_count) {
+		path = fstree_get_path(fsvol->node);
+		fprintf(stderr, "%s: tried to grow file based volume beyond "
+			"maximum block count.\n", path);
+		free(path);
+		return -1;
+	}
+
+	return fstree_file_truncate(fsvol->fstree, fsvol->node, size);
+}
+
 static int fsvol_commit(volume_t *vol)
 {
 	(void)vol;
@@ -196,8 +231,10 @@ volume_t *fstree_file_volume_create(fstree_t *fs, tree_node_t *n,
 		}
 	}
 
+	vol->get_block_count = get_block_count;
 	vol->get_min_block_count = get_min_block_count;
 	vol->get_max_block_count = get_max_block_count;
+	vol->truncate = fsvol_truncate;
 	vol->read_block = fsvol_read_block;
 	vol->read_partial_block = fsvol_read_partial_block;
 	vol->write_block = fsvol_write_block;

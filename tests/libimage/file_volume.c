@@ -51,6 +51,7 @@ int main(void)
 	TEST_EQUAL_UI(vol->blocksize, blocksz);
 	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
 	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
+	TEST_EQUAL_UI(vol->get_block_count(vol), 16);
 
 	/* read blocks */
 	for (i = 0; i < 16; ++i) {
@@ -131,6 +132,10 @@ int main(void)
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(sb.st_size, 25 * blocksz);
 
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
+	TEST_EQUAL_UI(vol->get_block_count(vol), 25);
+
 	munmap(buffer, blocksz * 16);
 	buffer = mmap(NULL, blocksz * 25, PROT_READ | PROT_WRITE,
 		      MAP_SHARED, fd, 0);
@@ -180,6 +185,10 @@ int main(void)
 	ret = vol->write_block(vol, 33, block_buffer);
 	TEST_ASSERT(ret != 0);
 
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
+	TEST_EQUAL_UI(vol->get_block_count(vol), 25);
+
 	/* discard (blow a few holes in the file) */
 	ret = vol->discard_blocks(vol, 3, 5);
 	TEST_EQUAL_I(ret, 0);
@@ -227,6 +236,10 @@ int main(void)
 		}
 	}
 
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
+	TEST_EQUAL_UI(vol->get_block_count(vol), 25);
+
 	/* discard the last block, causing the file to shrink */
 	ret = vol->discard_blocks(vol, 24, 1);
 	TEST_EQUAL_I(ret, 0);
@@ -237,6 +250,10 @@ int main(void)
 	ret = fstat(fd, &sb);
 	TEST_EQUAL_I(ret, 0);
 	TEST_EQUAL_UI(sb.st_size, 15 * blocksz);
+
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
+	TEST_EQUAL_UI(vol->get_block_count(vol), 15);
 
 	for (i = 0; i < 15; ++i) {
 		ptr = (char *)buffer + i * blocksz;
@@ -267,8 +284,70 @@ int main(void)
 		}
 	}
 
+	/* truncate to shrink */
+	munmap(buffer, blocksz * 25);
+
+	memset(block_buffer, 0xAA, blocksz);
+	ret = vol->write_block(vol, 0, block_buffer);
+	TEST_EQUAL_I(ret, 0);
+
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
+	TEST_EQUAL_UI(vol->get_block_count(vol), 15);
+
+	ret = vol->truncate(vol, 1337);
+	TEST_EQUAL_I(ret, 0);
+
+	ret = fstat(fd, &sb);
+	TEST_EQUAL_I(ret, 0);
+	TEST_EQUAL_UI(sb.st_size, 1337);
+
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
+	TEST_EQUAL_UI(vol->get_block_count(vol), 1);
+
+	ret = vol->read_block(vol, 0, block_buffer);
+	TEST_EQUAL_I(ret, 0);
+
+	for (i = 0; i < 1337; ++i) {
+		TEST_EQUAL_UI(((uint8_t *)block_buffer)[i], 0xAA);
+	}
+
+	for (; i < blocksz; ++i) {
+		TEST_EQUAL_UI(((uint8_t *)block_buffer)[i], 0);
+	}
+
+	/* truncate to grow */
+	ret = vol->truncate(vol, blocksz * 2);
+	TEST_EQUAL_I(ret, 0);
+
+	ret = fstat(fd, &sb);
+	TEST_EQUAL_I(ret, 0);
+	TEST_EQUAL_UI(sb.st_size, blocksz * 2);
+
+	TEST_EQUAL_UI(vol->get_min_block_count(vol), 0);
+	TEST_EQUAL_UI(vol->get_max_block_count(vol), 32);
+	TEST_EQUAL_UI(vol->get_block_count(vol), 2);
+
+	ret = vol->read_block(vol, 0, block_buffer);
+	TEST_EQUAL_I(ret, 0);
+
+	for (i = 0; i < 1337; ++i) {
+		TEST_EQUAL_UI(((uint8_t *)block_buffer)[i], 0xAA);
+	}
+
+	for (; i < blocksz; ++i) {
+		TEST_EQUAL_UI(((uint8_t *)block_buffer)[i], 0);
+	}
+
+	ret = vol->read_block(vol, 1, block_buffer);
+	TEST_EQUAL_I(ret, 0);
+
+	for (i = 0; i < blocksz; ++i) {
+		TEST_EQUAL_UI(((uint8_t *)block_buffer)[i], 0);
+	}
+
 	/* cleanup */
-	munmap(buffer, blocksz * 17);
 	object_drop(vol);
 	free(block_buffer);
 	cleanup_temp_files();

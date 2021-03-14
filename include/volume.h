@@ -19,9 +19,34 @@ struct volume_t {
 
 	uint32_t blocksize;
 
+	/*
+	  The minimum number of blocks that the volume always has and
+	  cannot shrink below.
+	 */
 	uint64_t (*get_min_block_count)(volume_t *vol);
 
+	/*
+	  The maximum number of blocks that the volume can potentially
+	  grow to.
+
+	  This is the absolute maximum and can potentially be ridiculously
+	  large. On a volume representing a disk partition, this can change
+	  without doing anything to volume directly, e.g. if another partition
+	  grows, this gets smaller and if another partition shrinks, this value
+	  will increase.
+	 */
 	uint64_t (*get_max_block_count)(volume_t *vol);
+
+	/*
+	  The actual number of usable blocks that the volume currently has.
+	 */
+	uint64_t (*get_block_count)(volume_t *vol);
+
+	/*
+	  Grow or shrink a volume. The given size is in bytes and internally
+	  rounded a multiple of the block size (if necessary).
+	 */
+	int (*truncate)(volume_t *vol, uint64_t size);
 
 	/*
 	  Read a block using its block index into a buffer that must be large

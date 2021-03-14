@@ -365,6 +365,39 @@ static uint64_t get_max_count(volume_t *vol)
 	return count;
 }
 
+static uint64_t get_blk_count(volume_t *vol)
+{
+	mbr_part_t *part = (mbr_part_t *)vol;
+
+	return part->parent->partitions[part->index].blk_count;
+}
+
+static int part_truncate(volume_t *vol, uint64_t size)
+{
+	mbr_part_t *part = (mbr_part_t *)vol;
+	uint64_t current = part->parent->partitions[part->index].blk_count;
+	uint64_t count = size / vol->blocksize;
+
+	if (size % vol->blocksize)
+		count += 1;
+
+	if (count % MBR_PART_ALIGN)
+		count += MBR_PART_ALIGN - count % MBR_PART_ALIGN;
+
+	if (count <= part->parent->partitions[part->index].blk_count_min)
+		return 0;
+
+	if (count == current)
+		return 0;
+
+	if (count < current) {
+		return shrink_partition(part->parent, part->index,
+					current - count);
+	}
+
+	return grow_partition(part->parent, part->index, count - current);
+}
+
 mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index)
 {
 	mbr_part_t *part = calloc(1, sizeof(*part));
@@ -383,6 +416,8 @@ mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index)
 	((partition_t *)part)->set_base_block_count = part_set_base_block_count;
 	vol->get_min_block_count = get_min_count;
 	vol->get_max_block_count = get_max_count;
+	vol->get_block_count = get_blk_count;
+	vol->truncate = part_truncate;
 	vol->blocksize = parent->volume->blocksize;
 	vol->read_partial_block = part_read_partial_block;
 	vol->write_partial_block = part_write_partial_block;
