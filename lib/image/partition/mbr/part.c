@@ -101,6 +101,9 @@ static uint64_t get_free_space(mbr_disk_t *disk)
 	uint64_t free = disk->volume->get_max_block_count(disk->volume);
 	size_t i;
 
+	if (free > MAX_LBA)
+		free = MAX_LBA;
+
 	if (free % MBR_PART_ALIGN)
 		free -= free % MBR_PART_ALIGN;
 
@@ -368,8 +371,12 @@ static uint64_t get_max_count(volume_t *vol)
 static uint64_t get_blk_count(volume_t *vol)
 {
 	mbr_part_t *part = (mbr_part_t *)vol;
+	mbr_disk_t *disk = part->parent;
 
-	return part->parent->partitions[part->index].blk_count;
+	if (disk->partitions[part->index].flags & COMMON_PARTITION_FLAG_FILL)
+		return vol->get_max_block_count(vol);
+
+	return disk->partitions[part->index].blk_count;
 }
 
 static int part_truncate(volume_t *vol, uint64_t size)

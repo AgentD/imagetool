@@ -19,6 +19,12 @@
 #define MBR_PART_ALIGN (1024 * 1024 / SECTOR_SIZE)
 #define MBR_RESERVED MBR_PART_ALIGN
 
+/* (63 sectors) * (254 heads) * (1023 cylinders) */
+#define MAX_CHS (63 * 254 * 1023)
+
+/* maximum sector index for 28-bit LBA */
+#define MAX_LBA (0x0FFFFFFF)
+
 typedef struct {
 	partition_mgr_t base;
 

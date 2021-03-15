@@ -6,9 +6,6 @@
  */
 #include "mbr.h"
 
-/* (63 sectors) * (254 heads) * (1023 cylinders) */
-#define MAX_LBA (16370046)
-
 static void lba_to_chs(uint32_t lba, uint8_t *chs)
 {
 	/* XXX: sane default values imposed by the UEFI spec */
@@ -17,7 +14,7 @@ static void lba_to_chs(uint32_t lba, uint8_t *chs)
 	uint8_t h, s;
 	uint16_t c;
 
-	if (lba >= MAX_LBA) {
+	if (lba >= MAX_CHS) {
 		c = 1023;
 		h = 254;
 		s = 63;
