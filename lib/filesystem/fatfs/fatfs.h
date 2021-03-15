@@ -22,8 +22,7 @@
 #define FAT32_RESERVED_COUNT (32)
 
 #define MAX_DISK_SIZE (1024UL * 1024UL * 1024UL * 1024UL)
-#define MAX_FLOPPY_SIZE (4 * 1024 * 1024)
-#define FAT16_SECTOR_THRESHOLD (66000)
+#define FAT32_MIN_SECTORS (66000)
 
 #define FAT_CHAR_PER_LONG_ENT (13)
 #define SEQ_NUMBER_LAST_FLAG (0x40)
@@ -42,12 +41,6 @@
 #define FAT_BS_COPY_INDEX (6)
 #define FAT_FS_INFO_INDEX (1)
 #define FAT_MEDIA_DESCRIPTOR_DISK (0xF8)
-
-typedef enum {
-	FAT_TYPE_12,
-	FAT_TYPE_16,
-	FAT_TYPE_32,
-} FAT_TYPE;
 
 typedef enum {
 	FAT_SHORTNAME_ERROR = -1,
@@ -140,41 +133,6 @@ typedef struct {
 } __attribute__((packed)) fat32_super_t;
 
 typedef struct {
-	uint8_t jump[3];
-	uint8_t oem_name[8];
-
-	/* DOS 2.0 BPB */
-	uint16_t bytes_per_sector;
-	uint8_t sectors_per_cluster;
-	uint16_t num_reserved_sectors;
-	uint8_t num_fats;
-	uint16_t root_ent_count;
-	uint16_t total_sector_count16;
-	uint8_t media_descriptor;
-	uint16_t sectors_per_fat;
-
-	/* DOS 3.31 BPB */
-	uint16_t sectors_per_track;
-	uint16_t heads_per_disk;
-	uint32_t hidden_sector_count;
-	uint32_t total_sector_count32;
-
-	/* FAT12 & FAT16 BPB */
-	uint8_t phys_drive_num;
-	uint8_t unused0;
-	uint8_t ext_boot_signature;
-	uint32_t volume_id;
-	uint8_t label[11];
-	uint8_t fs_name[8];
-
-	/* boot sector code */
-	uint8_t boot_code[448];
-
-	/* magic signature */
-	uint16_t boot_signature;
-} __attribute__((packed)) fat16_super_t;
-
-typedef struct {
 	uint32_t magic1;
 	uint8_t reserved0[480];
 	uint32_t magic2;
@@ -189,7 +147,6 @@ typedef struct {
 
 	volume_t *orig_volume;
 
-	FAT_TYPE type;
 	uint32_t secs_per_cluster;
 	uint32_t secs_per_fat;
 	uint32_t total_sectors;

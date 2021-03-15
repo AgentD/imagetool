@@ -46,50 +46,6 @@ static int write_super_block_fat32(fatfs_filesystem_t *fatfs)
 			    &super, sizeof(super));
 }
 
-static int write_super_block_fat16(fatfs_filesystem_t *fatfs)
-{
-	filesystem_t *fs = (filesystem_t *)fatfs;
-	fat16_super_t super;
-
-	memset(&super, 0, sizeof(super));
-
-	memcpy(super.oem_name, "Goliath ",    sizeof(super.oem_name));
-	memcpy(super.label,    "NO NAME    ", sizeof(super.label));
-
-	if (fatfs->type == FAT_TYPE_12) {
-		memcpy(super.fs_name, "FAT12   ", sizeof(super.fs_name));
-	} else {
-		memcpy(super.fs_name, "FAT16   ", sizeof(super.fs_name));
-	}
-
-	super.boot_signature       = htole16(IBM_BOOT_MAGIC);
-	super.volume_id            = htole32(MAGIC_VOLUME_ID);
-	super.bytes_per_sector     = htole16(SECTOR_SIZE);
-	super.num_reserved_sectors = htole16(1);
-	super.phys_drive_num       = FAT_DRIVE_NUMBER;
-	super.ext_boot_signature   = FAT_BOOT_SIG_MAGIC;
-	super.sectors_per_cluster  = fatfs->secs_per_cluster;
-	super.media_descriptor     = FAT_MEDIA_DESCRIPTOR_DISK;
-	super.num_fats             = 2;
-	super.sectors_per_track    = htole16(1);
-	super.heads_per_disk       = htole16(1);
-
-	if (fatfs->total_sectors > 0xFFFF) {
-		super.total_sector_count32 = htole32(fatfs->total_sectors);
-	} else {
-		super.total_sector_count16 = htole16(fatfs->total_sectors);
-	}
-
-	super.root_ent_count = htole16(fs->fstree->root->data.dir.size / 32);
-
-	super.jump[0] = 0xEB;
-	super.jump[1] = 0xFE;
-	super.jump[2] = 0x90;
-	memset(super.boot_code, 0x90, sizeof(super.boot_code));
-
-	return volume_write(fatfs->orig_volume, 0, &super, sizeof(super));
-}
-
 static int write_fs_info_block(fatfs_filesystem_t *fatfs)
 {
 	filesystem_t *fs = (filesystem_t *)fatfs;
@@ -113,12 +69,8 @@ static int write_fs_info_block(fatfs_filesystem_t *fatfs)
 
 int fatfs_write_super_block(fatfs_filesystem_t *fatfs)
 {
-	if (fatfs->type == FAT_TYPE_32) {
-		if (write_super_block_fat32(fatfs))
-			return -1;
+	if (write_super_block_fat32(fatfs))
+		return -1;
 
-		return write_fs_info_block(fatfs);
-	}
-
-	return write_super_block_fat16(fatfs);
+	return write_fs_info_block(fatfs);
 }

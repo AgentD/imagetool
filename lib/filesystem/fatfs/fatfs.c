@@ -6,70 +6,38 @@
  */
 #include "fatfs.h"
 
-static void compute_fs_parameters(uint64_t disk_size, fatfs_filesystem_t *fatfs)
+static int compute_fs_parameters(uint64_t disk_size, fatfs_filesystem_t *fatfs)
 {
 	uint32_t slots_per_fatsec;
 
-	if (disk_size > MAX_DISK_SIZE)
-		disk_size = MAX_DISK_SIZE;
-
 	fatfs->total_sectors = disk_size / SECTOR_SIZE;
 
-	if (disk_size <= MAX_FLOPPY_SIZE) {
-		fatfs->type = FAT_TYPE_12;
-		fatfs->secs_per_cluster = 1;
-		fatfs->total_clusters = fatfs->total_sectors;
+	fatfs->secs_per_cluster = 8;
+	fatfs->total_clusters = fatfs->total_sectors / 8;
 
-		while (fatfs->total_clusters > 4000) {
-			fatfs->secs_per_cluster *= 2;
-			fatfs->total_clusters =
-				fatfs->total_sectors / fatfs->secs_per_cluster;
-		}
+	while (fatfs->total_clusters < FAT32_MIN_SECTORS) {
+		if (fatfs->secs_per_cluster == 1)
+			goto fail_too_small;
 
-		fatfs->secs_per_fat = (3 * fatfs->total_clusters) /
-			(2 * SECTOR_SIZE);
-
-		if ((3 * fatfs->total_clusters) % (2 * SECTOR_SIZE))
-			fatfs->secs_per_fat += 1;
-	} else if (fatfs->total_sectors <= FAT16_SECTOR_THRESHOLD) {
-		fatfs->type = FAT_TYPE_16;
-		fatfs->secs_per_cluster = 8;
-		fatfs->total_clusters = fatfs->total_sectors / 8;
-
-		while (fatfs->total_clusters < 5000) {
-			fatfs->secs_per_cluster /= 2;
-			fatfs->total_clusters =
-				fatfs->total_sectors / fatfs->secs_per_cluster;
-		}
-
-		slots_per_fatsec = SECTOR_SIZE / 2;
-		fatfs->secs_per_fat = fatfs->total_clusters / slots_per_fatsec;
-		if (fatfs->total_clusters % slots_per_fatsec)
-			fatfs->secs_per_fat += 1;
-	} else {
-		fatfs->type = FAT_TYPE_32;
-		fatfs->secs_per_cluster = 8;
-		fatfs->total_clusters = fatfs->total_sectors / 8;
-
-		while (fatfs->total_clusters < 66000) {
-			fatfs->secs_per_cluster /= 2;
-			fatfs->total_clusters =
-				fatfs->total_sectors / fatfs->secs_per_cluster;
-		}
-
-		slots_per_fatsec = SECTOR_SIZE / 4;
-		fatfs->secs_per_fat = fatfs->total_clusters / slots_per_fatsec;
-		if (fatfs->total_clusters % slots_per_fatsec)
-			fatfs->secs_per_fat += 1;
+		fatfs->secs_per_cluster /= 2;
+		fatfs->total_clusters =
+			fatfs->total_sectors / fatfs->secs_per_cluster;
 	}
 
-	if (fatfs->type == FAT_TYPE_32) {
-		fatfs->fatstart = FAT32_RESERVED_COUNT * SECTOR_SIZE;
-	} else {
-		fatfs->fatstart = SECTOR_SIZE;
-	}
+	slots_per_fatsec = SECTOR_SIZE / 4;
 
+	fatfs->secs_per_fat = fatfs->total_clusters / slots_per_fatsec;
+
+	if (fatfs->total_clusters % slots_per_fatsec)
+		fatfs->secs_per_fat += 1;
+
+	fatfs->fatstart = FAT32_RESERVED_COUNT * SECTOR_SIZE;
 	fatfs->fatsize = fatfs->secs_per_fat * SECTOR_SIZE;
+	return 0;
+fail_too_small:
+	fprintf(stderr, "Cannot make FAT 32 filesystem with less than %d sectors "
+		"(%d MiB)\n", FAT32_MIN_SECTORS, FAT32_MIN_SECTORS / (2 * 1024));
+	return -1;
 }
 
 static int compute_dir_sizes(fatfs_filesystem_t *fatfs, uint64_t *total)
@@ -223,7 +191,8 @@ filesystem_t *filesystem_fatfs_create(volume_t *volume)
 		size = MAX_DISK_SIZE;
 	}
 
-	compute_fs_parameters(size, fatfs);
+	if (compute_fs_parameters(size, fatfs))
+		goto fail;
 
 	rsvp = fatfs->fatstart + 2 * fatfs->fatsize;
 	size = fatfs->secs_per_cluster * (uint64_t)SECTOR_SIZE;
