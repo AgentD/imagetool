@@ -6,38 +6,29 @@
  */
 #include "fatfs.h"
 
-static int compute_fs_parameters(uint64_t disk_size, fatfs_filesystem_t *fatfs)
+static void compute_fs_parameters(uint64_t disk_size, fatfs_filesystem_t *fatfs,
+				  uint32_t preferred_secs_per_cluster)
 {
-	uint32_t slots_per_fatsec;
+	uint32_t i;
 
 	fatfs->total_sectors = disk_size / SECTOR_SIZE;
 
-	fatfs->secs_per_cluster = 8;
-	fatfs->total_clusters = fatfs->total_sectors / 8;
+	for (i = 1; i <= preferred_secs_per_cluster; ++i) {
+		uint32_t clusters = fatfs->total_sectors / i;
 
-	while (fatfs->total_clusters < FAT32_MIN_SECTORS) {
-		if (fatfs->secs_per_cluster == 1)
-			goto fail_too_small;
+		if (clusters < FAT32_MIN_SECTORS)
+			break;
 
-		fatfs->secs_per_cluster /= 2;
-		fatfs->total_clusters =
-			fatfs->total_sectors / fatfs->secs_per_cluster;
+		fatfs->secs_per_cluster = i;
+		fatfs->total_clusters = clusters;
 	}
 
-	slots_per_fatsec = SECTOR_SIZE / 4;
+	fatfs->secs_per_fat = fatfs->total_clusters / FAT32_ENTRIES_PER_SECTOR;
 
-	fatfs->secs_per_fat = fatfs->total_clusters / slots_per_fatsec;
-
-	if (fatfs->total_clusters % slots_per_fatsec)
+	if (fatfs->total_clusters % FAT32_ENTRIES_PER_SECTOR)
 		fatfs->secs_per_fat += 1;
 
-	fatfs->fatstart = FAT32_RESERVED_COUNT * SECTOR_SIZE;
 	fatfs->fatsize = fatfs->secs_per_fat * SECTOR_SIZE;
-	return 0;
-fail_too_small:
-	fprintf(stderr, "Cannot make FAT 32 filesystem with less than %d sectors "
-		"(%d MiB)\n", FAT32_MIN_SECTORS, FAT32_MIN_SECTORS / (2 * 1024));
-	return -1;
 }
 
 static int compute_dir_sizes(fatfs_filesystem_t *fatfs, uint64_t *total)
@@ -191,10 +182,17 @@ filesystem_t *filesystem_fatfs_create(volume_t *volume)
 		size = MAX_DISK_SIZE;
 	}
 
-	if (compute_fs_parameters(size, fatfs))
-		goto fail;
+	compute_fs_parameters(size, fatfs,
+			      CLUSTER_SIZE_PREFERRED / SECTOR_SIZE);
 
-	rsvp = fatfs->fatstart + 2 * fatfs->fatsize;
+	if (fatfs->secs_per_cluster == 0) {
+		fprintf(stderr, "Cannot make FAT 32 filesystem with less "
+			"than %d sectors (%d MiB)\n", FAT32_MIN_SECTORS,
+			FAT32_MIN_SECTORS / (2 * 1024));
+		goto fail;
+	}
+
+	rsvp = FAT32_FAT_START + 2 * fatfs->fatsize;
 	size = fatfs->secs_per_cluster * (uint64_t)SECTOR_SIZE;
 
 	adapter = volume_blocksize_adapter_create(volume, size, rsvp);

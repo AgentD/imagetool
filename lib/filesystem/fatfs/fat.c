@@ -38,7 +38,7 @@ static int slide_window(fatfs_filesystem_t *fs, unsigned char *window,
 	if ((*next_wr_offset) <= (FAT_WINDOW_SIZE / 2))
 		return 0;
 
-	offset = fs->fatstart + *window_offset;
+	offset = FAT32_FAT_START + *window_offset;
 	diff = FAT_WINDOW_SIZE / 2;
 
 	if (volume_write(fs->orig_volume, offset, window, diff))
@@ -61,7 +61,7 @@ static int slide_window(fatfs_filesystem_t *fs, unsigned char *window,
 static int flush_window(fatfs_filesystem_t *fs, unsigned char *window,
 			size_t window_offset)
 {
-	size_t offset = fs->fatstart + window_offset;
+	size_t offset = FAT32_FAT_START + window_offset;
 	size_t size = fs->fatsize - window_offset;
 
 	size = size > FAT_WINDOW_SIZE ? FAT_WINDOW_SIZE : size;
@@ -110,13 +110,13 @@ int fatfs_build_fats(fatfs_filesystem_t *fs)
 
 	clustersize = fs->secs_per_cluster * SECTOR_SIZE;
 
-	if (volume_write(fs->orig_volume, fs->fatstart, NULL, fs->fatsize))
+	if (volume_write(fs->orig_volume, FAT32_FAT_START, NULL, fs->fatsize))
 		return -1;
 
 	/* initialize the sliding window and FAT */
 	window_offset = 0;
 	window = calloc(1, fs->fatsize < FAT_WINDOW_SIZE ?
-			fs->fatsize : FAT_WINDOW_SIZE);
+			FAT_WINDOW_SIZE : fs->fatsize);
 	if (window == NULL) {
 		perror("creating FAT buffer");
 		return -1;

@@ -21,6 +21,11 @@
 #define SECTOR_SIZE (512)
 #define FAT32_RESERVED_COUNT (32)
 
+#define FAT32_FAT_START (FAT32_RESERVED_COUNT * SECTOR_SIZE)
+#define FAT32_ENTRIES_PER_SECTOR (SECTOR_SIZE / 4)
+
+#define CLUSTER_SIZE_PREFERRED (4096)
+
 #define MAX_DISK_SIZE (1024UL * 1024UL * 1024UL * 1024UL)
 #define FAT32_MIN_SECTORS (66000)
 
@@ -152,7 +157,6 @@ typedef struct {
 	uint32_t total_sectors;
 	uint32_t total_clusters;
 
-	size_t fatstart;
 	size_t fatsize;
 } fatfs_filesystem_t;
 
