@@ -514,8 +514,31 @@ static int file_volume_truncate(volume_t *vol, uint64_t size)
 		return -1;
 	}
 
+	if (size > fvol->bytes_used) {
+		uint64_t end = size / vol->blocksize;
+		uint64_t idx = fvol->bytes_used / vol->blocksize;
+
+		while (idx <= end) {
+			if (bitmap_set(fvol->bitmap, idx++))
+				goto fail_flag;
+		}
+	} else if (size < fvol->bytes_used) {
+		uint64_t end = fvol->bytes_used / vol->blocksize;
+		uint64_t idx = size / vol->blocksize;
+
+		if (fvol->bytes_used % vol->blocksize)
+			end += 1;
+
+		while (end > idx)
+			bitmap_clear(fvol->bitmap, end--);
+	}
+
 	fvol->bytes_used = size;
 	return 0;
+fail_flag:
+	fprintf(stderr, "%s: failed to mark block as used after move.\n",
+		fvol->filename);
+	return -1;
 }
 
 volume_t *volume_from_fd(const char *filename, int fd, uint64_t max_size)
