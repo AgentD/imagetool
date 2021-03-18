@@ -250,6 +250,8 @@ int volume_memmove(volume_t *vol, uint64_t dst, uint64_t src, uint64_t size);
 ostream_t *volume_ostream_create(volume_t *vol, const char *name,
 				 uint64_t offset, uint64_t max_size);
 
+extern const meta_object_t partition_meta;
+
 #ifdef __cplusplus
 }
 #endif

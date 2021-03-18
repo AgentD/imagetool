@@ -9,8 +9,6 @@
 enum {
 	MBR_TYPE = 0,
 	MBR_BOOTABLE,
-	MBR_GROW,
-	MBR_FILL,
 };
 
 static const property_enum_t mbr_types[] = {
@@ -34,14 +32,6 @@ static const property_desc_t mbr_part_prop[] = {
 	[MBR_BOOTABLE] = {
 		.type = PROPERTY_TYPE_BOOL,
 		.name = "bootable",
-	},
-	[MBR_GROW] = {
-		.type = PROPERTY_TYPE_BOOL,
-		.name = "grow",
-	},
-	[MBR_FILL] = {
-		.type = PROPERTY_TYPE_BOOL,
-		.name = "fill",
 	},
 };
 
@@ -88,20 +78,6 @@ static int mbr_part_set_property(const meta_object_t *meta, size_t i,
 			flags &= ~MBR_PARTITION_FLAG_BOOTABLE;
 		}
 		return part->set_flags(part, flags);
-	case MBR_GROW:
-		if (value->value.boolean) {
-			flags |= COMMON_PARTITION_FLAG_GROW;
-		} else {
-			flags &= ~COMMON_PARTITION_FLAG_GROW;
-		}
-		return part->set_flags(part, flags);
-	case MBR_FILL:
-		if (value->value.boolean) {
-			flags |= COMMON_PARTITION_FLAG_FILL;
-		} else {
-			flags &= ~COMMON_PARTITION_FLAG_FILL;
-		}
-		return part->set_flags(part, flags);
 	default:
 		return -1;
 	}
@@ -126,14 +102,6 @@ static int mbr_part_get_property(const meta_object_t *meta, size_t i,
 		value->type = PROPERTY_TYPE_BOOL;
 		value->value.boolean = !!(flags & MBR_PARTITION_FLAG_BOOTABLE);
 		break;
-	case MBR_GROW:
-		value->type = PROPERTY_TYPE_BOOL;
-		value->value.boolean = !!(flags & COMMON_PARTITION_FLAG_GROW);
-		break;
-	case MBR_FILL:
-		value->type = PROPERTY_TYPE_BOOL;
-		value->value.boolean = !!(flags & COMMON_PARTITION_FLAG_FILL);
-		break;
 	default:
 		return -1;
 	}
@@ -143,7 +111,7 @@ static int mbr_part_get_property(const meta_object_t *meta, size_t i,
 
 const meta_object_t mbr_part_meta = {
 	.name = "mbr_part_t",
-	.parent = NULL,
+	.parent = &partition_meta,
 
 	.get_property_count = mbr_part_get_property_count,
 	.get_property_desc = mbr_part_get_property_desc,
