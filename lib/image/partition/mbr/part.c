@@ -384,6 +384,7 @@ static int part_truncate(volume_t *vol, uint64_t size)
 	mbr_part_t *part = (mbr_part_t *)vol;
 	uint64_t current = part->parent->partitions[part->index].blk_count;
 	uint64_t count = size / vol->blocksize;
+	int ret;
 
 	if (size % vol->blocksize)
 		count += 1;
@@ -398,11 +399,19 @@ static int part_truncate(volume_t *vol, uint64_t size)
 		return 0;
 
 	if (count < current) {
-		return shrink_partition(part->parent, part->index,
-					current - count);
+		ret = shrink_partition(part->parent, part->index,
+				       current - count);
+	} else {
+		ret = grow_partition(part->parent, part->index,
+				     count - current);
 	}
 
-	return grow_partition(part->parent, part->index, count - current);
+	if (ret)
+		return -1;
+
+	part->parent->partitions[part->index].blk_count = count;
+	part->parent->partitions[part->index].blk_used = count;
+	return 0;
 }
 
 mbr_part_t *mbr_part_create(mbr_disk_t *parent, size_t index)
