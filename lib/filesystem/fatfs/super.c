@@ -6,7 +6,8 @@
  */
 #include "fatfs.h"
 
-static int write_super_block_fat32(fatfs_filesystem_t *fatfs)
+static int write_super_block_fat32(fatfs_filesystem_t *fatfs,
+				   uint32_t sector_count)
 {
 	fat32_super_t super;
 
@@ -29,7 +30,7 @@ static int write_super_block_fat32(fatfs_filesystem_t *fatfs)
 	super.boot_sec_copy_index  = htole16(FAT_BS_COPY_INDEX);
 	super.sectors_per_track    = htole16(1);
 	super.heads_per_disk       = htole16(1);
-	super.total_sector_count   = htole32(fatfs->total_sectors);
+	super.total_sector_count   = htole32(sector_count);
 	super.sectors_per_fat      = htole32(fatfs->secs_per_fat);
 	super.root_dir_index       = htole32(CLUSTER_OFFSET);
 
@@ -46,13 +47,18 @@ static int write_super_block_fat32(fatfs_filesystem_t *fatfs)
 			    &super, sizeof(super));
 }
 
-static int write_fs_info_block(fatfs_filesystem_t *fatfs)
+static int write_fs_info_block(fatfs_filesystem_t *fatfs,
+			       uint32_t sector_count)
 {
+	uint32_t cluster_count, free_count, next_free;
 	filesystem_t *fs = (filesystem_t *)fatfs;
-	uint32_t free_count, next_free;
 	fat32_info_sector_t info;
 
-	free_count = fatfs->total_clusters - fs->fstree->data_offset;
+	cluster_count = sector_count - (FAT32_FAT_START / SECTOR_SIZE);
+	cluster_count -= fatfs->secs_per_fat * 2;
+	cluster_count /= fatfs->secs_per_cluster;
+
+	free_count = cluster_count - fs->fstree->data_offset;
 	next_free = fs->fstree->data_offset;
 
 	memset(&info, 0, sizeof(info));
@@ -69,8 +75,22 @@ static int write_fs_info_block(fatfs_filesystem_t *fatfs)
 
 int fatfs_write_super_block(fatfs_filesystem_t *fatfs)
 {
-	if (write_super_block_fat32(fatfs))
+	uint32_t sector_count;
+	uint64_t size;
+
+	if (MUL64_OV(fatfs->orig_volume->blocksize,
+		     fatfs->orig_volume->get_block_count(fatfs->orig_volume),
+		     &size)) {
+		size = MAX_DISK_SIZE;
+	}
+
+	if (size > MAX_DISK_SIZE)
+		size = MAX_DISK_SIZE;
+
+	sector_count = size / SECTOR_SIZE;
+
+	if (write_super_block_fat32(fatfs, sector_count))
 		return -1;
 
-	return write_fs_info_block(fatfs);
+	return write_fs_info_block(fatfs, sector_count);
 }

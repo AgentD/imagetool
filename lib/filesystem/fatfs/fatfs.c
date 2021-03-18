@@ -6,26 +6,26 @@
  */
 #include "fatfs.h"
 
-static void compute_fs_parameters(uint64_t disk_size, fatfs_filesystem_t *fatfs,
-				  uint32_t preferred_secs_per_cluster)
+static void compute_fs_parameters(uint64_t disk_size, fatfs_filesystem_t *fatfs)
 {
-	uint32_t i;
+	uint32_t i, sectors = disk_size / SECTOR_SIZE;
+	uint32_t secs_per_cluster = 1;
+	uint32_t clusters = sectors;
 
-	fatfs->total_sectors = disk_size / SECTOR_SIZE;
+	for (i = 1; i <= (CLUSTER_SIZE_PREFERRED / SECTOR_SIZE); ++i) {
+		uint32_t new = sectors / i;
 
-	for (i = 1; i <= preferred_secs_per_cluster; ++i) {
-		uint32_t clusters = fatfs->total_sectors / i;
-
-		if (clusters < FAT32_MIN_SECTORS)
+		if (new < FAT32_MIN_SECTORS)
 			break;
 
-		fatfs->secs_per_cluster = i;
-		fatfs->total_clusters = clusters;
+		secs_per_cluster = i;
+		clusters = new;
 	}
 
-	fatfs->secs_per_fat = fatfs->total_clusters / FAT32_ENTRIES_PER_SECTOR;
+	fatfs->secs_per_cluster = secs_per_cluster;
+	fatfs->secs_per_fat = clusters / FAT32_ENTRIES_PER_SECTOR;
 
-	if (fatfs->total_clusters % FAT32_ENTRIES_PER_SECTOR)
+	if (clusters % FAT32_ENTRIES_PER_SECTOR)
 		fatfs->secs_per_fat += 1;
 
 	fatfs->fatsize = fatfs->secs_per_fat * SECTOR_SIZE;
@@ -35,7 +35,7 @@ static int compute_dir_sizes(fatfs_filesystem_t *fatfs, uint64_t *total)
 {
 	filesystem_t *fs = (filesystem_t *)fatfs;
 	tree_node_t *it = fs->fstree->nodes_by_type[TREE_NODE_DIR];
-	uint32_t cluster_size = SECTOR_SIZE * fatfs->secs_per_cluster;
+	uint32_t cluster_size = CLUSTER_SIZE_PREFERRED;
 	null_ostream_t *ostrm;
 	uint64_t offset = 0;
 
@@ -123,36 +123,94 @@ static int write_directory_contents(fatfs_filesystem_t *fatfs)
 	return 0;
 }
 
+static int enforce_min_size(fatfs_filesystem_t *fat)
+{
+	uint64_t size;
+
+	size = fat->orig_volume->get_block_count(fat->orig_volume);
+	if (MUL64_OV(fat->orig_volume->blocksize, size, &size))
+		size = MAX_DISK_SIZE;
+
+	if (size < (FAT32_MIN_SECTORS * SECTOR_SIZE)) {
+		size = FAT32_MIN_SECTORS * SECTOR_SIZE;
+
+		if (fat->orig_volume->truncate(fat->orig_volume, size))
+			goto fail_resize;
+	}
+
+	return 0;
+fail_resize:
+	fprintf(stderr, "Error resizing volume to minimum required "
+		"size for FAT32 (~%d MiB).\n", FAT32_MIN_SECTORS / (2 * 1024));
+	return -1;
+}
+
+static void adjust_file_indices(fatfs_filesystem_t *fat)
+{
+	filesystem_t *fs = (filesystem_t *)fat;
+	tree_node_t *it = fs->fstree->nodes_by_type[TREE_NODE_FILE];
+	uint32_t old_secs_per_cluster = CLUSTER_SIZE_PREFERRED / SECTOR_SIZE;
+
+	for (; it != NULL; it = it->next_by_type) {
+		uint32_t sector;
+
+		sector = it->data.file.start_index * old_secs_per_cluster;
+		it->data.file.start_index = sector / fat->secs_per_cluster;
+	}
+}
+
 static int build_format(filesystem_t *fs)
 {
-	uint64_t dir_size;
+	fatfs_filesystem_t *fat = (fatfs_filesystem_t *)fs;
+	uint64_t dir_size, size;
+	int ret;
 
 	fstree_sort(fs->fstree);
 
-	if (compute_dir_sizes((fatfs_filesystem_t *)fs, &dir_size))
+	if (compute_dir_sizes(fat, &dir_size))
 		goto fail_serialize;
 
 	if (fstree_add_gap(fs->fstree, 0, dir_size))
 		goto fail_serialize;
 
-	if (write_directory_contents((fatfs_filesystem_t *)fs))
+	if (enforce_min_size(fat))
+		return -1;
+
+	size = fat->orig_volume->get_block_count(fat->orig_volume);
+	if (MUL64_OV(fat->orig_volume->blocksize, size, &size))
+		size = MAX_DISK_SIZE;
+
+	compute_fs_parameters(size, fat);
+	adjust_file_indices(fat);
+
+	if (write_directory_contents(fat))
 		goto fail_serialize;
 
-	if (fatfs_write_super_block((fatfs_filesystem_t *)fs))
-		goto fail_super;
+	/* move the data out of the way */
+	ret = volume_memmove(fat->orig_volume,
+			     FAT32_FAT_START + 2 * fat->fatsize, 0,
+			     fs->fstree->data_offset *
+			     fs->fstree->volume->blocksize);
+	if (ret)
+		goto fail_fat;
 
-	if (fatfs_build_fats((fatfs_filesystem_t *)fs))
+	ret = volume_write(fat->orig_volume, 0, NULL,
+			   FAT32_FAT_START + 2 * fat->fatsize);
+	if (ret)
+		goto fail_fat;
+
+	if (fatfs_write_super_block(fat))
+		goto fail_fat;
+
+	if (fatfs_build_fats(fat))
 		goto fail_fat;
 
 	return 0;
-fail_super:
-	fputs("Error writing FAT information structures.\n", stderr);
-	return -1;
 fail_serialize:
 	fputs("Error serializing FAT directory tree.\n", stderr);
 	return -1;
 fail_fat:
-	fputs("Error building FAT data structure.\n", stderr);
+	fputs("Error building FAT data structures.\n", stderr);
 	return -1;
 }
 
@@ -172,7 +230,7 @@ filesystem_t *filesystem_fatfs_create(volume_t *volume)
 	filesystem_t *fs = (filesystem_t *)fatfs;
 	object_t *obj = (object_t *)fatfs;
 	volume_t *adapter = NULL;
-	uint64_t size, rsvp;
+	uint64_t size;
 
 	if (fs == NULL)
 		goto fail_errno;
@@ -182,20 +240,15 @@ filesystem_t *filesystem_fatfs_create(volume_t *volume)
 		size = MAX_DISK_SIZE;
 	}
 
-	compute_fs_parameters(size, fatfs,
-			      CLUSTER_SIZE_PREFERRED / SECTOR_SIZE);
-
-	if (fatfs->secs_per_cluster == 0) {
+	if (size < (FAT32_MIN_SECTORS * SECTOR_SIZE)) {
 		fprintf(stderr, "Cannot make FAT 32 filesystem with less "
 			"than %d sectors (%d MiB)\n", FAT32_MIN_SECTORS,
 			FAT32_MIN_SECTORS / (2 * 1024));
 		goto fail;
 	}
 
-	rsvp = FAT32_FAT_START + 2 * fatfs->fatsize;
-	size = fatfs->secs_per_cluster * (uint64_t)SECTOR_SIZE;
-
-	adapter = volume_blocksize_adapter_create(volume, size, rsvp);
+	adapter = volume_blocksize_adapter_create(volume,
+						  CLUSTER_SIZE_PREFERRED, 0);
 	if (adapter == NULL)
 		goto fail;
 
@@ -207,6 +260,7 @@ filesystem_t *filesystem_fatfs_create(volume_t *volume)
 
 	fs->fstree->flags |= FSTREE_FLAG_NO_SPARSE;
 
+	fatfs->secs_per_cluster = CLUSTER_SIZE_PREFERRED / SECTOR_SIZE;
 	fatfs->orig_volume = object_grab(volume);
 	fs->build_format = build_format;
 	obj->refcount = 1;

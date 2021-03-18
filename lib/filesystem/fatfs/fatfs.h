@@ -154,8 +154,6 @@ typedef struct {
 
 	uint32_t secs_per_cluster;
 	uint32_t secs_per_fat;
-	uint32_t total_sectors;
-	uint32_t total_clusters;
 
 	size_t fatsize;
 } fatfs_filesystem_t;
