@@ -515,7 +515,7 @@ static int file_volume_truncate(volume_t *vol, uint64_t size)
 	}
 
 	if (size > fvol->bytes_used) {
-		uint64_t end = size / vol->blocksize;
+		uint64_t end = count;
 		uint64_t idx = fvol->bytes_used / vol->blocksize;
 
 		while (idx <= end) {
