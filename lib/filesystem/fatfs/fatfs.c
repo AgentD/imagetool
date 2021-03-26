@@ -260,11 +260,15 @@ filesystem_t *filesystem_fatfs_create(volume_t *volume)
 
 	fs->fstree->flags |= FSTREE_FLAG_NO_SPARSE;
 
+	strcpy((char *)fatfs->fs_oem, "Goliath");
+	strcpy((char *)fatfs->fs_label, "NO NAME");
+
 	fatfs->secs_per_cluster = CLUSTER_SIZE_PREFERRED / SECTOR_SIZE;
 	fatfs->orig_volume = object_grab(volume);
 	fs->build_format = build_format;
 	obj->refcount = 1;
 	obj->destroy = destroy;
+	obj->meta = &fatfs_meta;
 	return fs;
 fail_errno:
 	perror("creating FAT filesystem");

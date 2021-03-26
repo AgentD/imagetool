@@ -156,7 +156,12 @@ typedef struct {
 	uint32_t secs_per_fat;
 
 	size_t fatsize;
+
+	uint8_t fs_oem[9];
+	uint8_t fs_label[12];
 } fatfs_filesystem_t;
+
+extern const meta_object_t fatfs_meta;
 
 #ifdef __cplusplus
 extern "C" {

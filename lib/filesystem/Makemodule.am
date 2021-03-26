@@ -35,5 +35,6 @@ libfilesystem_a_SOURCES += lib/filesystem/fatfs/dirent.c
 libfilesystem_a_SOURCES += lib/filesystem/fatfs/super.c
 libfilesystem_a_SOURCES += lib/filesystem/fatfs/fat.c
 libfilesystem_a_SOURCES += lib/filesystem/fatfs/conv.c
+libfilesystem_a_SOURCES += lib/filesystem/fatfs/meta.c
 
 noinst_LIBRARIES += libfilesystem.a

@@ -10,12 +10,23 @@ static int write_super_block_fat32(fatfs_filesystem_t *fatfs,
 				   uint32_t sector_count)
 {
 	fat32_super_t super;
+	size_t len;
 
 	memset(&super, 0, sizeof(super));
 
-	memcpy(super.oem_name, "Goliath ",    sizeof(super.oem_name));
+	len = strlen((const char *)fatfs->fs_oem);
+	len = len > sizeof(super.oem_name) ? sizeof(super.oem_name) : len;
+
+	memset(super.oem_name, ' ', sizeof(super.oem_name));
+	memcpy(super.oem_name, fatfs->fs_oem, len);
+
+	len = strlen((const char *)fatfs->fs_label);
+	len = len > sizeof(super.label) ? sizeof(super.label) : len;
+
+	memset(super.label, ' ', sizeof(super.label));
+	memcpy(super.label, fatfs->fs_label, len);
+
 	memcpy(super.fs_name,  "FAT32   ",    sizeof(super.fs_name));
-	memcpy(super.label,    "NO NAME    ", sizeof(super.label));
 
 	super.boot_signature       = htole16(IBM_BOOT_MAGIC);
 	super.volume_id            = htole32(MAGIC_VOLUME_ID);
