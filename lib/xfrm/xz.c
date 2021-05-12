@@ -146,8 +146,10 @@ static xfrm_stream_t *create_stream(const compressor_config_t *cfg,
 		if (ret_xz != LZMA_OK)
 			goto fail_init;
 	} else {
-		if (lzma_stream_decoder(&xz->strm, memlimit, 0) != LZMA_OK)
+		if (lzma_stream_decoder(&xz->strm, memlimit,
+					LZMA_CONCATENATED) != LZMA_OK) {
 			goto fail_init;
+		}
 	}
 
 	xfrm->process_data = process_data;
