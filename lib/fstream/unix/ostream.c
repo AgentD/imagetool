@@ -144,29 +144,3 @@ fail_free:
 	free(file);
 	return NULL;
 }
-
-ostream_t *ostream_open_stdout(void)
-{
-	file_ostream_t *file = calloc(1, sizeof(*file));
-	object_t *obj = (object_t *)file;
-	ostream_t *strm = (ostream_t *)file;
-
-	if (file == NULL)
-		goto fail;
-
-	file->path = strdup("stdout");
-	if (file->path == NULL)
-		goto fail;
-
-	file->fd = STDOUT_FILENO;
-	strm->append = file_append;
-	strm->flush = file_flush;
-	strm->get_filename = file_get_filename;
-	obj->refcount = 1;
-	obj->destroy = file_destroy;
-	return strm;
-fail:
-	perror("creating file wrapper for stdout");
-	free(file);
-	return NULL;
-}

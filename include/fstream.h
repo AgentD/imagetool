@@ -99,15 +99,6 @@ extern "C" {
 ostream_t *ostream_open_file(const char *path, int flags);
 
 /**
- * @brief Create an output stream that writes to standard output.
- *
- * @memberof ostream_t
- *
- * @return A pointer to an output stream on success, NULL on failure.
- */
-ostream_t *ostream_open_stdout(void);
-
-/**
  * @brief Create an input stream that reads from a file.
  *
  * @memberof istream_t
@@ -131,15 +122,6 @@ istream_t *istream_open_file(const char *path);
  * @return A pointer to an output stream on success, NULL on failure.
  */
 istream_t *istream_open_fd(const char *path, int fd);
-
-/**
- * @brief Create an input stream that reads from standard input.
- *
- * @memberof istream_t
- *
- * @return A pointer to an input stream on success, NULL on failure.
- */
-istream_t *istream_open_stdin(void);
 
 /**
  * @brief Create an output stream that transparently transforms data.
@@ -231,18 +213,6 @@ int ostream_flush(ostream_t *strm);
 const char *ostream_get_filename(ostream_t *strm);
 
 /**
- * @brief Printf like function that appends to an output stream
- *
- * @memberof ostream_t
- *
- * @param strm The output stream to append to.
- * @param fmt A printf style format string.
- *
- * @return The number of characters written on success, -1 on failure.
- */
-int ostream_printf(ostream_t *strm, const char *fmt, ...);
-
-/**
  * @brief Read a line of text from an input stream
  *
  * @memberof istream_t
@@ -321,21 +291,6 @@ const char *istream_get_filename(istream_t *strm);
  * @return Zero on success, -1 on failure.
  */
 int istream_skip(istream_t *strm, uint64_t size);
-
-/**
- * @brief Read data from an input stream and append it to an output stream
- *
- * @memberof ostream_t
- *
- * @param out A pointer to an output stream to append to.
- * @param in A pointer to an input stream to read from.
- * @param size The number of bytes to copy over.
- *
- * @return The number of bytes copied on success, -1 on failure,
- *         0 on end-of-file.
- */
-int32_t ostream_append_from_istream(ostream_t *out, istream_t *in,
-				    uint32_t size);
 
 /**
  * @brief Create a dummy sink stream that discards all data.

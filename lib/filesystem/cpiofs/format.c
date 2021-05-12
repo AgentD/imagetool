@@ -14,6 +14,7 @@ int cpio_write_header(ostream_t *strm, tree_node_t *n, bool hardlink)
 	uint32_t pathlen, dev_major = 0, dev_minor = 0, padding = 0;
 	uint16_t mode = n->permissions;
 	uint64_t size = 0;
+	char buffer[128];
 	char *path;
 	int ret;
 
@@ -58,24 +59,26 @@ int cpio_write_header(ostream_t *strm, tree_node_t *n, bool hardlink)
 	fstree_canonicalize_path(path);
 	pathlen = strlen(path);
 
-	ret = ostream_printf(strm,
-			     "%s%08X%08X%08lX%08lX%08X%08lX"
-			     "%08X%08X%08X%08X%08X%08X%08X",
-			     cpio_magic, n->inode_num,
-			     mode, (long)n->uid, (long)n->gid, n->link_count,
-			     (long)n->mtime,
-			     size,
-			     3, 1,
-			     dev_major, dev_minor,
-			     pathlen + 1, 0);
-	if (ret < 0) {
+	snprintf(buffer, sizeof(buffer),
+		 "%s%08X%08X%08lX%08lX%08X%08lX"
+		 "%08X%08X%08X%08X%08X%08X%08X",
+		 cpio_magic, n->inode_num,
+		 mode, (unsigned long)n->uid, (unsigned long)n->gid,
+		 n->link_count, (unsigned long)n->mtime,
+		 (unsigned int)size, 3U, 1U,
+		 dev_major, dev_minor,
+		 pathlen + 1, 0U);
+
+	if (ostream_append(strm, buffer, strlen(buffer))) {
 		free(path);
 		return -1;
 	}
 
-	if (ostream_append(strm, path, pathlen + 1))
-		return -1;
+	ret = ostream_append(strm, path, pathlen + 1);
 	free(path);
+
+	if (ret)
+		return -1;
 
 	/* add null-terminator + header size, padd accordingly */
 	pathlen += 1 + 110;
@@ -102,20 +105,22 @@ int cpio_write_header(ostream_t *strm, tree_node_t *n, bool hardlink)
 int cpio_write_trailer(uint64_t offset, ostream_t *strm)
 {
 	unsigned int namelen = strlen(cpio_trailer);
-	int ret;
+	char buffer[128];
 
-	ret = ostream_printf(strm,
-			     "%s%08X%08X%08lX%08lX%08X%08lX"
-			     "%08X%08X%08X%08X%08X%08X%08X",
-			     cpio_magic, 0, 0, 0L, 0L, 1, 0L,
-			     0, 0, 0, 0, 0, namelen + 1, 0);
-	if (ret < 0)
+	snprintf(buffer, sizeof(buffer),
+		 "%s%08X%08X%08lX%08lX%08X%08lX"
+		 "%08X%08X%08X%08X%08X%08X%08X",
+		 cpio_magic, 0U, 0U, 0UL, 0UL, 1U, 0UL,
+		 0U, 0U, 0U, 0U, 0U, namelen + 1, 0U);
+
+	if (ostream_append(strm, buffer, strlen(buffer)))
 		return -1;
 
 	if (ostream_append(strm, cpio_trailer, namelen + 1))
 		return -1;
 
-	offset += (uint64_t)ret + namelen + 1;
+	offset += strlen(buffer) + namelen + 1;
+
 	while (offset % 512) {
 		if (ostream_append(strm, "\0", 1))
 			return -1;

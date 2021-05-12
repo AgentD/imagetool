@@ -111,29 +111,3 @@ istream_t *istream_open_file(const char *path)
 
 	return out;
 }
-
-istream_t *istream_open_stdin(void)
-{
-	file_istream_t *file = calloc(1, sizeof(*file));
-	object_t *obj = (object_t *)file;
-	istream_t *strm = (istream_t *)file;
-
-	if (file == NULL)
-		goto fail;
-
-	file->path = strdup("stdin");
-	if (file->path == NULL)
-		goto fail;
-
-	file->fd = STDIN_FILENO;
-	strm->buffer = file->buffer;
-	strm->precache = file_precache;
-	strm->get_filename = file_get_filename;
-	obj->refcount = 1;
-	obj->destroy = file_destroy;
-	return strm;
-fail:
-	perror("creating file wrapper for stdin");
-	free(file);
-	return NULL;
-}

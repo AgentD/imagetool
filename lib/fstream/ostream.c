@@ -49,36 +49,3 @@ const char *ostream_get_filename(ostream_t *strm)
 {
 	return strm->get_filename(strm);
 }
-
-int32_t ostream_append_from_istream(ostream_t *out, istream_t *in,
-				    uint32_t size)
-{
-	int32_t total = 0;
-	size_t diff;
-
-	if (size > 0x7FFFFFFF)
-		size = 0x7FFFFFFF;
-
-	while (size > 0) {
-		if (in->buffer_offset >= in->buffer_used) {
-			if (istream_precache(in))
-				return -1;
-
-			if (in->buffer_used == 0)
-				break;
-		}
-
-		diff = in->buffer_used - in->buffer_offset;
-		if (diff > size)
-			diff = size;
-
-		if (out->append(out, in->buffer + in->buffer_offset, diff))
-			return -1;
-
-		in->buffer_offset += diff;
-		size -= diff;
-		total += diff;
-	}
-
-	return total;
-}

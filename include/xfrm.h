@@ -34,13 +34,6 @@ struct xfrm_stream_t {
 			    int flush_mode);
 };
 
-struct xfrm_block_t {
-	object_t base;
-
-	int32_t (*process_block)(xfrm_block_t *xfrm,
-				 void *buffer, uint32_t size);
-};
-
 
 struct compressor_config_t {
 	uint32_t flags;
