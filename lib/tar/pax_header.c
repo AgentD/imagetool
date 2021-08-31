@@ -8,9 +8,138 @@
 
 #include "internal.h"
 
-static tar_xattr_t *mkxattr(const char *key, size_t keylen,
+static int pax_uid(tar_header_decoded_t *out, uint64_t id)
+{
+	out->sb.st_uid = id;
+	return 0;
+}
+
+static int pax_gid(tar_header_decoded_t *out, uint64_t id)
+{
+	out->sb.st_gid = id;
+	return 0;
+}
+
+static int pax_size(tar_header_decoded_t *out, uint64_t size)
+{
+	out->record_size = size;
+	return 0;
+}
+
+static int pax_mtime(tar_header_decoded_t *out, int64_t mtime)
+{
+	out->mtime = mtime;
+	return 0;
+}
+
+static int pax_rsize(tar_header_decoded_t *out, uint64_t size)
+{
+	out->actual_size = size;
+	return 0;
+}
+
+static int pax_path(tar_header_decoded_t *out, char *path)
+{
+	free(out->name);
+	out->name = path;
+	return 0;
+}
+
+static int pax_slink(tar_header_decoded_t *out, char *path)
+{
+	free(out->link_target);
+	out->link_target = path;
+	return 0;
+}
+
+static int pax_xattr_schily(tar_header_decoded_t *out,
+			    tar_xattr_t *xattr)
+{
+	xattr->next = out->xattr;
+	out->xattr = xattr;
+	return 0;
+}
+
+static int pax_xattr_libarchive(tar_header_decoded_t *out,
+				tar_xattr_t *xattr)
+{
+	urldecode(xattr->key);
+	xattr->value_len = base64_decode(xattr->value,
+					 (const char *)xattr->value,
+					 xattr->value_len);
+	xattr->next = out->xattr;
+	out->xattr = xattr;
+	return 0;
+}
+
+enum {
+	PAX_TYPE_SINT = 0,
+	PAX_TYPE_UINT,
+	PAX_TYPE_STRING,
+	PAX_TYPE_PREFIXED_XATTR,
+	PAX_TYPE_IGNORE,
+};
+
+static const struct pax_handler_t {
+	const char *name;
+	int flag;
+	int type;
+	union {
+		int (*sint)(tar_header_decoded_t *out, int64_t sval);
+		int (*uint)(tar_header_decoded_t *out, uint64_t uval);
+		int (*str)(tar_header_decoded_t *out, char *str);
+		int (*xattr)(tar_header_decoded_t *out, tar_xattr_t *xattr);
+	} cb;
+} pax_fields[] = {
+	{ "uid", PAX_UID, PAX_TYPE_UINT, { .uint = pax_uid } },
+	{ "gid", PAX_GID, PAX_TYPE_UINT, { .uint = pax_gid } },
+	{ "path", PAX_NAME, PAX_TYPE_STRING, { .str = pax_path } },
+	{ "size", PAX_SIZE, PAX_TYPE_UINT, { .uint = pax_size } },
+	{ "linkpath", PAX_SLINK_TARGET, PAX_TYPE_STRING, { .str = pax_slink } },
+	{ "mtime", PAX_MTIME, PAX_TYPE_SINT, { .sint = pax_mtime } },
+	{ "GNU.sparse.name", PAX_NAME, PAX_TYPE_STRING, { .str = pax_path } },
+	{ "GNU.sparse.size", PAX_SPARSE_SIZE, PAX_TYPE_UINT,
+	  {.uint = pax_rsize} },
+	{ "GNU.sparse.realsize", PAX_SPARSE_SIZE, PAX_TYPE_UINT,
+	  {.uint = pax_rsize} },
+	{ "GNU.sparse.major", PAX_SPARSE_GNU_1_X, PAX_TYPE_IGNORE,
+	  { .str = NULL } },
+	{ "GNU.sparse.minor", PAX_SPARSE_GNU_1_X, PAX_TYPE_IGNORE,
+	  { .str = NULL }},
+	{ "SCHILY.xattr", 0, PAX_TYPE_PREFIXED_XATTR,
+	  { .xattr = pax_xattr_schily } },
+	{ "LIBARCHIVE.xattr", 0, PAX_TYPE_PREFIXED_XATTR,
+	  { .xattr = pax_xattr_libarchive } },
+};
+
+static const struct pax_handler_t *find_handler(const char *key)
+{
+	size_t i, fieldlen;
+
+	for (i = 0; i < sizeof(pax_fields) / sizeof(pax_fields[0]); ++i) {
+		if (pax_fields[i].type == PAX_TYPE_PREFIXED_XATTR) {
+			fieldlen = strlen(pax_fields[i].name);
+
+			if (strncmp(key, pax_fields[i].name, fieldlen))
+				continue;
+
+			if (key[fieldlen] != '.')
+				continue;
+
+			return pax_fields + i;
+		}
+
+		if (!strcmp(key, pax_fields[i].name))
+			return pax_fields + i;
+	}
+
+	return NULL;
+}
+
+static tar_xattr_t *mkxattr(const char *key,
 			    const char *value, size_t valuelen)
 {
+	size_t keylen = strlen(key);
 	tar_xattr_t *xattr;
 
 	xattr = calloc(1, sizeof(*xattr) + keylen + 1 + valuelen + 1);
@@ -25,13 +154,68 @@ static tar_xattr_t *mkxattr(const char *key, size_t keylen,
 	return xattr;
 }
 
+static int apply_handler(tar_header_decoded_t *out,
+			 const struct pax_handler_t *field, const char *key,
+			 const char *value, size_t valuelen)
+{
+	tar_xattr_t *xattr;
+	int64_t s64val;
+	uint64_t uval;
+	char *copy;
+
+	switch (field->type) {
+	case PAX_TYPE_SINT:
+		if (value[0] == '-') {
+			if (pax_read_decimal(value + 1, &uval))
+				return -1;
+			s64val = -((int64_t)uval);
+		} else {
+			if (pax_read_decimal(value, &uval))
+				return -1;
+			s64val = (int64_t)uval;
+		}
+		return field->cb.sint(out, s64val);
+	case PAX_TYPE_UINT:
+		if (pax_read_decimal(value, &uval))
+			return -1;
+		return field->cb.uint(out, uval);
+	case PAX_TYPE_STRING:
+		copy = strdup(value);
+		if (copy == NULL) {
+			perror("processing pax header");
+			return -1;
+		}
+		if (field->cb.str(out, copy)) {
+			free(copy);
+			return -1;
+		}
+		break;
+	case PAX_TYPE_PREFIXED_XATTR:
+		xattr = mkxattr(key + strlen(field->name) + 1,
+				value, valuelen);
+		if (xattr == NULL) {
+			perror("reading pax xattr field");
+			return -1;
+		}
+		if (field->cb.xattr(out, xattr)) {
+			free(xattr);
+			return -1;
+		}
+		break;
+	default:
+		break;
+	}
+
+	return 0;
+}
+
 int read_pax_header(istream_t *fp, uint64_t entsize, unsigned int *set_by_pax,
 		    tar_header_decoded_t *out)
 {
 	char *buffer, *line, *key, *ptr, *value, *end;
 	sparse_map_t *sparse_last = NULL, *sparse;
-	uint64_t field, offset = 0, num_bytes = 0;
-	tar_xattr_t *xattr;
+	uint64_t offset = 0, num_bytes = 0;
+	const struct pax_handler_t *field;
 	long len;
 
 	buffer = record_to_memory(fp, entsize);
@@ -56,72 +240,38 @@ int read_pax_header(istream_t *fp, uint64_t entsize, unsigned int *set_by_pax,
 		if (ptr >= end || (ptr - line) >= len)
 			goto fail_malformed;
 
-		if (!strncmp(ptr, "uid=", 4)) {
-			if (pax_read_decimal(ptr + 4, &field))
+		key = ptr;
+
+		while (*ptr != '\0' && *ptr != '=')
+			++ptr;
+
+		if (ptr == key || *ptr != '=')
+			goto fail_malformed;
+
+		*(ptr++) = '\0';
+		value = ptr;
+
+		field = find_handler(key);
+
+		if (field != NULL) {
+			if (apply_handler(out, field, key, value,
+					  len - (value - line) - 1)) {
 				goto fail;
-			out->sb.st_uid = field;
-			*set_by_pax |= PAX_UID;
-		} else if (!strncmp(ptr, "gid=", 4)) {
-			if (pax_read_decimal(ptr + 4, &field))
-				goto fail;
-			out->sb.st_gid = field;
-			*set_by_pax |= PAX_GID;
-		} else if (!strncmp(ptr, "path=", 5)) {
-			free(out->name);
-			out->name = strdup(ptr + 5);
-			if (out->name == NULL)
-				goto fail_errno;
-			*set_by_pax |= PAX_NAME;
-		} else if (!strncmp(ptr, "size=", 5)) {
-			if (pax_read_decimal(ptr + 5, &out->record_size))
-				goto fail;
-			*set_by_pax |= PAX_SIZE;
-		} else if (!strncmp(ptr, "linkpath=", 9)) {
-			free(out->link_target);
-			out->link_target = strdup(ptr + 9);
-			if (out->link_target == NULL)
-				goto fail_errno;
-			*set_by_pax |= PAX_SLINK_TARGET;
-		} else if (!strncmp(ptr, "mtime=", 6)) {
-			if (ptr[6] == '-') {
-				if (pax_read_decimal(ptr + 7, &field))
-					goto fail;
-				out->mtime = -((int64_t)field);
-			} else {
-				if (pax_read_decimal(ptr + 6, &field))
-					goto fail;
-				out->mtime = field;
 			}
-			*set_by_pax |= PAX_MTIME;
-		} else if (!strncmp(ptr, "GNU.sparse.name=", 16)) {
-			free(out->name);
-			out->name = strdup(ptr + 16);
-			if (out->name == NULL)
-				goto fail_errno;
-			*set_by_pax |= PAX_NAME;
-		} else if (!strncmp(ptr, "GNU.sparse.map=", 15)) {
+
+			*set_by_pax |= field->flag;
+		} else if (!strcmp(key, "GNU.sparse.map")) {
 			free_sparse_list(out->sparse);
 			sparse_last = NULL;
 
-			out->sparse = read_sparse_map(ptr + 15);
+			out->sparse = read_sparse_map(value);
 			if (out->sparse == NULL)
 				goto fail;
-		} else if (!strncmp(ptr, "GNU.sparse.size=", 16)) {
-			if (pax_read_decimal(ptr + 16, &out->actual_size))
+		} else if (!strcmp(key, "GNU.sparse.offset")) {
+			if (pax_read_decimal(value, &offset))
 				goto fail;
-			*set_by_pax |= PAX_SPARSE_SIZE;
-		} else if (!strncmp(ptr, "GNU.sparse.realsize=", 20)) {
-			if (pax_read_decimal(ptr + 20, &out->actual_size))
-				goto fail;
-			*set_by_pax |= PAX_SPARSE_SIZE;
-		} else if (!strncmp(ptr, "GNU.sparse.major=", 17) ||
-			   !strncmp(ptr, "GNU.sparse.minor=", 17)) {
-			*set_by_pax |= PAX_SPARSE_GNU_1_X;
-		} else if (!strncmp(ptr, "GNU.sparse.offset=", 18)) {
-			if (pax_read_decimal(ptr + 18, &offset))
-				goto fail;
-		} else if (!strncmp(ptr, "GNU.sparse.numbytes=", 20)) {
-			if (pax_read_decimal(ptr + 20, &num_bytes))
+		} else if (!strcmp(key, "GNU.sparse.numbytes")) {
+			if (pax_read_decimal(value, &num_bytes))
 				goto fail;
 			sparse = calloc(1, sizeof(*sparse));
 			if (sparse == NULL)
@@ -135,41 +285,6 @@ int read_pax_header(istream_t *fp, uint64_t entsize, unsigned int *set_by_pax,
 				sparse_last->next = sparse;
 				sparse_last = sparse;
 			}
-		} else if (!strncmp(ptr, "SCHILY.xattr.", 13)) {
-			key = ptr + 13;
-
-			ptr = strrchr(key, '=');
-			if (ptr == NULL || ptr == key)
-				continue;
-
-			value = ptr + 1;
-
-			xattr = mkxattr(key, ptr - key,
-					value, len - (value - line) - 1);
-			if (xattr == NULL)
-				goto fail_errno;
-
-			xattr->next = out->xattr;
-			out->xattr = xattr;
-		} else if (!strncmp(ptr, "LIBARCHIVE.xattr.", 17)) {
-			key = ptr + 17;
-
-			ptr = strrchr(key, '=');
-			if (ptr == NULL || ptr == key)
-				continue;
-
-			value = ptr + 1;
-
-			xattr = mkxattr(key, ptr - key, value, strlen(value));
-			if (xattr == NULL)
-				goto fail_errno;
-
-			urldecode(xattr->key);
-			xattr->value_len = base64_decode(xattr->value, value,
-							 xattr->value_len);
-
-			xattr->next = out->xattr;
-			out->xattr = xattr;
 		}
 	}
 
